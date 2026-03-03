@@ -1,12 +1,17 @@
+// qmllint /disable
 import QtQuick
 import QtMultimedia
 import org.qfield
+import qmllint
 
 Item {
   id: root
 
   // ---------- Settings ----------
-  property int repeatSeconds: 5
+  property int repeatSeconds: 5   // default (Breach) alarms repeat every N seconds while breaching
+  property int warningRepeatSeconds: 10  // WARNING alarms repeat less frequently than breach
+  property int infoRepeatSeconds: 60  // INFO alarms repeat less frequently
+  property int rotationDegrees: 5  // For rotating map canvas clockwise and counterclockwise
 
   // Debug overlay (small panel)
   property bool debugOverlayEnabled: false
@@ -17,6 +22,23 @@ Item {
   // If acknowledged, overlay hides but alarm continues until breach ends
   property bool breachAcknowledged: false
 
+  // ---------- UI Constants ----------
+  // Z-index layering
+  readonly property int zIndexBase: 100000
+  readonly property int zIndexOverlay: 200000
+
+  // Color palette
+  readonly property color colorActive: "#d32f2f"
+  readonly property color colorInactive: "#424242"
+  readonly property color colorWarning: "#ff9800"
+  readonly property color colorInfo: "#4caf50"
+  readonly property color colorBreach: "#ff0000"
+
+  // Spacing and layout
+  readonly property int buttonMargin: 12
+  readonly property int buttonSpacing: 10
+  readonly property int buttonTopOffset: 100
+
   function toast(msg, kind) {
     iface.mainWindow().displayToast(msg, kind ? kind : "")
   }
@@ -26,7 +48,21 @@ Item {
   }
 
   function onSavePressed() {
-    root.toast("Save pressed.  Trackfile upload process here")
+    root.toast("Save pressed")
+  }
+
+  function rotateClockwise() {
+    if (mapCanvas && mapCanvas.mapSettings) {
+      mapCanvas.mapSettings.rotation += root.rotationDegrees
+      root.toast("Rotated " + root.rotationDegrees + "° clockwise")
+    }
+  }
+
+  function rotateCounterClockwise() {
+    if (mapCanvas && mapCanvas.mapSettings) {
+      mapCanvas.mapSettings.rotation -= root.rotationDegrees
+      root.toast("Rotated " + root.rotationDegrees + "° counter-clockwise")
+    }
   }
 
   // ---------- Audio ----------
@@ -62,24 +98,6 @@ Item {
   readonly property bool isWarningType: alarmTypeNormalized === "WARNING"
   readonly property bool isInfoType: alarmTypeNormalized === "INFO"
 
-  // Best-effort accuracy (varies by platform/object; we try a few common properties)
-  property string accuracyText: "—"
-  function updateAccuracy() {
-    if (!positionSource) {
-      accuracyText = "—"
-      return
-    }
-    // Try common property names without throwing
-    var v = undefined
-    try { if ("horizontalAccuracy" in positionSource) v = positionSource.horizontalAccuracy } catch (e) {}
-    if (v === undefined) { try { if ("accuracy" in positionSource) v = positionSource.accuracy } catch (e) {} }
-    if (v === undefined) { try { if ("horizontalAccuracy" in positionSource.position) v = positionSource.position.horizontalAccuracy } catch (e) {} }
-    if (v === undefined) { try { if ("accuracy" in positionSource.position) v = positionSource.position.accuracy } catch (e) {} }
-
-    if (v === undefined || v === null || isNaN(v)) accuracyText = "not measured"
-    else accuracyText = Number(v).toFixed(1) + " m"
-  }
-
   function normalizeAlarmType(value) {
     if (value === undefined || value === null) return "BREACH"
     var t = String(value).trim().toUpperCase()
@@ -108,9 +126,21 @@ Item {
 
   function alarmBorderColorFor(type) {
     var t = normalizeAlarmType(type)
-    if (t === "WARNING") return "#ff9800"
-    if (t === "INFO") return "#4caf50"
-    return "#ff0000"
+    if (t === "WARNING") return root.colorWarning
+    if (t === "INFO") return root.colorInfo
+    return root.colorBreach
+  }
+
+  function checkAndHandleTrespass() {
+    const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
+    if (isTrespassMode && gf.isWithin) {
+      if (!root.breaching) {
+        const data = root.parseAreaData(gf.isWithinAreaName)
+        root.startBreach(data.areaName, data.alarmType)
+      }
+    } else {
+      root.stopBreach()
+    }
   }
 
   Timer {
@@ -134,8 +164,14 @@ Item {
     root.alarmType = type ? String(type) : ""
     root.breachAcknowledged = false
 
-    // Info alarms repeat less frequently to reduce noise
-    repeatTimer.interval = root.isInfoType ? 60000 : (root.repeatSeconds * 1000)
+    // Set interval based on alarm type
+    if (root.isInfoType) {
+      repeatTimer.interval = root.infoRepeatSeconds * 1000
+    } else if (root.isWarningType) {
+      repeatTimer.interval = root.warningRepeatSeconds * 1000
+    } else {
+      repeatTimer.interval = root.repeatSeconds * 1000
+    }
 
     // Immediate beep on trespass
     var snd = root.alarmSoundFor(root.alarmType)
@@ -167,32 +203,9 @@ Item {
 
     // Match QField's "trespassed into" semantics:
     // behavior == AlertWhenInsideGeofencedArea AND isWithin == true
-    onIsWithinChanged: {
-      const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
-
-      if (isTrespassMode && gf.isWithin) {
-        const data = root.parseAreaData(gf.isWithinAreaName)
-        root.startBreach(data.areaName, data.alarmType)
-      } else {
-        root.stopBreach()
-      }
-    }
-
-    onBehaviorChanged: {
-      const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
-      if (isTrespassMode && gf.isWithin) {
-        if (!root.breaching) {
-          const data = root.parseAreaData(gf.isWithinAreaName)
-          root.startBreach(data.areaName, data.alarmType)
-        }
-      } else {
-        root.stopBreach()
-      }
-    }
-
-    onActiveChanged: {
-      if (!gf.active) root.stopBreach()
-    }
+    onIsWithinChanged: root.checkAndHandleTrespass()
+    onBehaviorChanged: root.checkAndHandleTrespass()
+    onActiveChanged: { if (!gf.active) root.stopBreach() }
   }
 
   // ============================================================
@@ -201,7 +214,7 @@ Item {
   Rectangle {
     id: breachOverlay
     visible: root.breachOverlayEnabled && root.breaching
-    z: 200000
+    z: root.zIndexOverlay
     color: (root.isBreachType && !root.breachAcknowledged) ? "#000000" : "transparent"
 
     // base fill (semi transparent)
@@ -222,7 +235,7 @@ Item {
       color: "transparent"
       border.width: 18
       border.color: root.alarmBorderColorFor(root.alarmType)
-      z: 200001
+      z: root.zIndexOverlay + 1
 
       // Flash the border opacity
       SequentialAnimation on opacity {
@@ -264,16 +277,9 @@ Item {
       Text {
         text: (root.breachAreaName && root.breachAreaName !== "")
               ? ("Trespassed into:\n“" + root.breachAreaName + "”")
-              : "Trespassed into a restricted area"
+              : "You are in a restricted area"
         font.pixelSize: 22
         wrapMode: Text.Wrap
-        horizontalAlignment: Text.AlignHCenter
-        width: parent.width
-      }
-
-      Text {
-        text: "GPS accuracy: " + root.accuracyText
-        font.pixelSize: 18
         horizontalAlignment: Text.AlignHCenter
         width: parent.width
       }
@@ -314,7 +320,7 @@ Item {
           enabled: root.isBreachType && !root.breachAcknowledged
           onClicked: {
             root.breachAcknowledged = true
-            root.toast("Breach acknowledged (alarm continues until exit)")
+            root.toast("Breach acknowledged (alarm will continue until zone exited)")
           }
         }
       }
@@ -325,7 +331,7 @@ Item {
   Rectangle {
     id: acknowledgedBadge
     visible: root.breaching && root.breachAcknowledged && root.isBreachType
-    z: 200010
+    z: root.zIndexOverlay + 10
     radius: 10
     opacity: 0.92
     width: Math.min(520, parent ? parent.width * 0.9 : 520)
@@ -346,14 +352,6 @@ Item {
     }
   }
 
-  // Keep accuracy updated while running
-  Timer {
-    interval: 1000
-    running: true
-    repeat: true
-    onTriggered: root.updateAccuracy()
-  }
-
   // ============================================================
   // DEBUG PANEL (small)
   // ============================================================
@@ -364,7 +362,7 @@ Item {
     height: 160
     radius: 12
     opacity: 0.9
-    z: 100000
+    z: root.zIndexBase
 
     Text {
       anchors.fill: parent
@@ -381,7 +379,6 @@ Item {
         " alarmType=" + root.alarmTypeNormalized +
         " acknowledged=" + root.breachAcknowledged +
         " interval=" + root.repeatSeconds + "s\n" +
-        "accuracy=" + root.accuracyText + "\n" +
         "area='" + root.breachAreaName + "'"
     }
   }
@@ -396,9 +393,9 @@ Item {
     width: 38
     height: 38
     radius: 19
-    z: 100001
+    z: root.zIndexBase + 1
     opacity: 0.88
-    color: root.alarmTestMenuVisible ? "#d32f2f" : "#424242"
+    color: root.alarmTestMenuVisible ? root.colorActive : root.colorInactive
 
     Text { anchors.centerIn: parent; text: "🧪"; font.pixelSize: 16 }
 
@@ -417,11 +414,11 @@ Item {
     width: 220
     height: 230
     radius: 10
-    opacity: 0.93
+    opacity: 0.80
     color: "#202020"
     border.width: 2
     border.color: "#ffffff"
-    z: 100002
+    z: root.zIndexBase + 2
 
     Column {
       anchors.fill: parent
@@ -439,7 +436,7 @@ Item {
         width: parent.width
         height: 38
         radius: 8
-        color: "#b71c1c"
+        color: root.colorBreach
         Text { anchors.centerIn: parent; text: "Test BREACH"; font.pixelSize: 15 }
         MouseArea {
           anchors.fill: parent
@@ -451,7 +448,7 @@ Item {
         width: parent.width
         height: 38
         radius: 8
-        color: "#ef6c00"
+        color: root.colorWarning
         Text { anchors.centerIn: parent; text: "Test WARNING"; font.pixelSize: 15 }
         MouseArea {
           anchors.fill: parent
@@ -463,7 +460,7 @@ Item {
         width: parent.width
         height: 38
         radius: 8
-        color: "#2e7d32"
+        color: root.colorInfo
         Text { anchors.centerIn: parent; text: "Test INFO"; font.pixelSize: 15 }
         MouseArea {
           anchors.fill: parent
@@ -475,7 +472,7 @@ Item {
         width: parent.width
         height: 34
         radius: 8
-        color: "#424242"
+        color: root.colorInactive
         Text { anchors.centerIn: parent; text: "Stop test"; font.pixelSize: 14 }
         MouseArea {
           anchors.fill: parent
@@ -494,9 +491,9 @@ Item {
     width: 38
     height: 38
     radius: 19
-    z: 100001
+    z: root.zIndexBase + 1
     opacity: 0.88
-    color: root.debugOverlayEnabled ? "#d32f2f" : "#424242"
+    color: root.debugOverlayEnabled ? root.colorActive : root.colorInactive
 
     Text { anchors.centerIn: parent; text: "🐞"; font.pixelSize: 18 }
 
@@ -515,9 +512,9 @@ Item {
     width: 38
     height: 38
     radius: 19
-    z: 100001
+    z: root.zIndexBase + 1
     opacity: 0.88
-    color: root.breachOverlayEnabled ? "#d32f2f" : "#424242"
+    color: root.breachOverlayEnabled ? root.colorActive : root.colorInactive
 
     Text { anchors.centerIn: parent; text: "🚨"; font.pixelSize: 18 }
 
@@ -536,9 +533,9 @@ Item {
     width: 38
     height: 38
     radius: 19
-    z: 100001
+    z: root.zIndexBase + 1
     opacity: 0.88
-    color: "#424242"
+    color: root.colorInactive
 
     Text {
       anchors.centerIn: parent
@@ -558,9 +555,9 @@ Item {
     width: 38
     height: 38
     radius: 19
-    z: 100001
+    z: root.zIndexBase + 1
     opacity: 0.88
-    color: "#424242"
+    color: root.colorInactive
 
     Text {
       anchors.centerIn: parent
@@ -571,6 +568,50 @@ Item {
     MouseArea {
       anchors.fill: parent
       onClicked: root.onSavePressed()
+    }
+  }
+
+  // Rotate map clockwise button
+  Rectangle {
+    id: rotateClockwiseButton
+    width: 38
+    height: 38
+    radius: 19
+    z: root.zIndexBase + 1
+    opacity: 0.88
+    color: root.colorInactive
+
+    Text {
+      anchors.centerIn: parent
+      text: "↩️"
+      font.pixelSize: 20
+    }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: root.rotateClockwise()
+    }
+  }
+
+  // Rotate map counter-clockwise button
+  Rectangle {
+    id: rotateCounterClockwiseButton
+    width: 38
+    height: 38
+    radius: 19
+    z: root.zIndexBase + 1
+    opacity: 0.88
+    color: root.colorInactive
+
+    Text {
+      anchors.centerIn: parent
+      text: "↪️"
+      font.pixelSize: 20
+    }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: root.rotateCounterClockwise()
     }
   }
   
@@ -620,45 +661,56 @@ Item {
       // Parent buttons (middle-left)
       alarmTestButton.parent = iface.mainWindow().contentItem
       alarmTestButton.anchors.left = alarmTestButton.parent.left
-      alarmTestButton.anchors.verticalCenter = alarmTestButton.parent.verticalCenter
-      alarmTestButton.anchors.margins = 12
+      alarmTestButton.anchors.top = alarmTestButton.parent.top
+      alarmTestButton.anchors.leftMargin = root.buttonMargin
+      alarmTestButton.anchors.topMargin = root.buttonTopOffset
 
       alarmTestMenu.parent = iface.mainWindow().contentItem
       alarmTestMenu.anchors.left = alarmTestButton.right
-      alarmTestMenu.anchors.leftMargin = 10
+      alarmTestMenu.anchors.leftMargin = root.buttonSpacing
       alarmTestMenu.anchors.verticalCenter = alarmTestButton.verticalCenter
 
       debugButton.parent = iface.mainWindow().contentItem
       debugButton.anchors.left = debugButton.parent.left
       debugButton.anchors.top = alarmTestButton.bottom
-      debugButton.anchors.topMargin = 10
-      debugButton.anchors.leftMargin = 12
+      debugButton.anchors.topMargin = root.buttonSpacing
+      debugButton.anchors.leftMargin = root.buttonMargin
 
       breachButton.parent = iface.mainWindow().contentItem
       breachButton.anchors.left = breachButton.parent.left
       breachButton.anchors.top = debugButton.bottom
-      breachButton.anchors.topMargin = 10
-      breachButton.anchors.leftMargin = 12
+      breachButton.anchors.topMargin = root.buttonSpacing
+      breachButton.anchors.leftMargin = root.buttonMargin
 
       syncButton.parent = iface.mainWindow().contentItem
       syncButton.anchors.left = syncButton.parent.left
       syncButton.anchors.top = breachButton.bottom
-      syncButton.anchors.topMargin = 10
-      syncButton.anchors.leftMargin = 12
+      syncButton.anchors.topMargin = root.buttonSpacing
+      syncButton.anchors.leftMargin = root.buttonMargin
 
       saveButton.parent = iface.mainWindow().contentItem
       saveButton.anchors.left = saveButton.parent.left
       saveButton.anchors.top = syncButton.bottom
-      saveButton.anchors.topMargin = 10
-      saveButton.anchors.leftMargin = 12
+      saveButton.anchors.topMargin = root.buttonSpacing
+      saveButton.anchors.leftMargin = root.buttonMargin
+
+      rotateClockwiseButton.parent = iface.mainWindow().contentItem
+      rotateClockwiseButton.anchors.left = rotateClockwiseButton.parent.left
+      rotateClockwiseButton.anchors.top = saveButton.bottom
+      rotateClockwiseButton.anchors.topMargin = root.buttonSpacing
+      rotateClockwiseButton.anchors.leftMargin = root.buttonMargin
+
+      rotateCounterClockwiseButton.parent = iface.mainWindow().contentItem
+      rotateCounterClockwiseButton.anchors.left = rotateCounterClockwiseButton.parent.left
+      rotateCounterClockwiseButton.anchors.top = rotateClockwiseButton.bottom
+      rotateCounterClockwiseButton.anchors.topMargin = root.buttonSpacing
+      rotateCounterClockwiseButton.anchors.leftMargin = root.buttonMargin
 
       positionSource = iface.findItemByObjectName("positionSource")
       mapCanvas = iface.findItemByObjectName("mapCanvas")
 
       if (!positionSource) toast("positionSource NOT FOUND", "error")
       if (!mapCanvas) toast("mapCanvas NOT FOUND", "error")
-
-      root.updateAccuracy()
 
       applySettings("t=0.6s")
       retry.running = true
