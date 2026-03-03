@@ -1,0 +1,675 @@
+import QtQuick
+import QtMultimedia
+import org.qfield
+
+Item {
+  id: root
+
+  // ---------- Settings ----------
+  property int repeatSeconds: 5
+
+  // Debug overlay (small panel)
+  property bool debugOverlayEnabled: false
+
+  // Big breach overlay (full screen)
+  property bool breachOverlayEnabled: true
+
+  // If acknowledged, overlay hides but alarm continues until breach ends
+  property bool breachAcknowledged: false
+
+  function toast(msg, kind) {
+    iface.mainWindow().displayToast(msg, kind ? kind : "")
+  }
+
+  function onSyncPressed() {
+    root.toast("Sync pressed")
+  }
+
+  function onSavePressed() {
+    root.toast("Save pressed.  Trackfile upload process here")
+  }
+
+  // ---------- Audio ----------
+  SoundEffect {
+    id: trespassSound
+    source: Qt.resolvedUrl("geofence_breach.wav")
+    volume: 0.9
+  }
+
+  SoundEffect {
+    id: warningSound
+    source: Qt.resolvedUrl("geofence_warning.wav")
+    volume: 0.9
+  }
+
+  SoundEffect {
+    id: infoSound
+    source: Qt.resolvedUrl("geofence_info.wav")
+    volume: 0.9
+  }
+
+  // ---------- QField refs ----------
+  property var positionSource: null
+  property var mapCanvas: null
+
+  // ---------- State ----------
+  property bool breaching: false
+  property string breachAreaName: ""
+  property string alarmType: ""
+  property bool alarmTestMenuVisible: false
+  readonly property string alarmTypeNormalized: normalizeAlarmType(alarmType)
+  readonly property bool isBreachType: alarmTypeNormalized === "BREACH"
+  readonly property bool isWarningType: alarmTypeNormalized === "WARNING"
+  readonly property bool isInfoType: alarmTypeNormalized === "INFO"
+
+  // Best-effort accuracy (varies by platform/object; we try a few common properties)
+  property string accuracyText: "—"
+  function updateAccuracy() {
+    if (!positionSource) {
+      accuracyText = "—"
+      return
+    }
+    // Try common property names without throwing
+    var v = undefined
+    try { if ("horizontalAccuracy" in positionSource) v = positionSource.horizontalAccuracy } catch (e) {}
+    if (v === undefined) { try { if ("accuracy" in positionSource) v = positionSource.accuracy } catch (e) {} }
+    if (v === undefined) { try { if ("horizontalAccuracy" in positionSource.position) v = positionSource.position.horizontalAccuracy } catch (e) {} }
+    if (v === undefined) { try { if ("accuracy" in positionSource.position) v = positionSource.position.accuracy } catch (e) {} }
+
+    if (v === undefined || v === null || isNaN(v)) accuracyText = "not measured"
+    else accuracyText = Number(v).toFixed(1) + " m"
+  }
+
+  function normalizeAlarmType(value) {
+    if (value === undefined || value === null) return "BREACH"
+    var t = String(value).trim().toUpperCase()
+    if (t === "") return "BREACH"
+    return t
+  }
+
+  // Expected format from layer display expression: "Name|AlarmType"
+  function parseAreaData(rawValue) {
+    var name = rawValue ? String(rawValue) : ""
+    var type = ""
+    var idx = name.indexOf("|")
+    if (idx !== -1) {
+      type = name.slice(idx + 1).trim()
+      name = name.slice(0, idx).trim()
+    }
+    return { areaName: name, alarmType: type }
+  }
+
+  function alarmSoundFor(type) {
+    var t = normalizeAlarmType(type)
+    if (t === "WARNING") return warningSound
+    if (t === "INFO") return infoSound
+    return trespassSound
+  }
+
+  function alarmBorderColorFor(type) {
+    var t = normalizeAlarmType(type)
+    if (t === "WARNING") return "#ff9800"
+    if (t === "INFO") return "#4caf50"
+    return "#ff0000"
+  }
+
+  Timer {
+    id: repeatTimer
+    interval: root.repeatSeconds * 1000
+    running: false
+    repeat: true
+    onTriggered: {
+      if (root.breaching) {
+        var snd = root.alarmSoundFor(root.alarmType)
+        if (snd) snd.play()
+      } else {
+        running = false
+      }
+    }
+  }
+
+  function startBreach(areaName, type) {
+    root.breaching = true
+    root.breachAreaName = areaName
+    root.alarmType = type ? String(type) : ""
+    root.breachAcknowledged = false
+
+    // Info alarms repeat less frequently to reduce noise
+    repeatTimer.interval = root.isInfoType ? 60000 : (root.repeatSeconds * 1000)
+
+    // Immediate beep on trespass
+    var snd = root.alarmSoundFor(root.alarmType)
+    if (snd) snd.play()
+
+    // Then keep beeping every N seconds
+    repeatTimer.start()
+  }
+
+  function stopBreach() {
+    root.breaching = false
+    root.breachAreaName = ""
+    root.alarmType = ""
+    root.breachAcknowledged = false
+    repeatTimer.stop()
+  }
+
+  function runAlarmTest(type) {
+    var t = normalizeAlarmType(type)
+    root.startBreach("Manual alarm test", t)
+    root.toast("Testing " + t + " alarm")
+  }
+
+  // ---------- Geofencer ----------
+  Geofencer {
+    id: gf
+    position: positionSource ? positionSource.projectedPosition : undefined
+    positionCrs: mapCanvas ? mapCanvas.mapSettings.destinationCrs : undefined
+
+    // Match QField's "trespassed into" semantics:
+    // behavior == AlertWhenInsideGeofencedArea AND isWithin == true
+    onIsWithinChanged: {
+      const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
+
+      if (isTrespassMode && gf.isWithin) {
+        const data = root.parseAreaData(gf.isWithinAreaName)
+        root.startBreach(data.areaName, data.alarmType)
+      } else {
+        root.stopBreach()
+      }
+    }
+
+    onBehaviorChanged: {
+      const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
+      if (isTrespassMode && gf.isWithin) {
+        if (!root.breaching) {
+          const data = root.parseAreaData(gf.isWithinAreaName)
+          root.startBreach(data.areaName, data.alarmType)
+        }
+      } else {
+        root.stopBreach()
+      }
+    }
+
+    onActiveChanged: {
+      if (!gf.active) root.stopBreach()
+    }
+  }
+
+  // ============================================================
+  // BIG BREACH OVERLAY (covers most of the screen)
+  // ============================================================
+  Rectangle {
+    id: breachOverlay
+    visible: root.breachOverlayEnabled && root.breaching
+    z: 200000
+    color: (root.isBreachType && !root.breachAcknowledged) ? "#000000" : "transparent"
+
+    // base fill (semi transparent)
+    opacity: (root.isBreachType && !root.breachAcknowledged) ? 0.55 : 1.0
+
+    // Gentle pulsing background to grab attention
+    SequentialAnimation on opacity {
+      running: breachOverlay.visible && root.isBreachType
+      loops: Animation.Infinite
+      NumberAnimation { to: 0.45; duration: 450 }
+      NumberAnimation { to: 0.65; duration: 450 }
+    }
+
+    // Big flashing border
+    Rectangle {
+      id: border
+      anchors.fill: parent
+      color: "transparent"
+      border.width: 18
+      border.color: root.alarmBorderColorFor(root.alarmType)
+      z: 200001
+
+      // Flash the border opacity
+      SequentialAnimation on opacity {
+        running: breachOverlay.visible
+        loops: Animation.Infinite
+        NumberAnimation {
+          to: root.isBreachType ? 0.15 : 0.6
+          duration: root.isBreachType ? 300 : 1000
+        }
+        NumberAnimation {
+          to: 1.0
+          duration: root.isBreachType ? 300 : 1000
+        }
+      }
+    }
+
+    // Block interaction behind overlay
+    MouseArea {
+      anchors.fill: parent
+      enabled: root.isBreachType && !root.breachAcknowledged
+      onClicked: {} // swallow taps
+    }
+
+    Column {
+      visible: root.isBreachType && !root.breachAcknowledged
+      anchors.centerIn: parent
+      spacing: 14
+      width: Math.min(parent.width * 0.9, 900)
+
+      Text {
+        text: root.isBreachType && root.breachAcknowledged
+              ? "⚠️ BREACH ACKNOWLEDGED ⚠️"
+              : ("⚠️ GEOFENCE " + root.alarmTypeNormalized + " ⚠️")
+        font.pixelSize: 34
+        horizontalAlignment: Text.AlignHCenter
+        width: parent.width
+      }
+
+      Text {
+        text: (root.breachAreaName && root.breachAreaName !== "")
+              ? ("Trespassed into:\n“" + root.breachAreaName + "”")
+              : "Trespassed into a restricted area"
+        font.pixelSize: 22
+        wrapMode: Text.Wrap
+        horizontalAlignment: Text.AlignHCenter
+        width: parent.width
+      }
+
+      Text {
+        text: "GPS accuracy: " + root.accuracyText
+        font.pixelSize: 18
+        horizontalAlignment: Text.AlignHCenter
+        width: parent.width
+      }
+
+      Text {
+        text: root.isBreachType
+          ? (root.breachAcknowledged
+             ? "Alarm will continue until you exit the area."
+             : "Leave the area immediately.")
+          : (root.isWarningType
+             ? "Proceed with caution."
+             : "Information only.")
+        font.pixelSize: 20
+        horizontalAlignment: Text.AlignHCenter
+        width: parent.width
+      }
+
+      // Acknowledge button (does NOT stop beeping; it changes messaging)
+      Rectangle {
+        id: ackButton
+        width: 260
+        height: 56
+        radius: 14
+        opacity: 0.95
+        border.width: 2
+        border.color: "#ffffff"
+        anchors.horizontalCenter: parent.horizontalCenter
+        visible: root.isBreachType
+
+        Text {
+          anchors.centerIn: parent
+          text: root.breachAcknowledged ? "Acknowledged" : "Acknowledge"
+          font.pixelSize: 18
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          enabled: root.isBreachType && !root.breachAcknowledged
+          onClicked: {
+            root.breachAcknowledged = true
+            root.toast("Breach acknowledged (alarm continues until exit)")
+          }
+        }
+      }
+    }
+  }
+
+  // Small non-blocking status shown after acknowledging while still breaching
+  Rectangle {
+    id: acknowledgedBadge
+    visible: root.breaching && root.breachAcknowledged && root.isBreachType
+    z: 200010
+    radius: 10
+    opacity: 0.92
+    width: Math.min(520, parent ? parent.width * 0.9 : 520)
+    height: 66
+    border.width: 2
+    border.color: "#ffffff"
+
+    Text {
+      anchors.fill: parent
+      anchors.margins: 10
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+      wrapMode: Text.Wrap
+      font.pixelSize: 18
+      text: (root.breachAreaName && root.breachAreaName !== "")
+            ? ("Breach acknowledged: still inside “" + root.breachAreaName + "”")
+            : "Breach acknowledged: still inside restricted area"
+    }
+  }
+
+  // Keep accuracy updated while running
+  Timer {
+    interval: 1000
+    running: true
+    repeat: true
+    onTriggered: root.updateAccuracy()
+  }
+
+  // ============================================================
+  // DEBUG PANEL (small)
+  // ============================================================
+  Rectangle {
+    id: panel
+    visible: root.debugOverlayEnabled
+    width: 760
+    height: 160
+    radius: 12
+    opacity: 0.9
+    z: 100000
+
+    Text {
+      anchors.fill: parent
+      anchors.margins: 12
+      font.pixelSize: 14
+      wrapMode: Text.Wrap
+      text:
+        "Geofence trespass alarm\n" +
+        "active=" + gf.active +
+        " behavior=" + gf.behavior +
+        " areasLayerSet=" + (gf.areasLayer !== null) + "\n" +
+        "within=" + gf.isWithin +
+        " breaching=" + root.breaching +
+        " alarmType=" + root.alarmTypeNormalized +
+        " acknowledged=" + root.breachAcknowledged +
+        " interval=" + root.repeatSeconds + "s\n" +
+        "accuracy=" + root.accuracyText + "\n" +
+        "area='" + root.breachAreaName + "'"
+    }
+  }
+
+  // ============================================================
+  // BUTTONS (middle-left)
+  // ============================================================
+
+  // 🧪 toggles alarm test menu
+  Rectangle {
+    id: alarmTestButton
+    width: 38
+    height: 38
+    radius: 19
+    z: 100001
+    opacity: 0.88
+    color: root.alarmTestMenuVisible ? "#d32f2f" : "#424242"
+
+    Text { anchors.centerIn: parent; text: "🧪"; font.pixelSize: 16 }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: {
+        root.alarmTestMenuVisible = !root.alarmTestMenuVisible
+        root.toast("Alarm test menu " + (root.alarmTestMenuVisible ? "ON" : "OFF"))
+      }
+    }
+  }
+
+  Rectangle {
+    id: alarmTestMenu
+    visible: root.alarmTestMenuVisible
+    width: 220
+    height: 230
+    radius: 10
+    opacity: 0.93
+    color: "#202020"
+    border.width: 2
+    border.color: "#ffffff"
+    z: 100002
+
+    Column {
+      anchors.fill: parent
+      anchors.margins: 10
+      spacing: 8
+
+      Text {
+        width: parent.width
+        horizontalAlignment: Text.AlignHCenter
+        text: "Alarm test"
+        font.pixelSize: 16
+      }
+
+      Rectangle {
+        width: parent.width
+        height: 38
+        radius: 8
+        color: "#b71c1c"
+        Text { anchors.centerIn: parent; text: "Test BREACH"; font.pixelSize: 15 }
+        MouseArea {
+          anchors.fill: parent
+          onClicked: root.runAlarmTest("BREACH")
+        }
+      }
+
+      Rectangle {
+        width: parent.width
+        height: 38
+        radius: 8
+        color: "#ef6c00"
+        Text { anchors.centerIn: parent; text: "Test WARNING"; font.pixelSize: 15 }
+        MouseArea {
+          anchors.fill: parent
+          onClicked: root.runAlarmTest("WARNING")
+        }
+      }
+
+      Rectangle {
+        width: parent.width
+        height: 38
+        radius: 8
+        color: "#2e7d32"
+        Text { anchors.centerIn: parent; text: "Test INFO"; font.pixelSize: 15 }
+        MouseArea {
+          anchors.fill: parent
+          onClicked: root.runAlarmTest("INFO")
+        }
+      }
+
+      Rectangle {
+        width: parent.width
+        height: 34
+        radius: 8
+        color: "#424242"
+        Text { anchors.centerIn: parent; text: "Stop test"; font.pixelSize: 14 }
+        MouseArea {
+          anchors.fill: parent
+          onClicked: {
+            root.stopBreach()
+            root.toast("Alarm test stopped")
+          }
+        }
+      }
+    }
+  }
+
+  // 🐞 toggles debug panel
+  Rectangle {
+    id: debugButton
+    width: 38
+    height: 38
+    radius: 19
+    z: 100001
+    opacity: 0.88
+    color: root.debugOverlayEnabled ? "#d32f2f" : "#424242"
+
+    Text { anchors.centerIn: parent; text: "🐞"; font.pixelSize: 18 }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: {
+        root.debugOverlayEnabled = !root.debugOverlayEnabled
+        root.toast("Debug panel " + (root.debugOverlayEnabled ? "ON" : "OFF"))
+      }
+    }
+  }
+
+  // 🚨 toggles BIG breach overlay (feature toggle)
+  Rectangle {
+    id: breachButton
+    width: 38
+    height: 38
+    radius: 19
+    z: 100001
+    opacity: 0.88
+    color: root.breachOverlayEnabled ? "#d32f2f" : "#424242"
+
+    Text { anchors.centerIn: parent; text: "🚨"; font.pixelSize: 18 }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: {
+        root.breachOverlayEnabled = !root.breachOverlayEnabled
+        root.toast("Breach overlay " + (root.breachOverlayEnabled ? "ON" : "OFF"))
+      }
+    }
+  }
+
+  // Sync placeholder button
+  Rectangle {
+    id: syncButton
+    width: 38
+    height: 38
+    radius: 19
+    z: 100001
+    opacity: 0.88
+    color: "#424242"
+
+    Text {
+      anchors.centerIn: parent
+      text: "🔄"
+      font.pixelSize: 15
+    }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: root.onSyncPressed()
+    }
+  }
+
+  // Save placeholder button
+  Rectangle {
+    id: saveButton
+    width: 38
+    height: 38
+    radius: 19
+    z: 100001
+    opacity: 0.88
+    color: "#424242"
+
+    Text {
+      anchors.centerIn: parent
+      text: "💾"
+      font.pixelSize: 15
+    }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: root.onSavePressed()
+    }
+  }
+  
+
+  // ============================================================
+  // Wiring / parenting into visible UI
+  // ============================================================
+  function applySettings(tag) {
+    gf.applyProjectSettings(qgisProject)
+
+    // Stop any alarm if not in the right mode / not active / no layer
+    if (!gf.active || gf.areasLayer === null) stopBreach()
+
+    // Re-evaluate breach state after applying settings
+    const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
+    if (gf.active && isTrespassMode && gf.isWithin) {
+      if (!root.breaching) {
+        const data = root.parseAreaData(gf.isWithinAreaName)
+        root.startBreach(data.areaName, data.alarmType)
+      }
+    }
+  }
+
+  Timer {
+    interval: 600
+    running: true
+    repeat: false
+    onTriggered: {
+      toast("✅ Terrex Geofence trespass alarm loaded")
+
+      // Parent debug panel
+      panel.parent = iface.mainWindow().contentItem
+      panel.anchors.left = panel.parent.left
+      panel.anchors.bottom = panel.parent.bottom
+      panel.anchors.margins = 16
+
+      // Parent breach overlay (full screen)
+      breachOverlay.parent = iface.mainWindow().contentItem
+      breachOverlay.anchors.fill = breachOverlay.parent
+
+      // Parent acknowledged badge (top-center)
+      acknowledgedBadge.parent = iface.mainWindow().contentItem
+      acknowledgedBadge.anchors.horizontalCenter = acknowledgedBadge.parent.horizontalCenter
+      acknowledgedBadge.anchors.top = acknowledgedBadge.parent.top
+      acknowledgedBadge.anchors.topMargin = 16
+
+      // Parent buttons (middle-left)
+      alarmTestButton.parent = iface.mainWindow().contentItem
+      alarmTestButton.anchors.left = alarmTestButton.parent.left
+      alarmTestButton.anchors.verticalCenter = alarmTestButton.parent.verticalCenter
+      alarmTestButton.anchors.margins = 12
+
+      alarmTestMenu.parent = iface.mainWindow().contentItem
+      alarmTestMenu.anchors.left = alarmTestButton.right
+      alarmTestMenu.anchors.leftMargin = 10
+      alarmTestMenu.anchors.verticalCenter = alarmTestButton.verticalCenter
+
+      debugButton.parent = iface.mainWindow().contentItem
+      debugButton.anchors.left = debugButton.parent.left
+      debugButton.anchors.top = alarmTestButton.bottom
+      debugButton.anchors.topMargin = 10
+      debugButton.anchors.leftMargin = 12
+
+      breachButton.parent = iface.mainWindow().contentItem
+      breachButton.anchors.left = breachButton.parent.left
+      breachButton.anchors.top = debugButton.bottom
+      breachButton.anchors.topMargin = 10
+      breachButton.anchors.leftMargin = 12
+
+      syncButton.parent = iface.mainWindow().contentItem
+      syncButton.anchors.left = syncButton.parent.left
+      syncButton.anchors.top = breachButton.bottom
+      syncButton.anchors.topMargin = 10
+      syncButton.anchors.leftMargin = 12
+
+      saveButton.parent = iface.mainWindow().contentItem
+      saveButton.anchors.left = saveButton.parent.left
+      saveButton.anchors.top = syncButton.bottom
+      saveButton.anchors.topMargin = 10
+      saveButton.anchors.leftMargin = 12
+
+      positionSource = iface.findItemByObjectName("positionSource")
+      mapCanvas = iface.findItemByObjectName("mapCanvas")
+
+      if (!positionSource) toast("positionSource NOT FOUND", "error")
+      if (!mapCanvas) toast("mapCanvas NOT FOUND", "error")
+
+      root.updateAccuracy()
+
+      applySettings("t=0.6s")
+      retry.running = true
+    }
+  }
+
+  Timer {
+    id: retry
+    interval: 2000
+    running: false
+    repeat: false
+    onTriggered: applySettings("t=2.6s retry")
+  }
+}

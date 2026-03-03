@@ -58,4 +58,6 @@
 
 
   "onCreateCommand": "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git curl wget zip bison gperf flex libtool libxcb-cursor-dev autopoint '^libxcb.*-dev' libx11-xcb-dev libegl1-mesa libegl1-mesa-dev libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libxrandr-dev libxxf86vm-dev autoconf-archive libgstreamer-gl1.0-0 libgstreamer-plugins-base1.0-0 libfuse2 libpulse-dev libcups2-dev nasm python3-tk python3-jinja2",
+  
+  "postCreateCommand": "curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg && echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && apt update && apt install -y gh && gh extension install github/gh-copilot"
 }
