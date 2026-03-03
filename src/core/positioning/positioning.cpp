@@ -50,6 +50,9 @@ void Positioning::setupSource()
   if ( mPositioningSource )
   {
     mHost.disableRemoting( mPositioningSource );
+    // Don't rely on deleteLater(), insure any device is disconnected prior to switching source
+    mPositioningSource->setActive( false );
+    mPositioningSource->setDeviceId( QString() );
     mPositioningSource->deleteLater();
     mPositioningSource = nullptr;
   }
@@ -110,7 +113,7 @@ bool Positioning::isSourceAvailable() const
 
 void Positioning::onApplicationStateChanged( Qt::ApplicationState state )
 {
-#ifdef Q_OS_ANDROID
+#if defined( Q_OS_ANDROID ) || defined( Q_OS_IOS )
   // Google Play policy only allows for background access if it's explicitly stated and justified
   // Not stopping on Activity::onPause is detected as violation
   if ( mServiceMode )

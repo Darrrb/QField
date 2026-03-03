@@ -22,12 +22,16 @@
         <translation>Menu linków</translation>
     </message>
     <message>
-        <source>QField app directories</source>
-        <translation>Katalogi aplikacji QField</translation>
+        <source>Powered by QField</source>
+        <translation>Zasilany przez QField</translation>
     </message>
     <message>
-        <source>QField app directory</source>
-        <translation>Katalog aplikacji QField</translation>
+        <source>%1 app directories</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1 app directory</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -841,10 +845,6 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
         <translation>Narysuj szkic</translation>
     </message>
     <message>
-        <source>The external storage&apos;s authentication configuration ID is missing, please insure it is imported into QField</source>
-        <translation>Brakuje identyfikatora konfiguracji uwierzytelniania zewnętrznej pamięci masowej, upewnij się, że został on zaimportowany do QField.</translation>
-    </message>
-    <message>
         <source>Learn more</source>
         <translation>Dowiedz się więcej</translation>
     </message>
@@ -859,6 +859,10 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     <message>
         <source>NULL</source>
         <translation>NULL</translation>
+    </message>
+    <message>
+        <source>The external storage&apos;s authentication configuration ID is missing, please insure it is imported into %1</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2539,10 +2543,6 @@ Geometrie elementów zostaną połączone w element &quot;%1&quot;, który zacho
         <translation>Kopia zapasowa i współpraca?</translation>
     </message>
     <message>
-        <source>QFieldCloud allows to synchronize and merge the data collected by your team in QField. From small individual projects to large data collection campaigns. </source>
-        <translation>QFieldCloud pozwala synchronizować i łączyć dane zebrane przez Twój zespół w QField. Od małych indywidualnych projektów po duże kampanie gromadzenia danych. </translation>
-    </message>
-    <message>
         <source>Learn more about QFieldCloud here</source>
         <translation>Dowiedz się więcej o QFieldCloud tutaj</translation>
     </message>
@@ -2553,6 +2553,10 @@ Geometrie elementów zostaną połączone w element &quot;%1&quot;, który zacho
     <message>
         <source>My Project</source>
         <translation>Mój projekt</translation>
+    </message>
+    <message>
+        <source>QFieldCloud allows to synchronize and merge the data collected by your team in %1. From small individual projects to large data collection campaigns. </source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -3967,7 +3971,7 @@ Chociaż nadal możesz wyświetlać i używać projektu, zdecydowanie zaleca si�
     </message>
     <message>
         <source>If disabled, QField will use a minimalist internal camera instead of the camera app on the device.&lt;br&gt;Tip: Enable this option and install the open camera app to create geo tagged photos.</source>
-        <translation>Jeśli wyłączone, QField będzie używać własnego minimalistycznego programu aparatu zamiast aplikacji aparatu w urządzeniu.&lt;br&gt;Wskazówka: Włącz tę opcję i zainstaluj otwartą aplikację aparatu, aby tworzyć fotografie z geolokalizacją (geotagami).</translation>
+        <translation type="vanished">Jeśli wyłączone, QField będzie używać własnego minimalistycznego programu aparatu zamiast aplikacji aparatu w urządzeniu.&lt;br&gt;Wskazówka: Włącz tę opcję i zainstaluj otwartą aplikację aparatu, aby tworzyć fotografie z geolokalizacją (geotagami).</translation>
     </message>
     <message>
         <source>Fast editing mode</source>
@@ -3999,7 +4003,7 @@ Chociaż nadal możesz wyświetlać i używać projektu, zdecydowanie zaleca si�
     </message>
     <message>
         <source>If enabled, anonymized metrics will be collected and sent to help improve QField for everyone.</source>
-        <translation>Jeśli włączone, zbierane i wysyłane są anonimowe dane o użytkowaniu aplikacji, które pomagają rozwijać QField.</translation>
+        <translation type="vanished">Jeśli włączone, zbierane i wysyłane są anonimowe dane o użytkowaniu aplikacji, które pomagają rozwijać QField.</translation>
     </message>
     <message>
         <source>General</source>
@@ -4161,7 +4165,7 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     </message>
     <message>
         <source>QField Settings</source>
-        <translation>Ustawienia QField</translation>
+        <translation type="vanished">Ustawienia QField</translation>
     </message>
     <message>
         <source>Time of inactivity in seconds before the screen brightness get be dimmed to preserve battery.</source>
@@ -4274,10 +4278,6 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     <message>
         <source>A lower quality trades rendering precision in favor of lower memory usage and rendering time.</source>
         <translation>Niższa jakość to kompromis między precyzją rysowania a mniejszym użyciem pamięci i czasem rysowania.</translation>
-    </message>
-    <message>
-        <source>This value will correct the Z values recorded from the positioning device. If a value of 1.6 is entered, QField will automatically subtract 1.6 from each recorded value. Make sure to insert the effective antenna height, i.e. pole length + antenna phase centre offset.</source>
-        <translation>Ta wartość koryguje wartości Z rejestrowane z urządzenia pozycjonującego. Np. jeśli podano wartość 1,6, QField automatycznie odejmie 1,6 od każdej zarejestrowanej wartości. Upewnij się, że podano efektywną wysokość anteny, np. długość tyczki + korekcję centrum fazowego anteny.</translation>
     </message>
     <message>
         <source>Orthometric from device</source>
@@ -4398,6 +4398,42 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     <message>
         <source>When enabled, the map will automatically zoom to show all identified features, as well as the individual selected feature when the feature form is opened.</source>
         <translation>Po włączeniu tej opcji mapa będzie automatycznie powiększana w celu wyświetlenia wszystkich zidentyfikowanych obiektów, a także pojedynczego wybranego obiektu po otwarciu formularza obiektu.</translation>
+    </message>
+    <message>
+        <source>Behavior when locked to position:</source>
+        <translation>Zachowanie po zablokowaniu w pozycji:</translation>
+    </message>
+    <message>
+        <source>Follow position only</source>
+        <translation>Podążaj tylko za pozycją</translation>
+    </message>
+    <message>
+        <source>Follow position and compass orientation</source>
+        <translation>Podążaj za pozycją i orientacją kompasu</translation>
+    </message>
+    <message>
+        <source>Follow position and movement direction</source>
+        <translation>Podążaj za pozycją i kierunkiem ruchu</translation>
+    </message>
+    <message>
+        <source>When the map canvas is following or locked to position, it can also rotate to match compass orientation or movement direction.</source>
+        <translation>Gdy kanwa mapy podąża za pozycją lub jest zablokowana, może również obracać się, aby dopasować się do orientacji kompasu lub kierunku ruchu.</translation>
+    </message>
+    <message>
+        <source>If enabled, anonymized metrics will be collected and sent to help improve the experience for everyone.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, anonymized metrics will be collected and sent to help improve %1 for everyone.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>This value will correct the Z values recorded from the positioning device. If a value of 1.6 is entered, the system will automatically subtract 1.6 from each recorded value. Make sure to insert the effective antenna height, i.e. pole length + antenna phase center offset.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1 Settings</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -4730,6 +4766,10 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     <message>
         <source>Map printed on %1 using QField</source>
         <translation>Mapa wydrukowana na %1 przy użyciu QField</translation>
+    </message>
+    <message>
+        <source>Could not load resource font: %1</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -5539,6 +5579,62 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
         <source>Failed to upload file %1 due to network error (%2)</source>
         <translation>Nie udało się przesłać pliku %1 z powodu błędu sieci (%2)</translation>
     </message>
+    <message>
+        <source>Upload finished.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No local paths provided.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>WebDAV is busy.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Not a WebDAV imported project.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>WebDAV config is missing required fields.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No stored password available.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Selected items belong to different WebDAV projects.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Nothing to upload.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No local changes detected.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upload cancelled.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upload skipped.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upload is locked by another process.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to read WebDAV config file.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Invalid WebDAV config JSON.</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>WelcomeScreen</name>
@@ -5552,7 +5648,7 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     </message>
     <message>
         <source>Hey there, how do you like your experience with QField so far?</source>
-        <translation>Hej, jak ci się podoba QField?</translation>
+        <translation type="vanished">Hej, jak ci się podoba QField?</translation>
     </message>
     <message>
         <source>That&apos;s great! We&apos;d love for you to click on the button below and leave a comment on the store.</source>
@@ -5568,7 +5664,7 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     </message>
     <message>
         <source>To improve stability for everyone, QField collects and sends anonymized metrics.</source>
-        <translation>Aby zwiększyć stabilność dla użytkowników, QField zbiera i wysyła anonimowe dane o użytkowaniu aplikacji.</translation>
+        <translation type="vanished">Aby zwiększyć stabilność dla użytkowników, QField zbiera i wysyła anonimowe dane o użytkowaniu aplikacji.</translation>
     </message>
     <message>
         <source>I agree</source>
@@ -5612,7 +5708,7 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
     </message>
     <message>
         <source>Welcome back to QField.</source>
-        <translation>Witaj ponownie w QField</translation>
+        <translation type="vanished">Witaj ponownie w QField</translation>
     </message>
     <message>
         <source>Default project</source>
@@ -5643,10 +5739,6 @@ Anuluj, aby wykonać zamiast tego minimalne skanowanie urządzeń.</translation>
         <translation>Ostatnie działania projektów</translation>
     </message>
     <message>
-        <source>Welcome to QField. First time using this application? Try the sample projects listed below.</source>
-        <translation>Witaj w QField. Jeśli pierwszy raz używasz tej aplikacji, możesz wypróbować przykładowe projekty z poniższej listy.</translation>
-    </message>
-    <message>
         <source>That&apos;s great! We&apos;d love for you to click on the button below and leave a review.</source>
         <translation>To świetnie! Chcielibyśmy, abyś kliknął(ęła) przycisk poniżej i zostawił(a) recenzję.</translation>
     </message>
@@ -5671,6 +5763,26 @@ projekty</translation>
 project</source>
         <translation>Utwórz nowy
 projekt</translation>
+    </message>
+    <message>
+        <source>Hey there, how do you like your experience with %1 so far?</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>To improve stability for everyone, %1 collects and sends anonymized metrics.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Welcome back to %1.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Welcome to %1.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>First time using this application? Try the sample projects listed below.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -6011,7 +6123,7 @@ projekt</translation>
     </message>
     <message>
         <source>About QField</source>
-        <translation>O QField</translation>
+        <translation type="vanished">O QField</translation>
     </message>
     <message>
         <source>Select template below</source>
@@ -6462,10 +6574,6 @@ projekt</translation>
         <translation>Potwierdzenie importu</translation>
     </message>
     <message>
-        <source>Do you want to import &lt;b&gt;%1&lt;/b&gt; from &lt;b&gt;%2&lt;/b&gt; into QField?</source>
-        <translation>Czy chcesz zaimportować &lt;b&gt;%1&lt;/b&gt; z &lt;b&gt;%2&lt;/b&gt; do QField?</translation>
-    </message>
-    <message>
         <source>Plugin Permission</source>
         <translation>Zezwolenie na wtyczkę</translation>
     </message>
@@ -6638,6 +6746,34 @@ aby wyświetlić działania</translation>
     <message>
         <source>Positioning service has not yet received a valid location</source>
         <translation>Usługa pozycjonowania nie otrzymała jeszcze prawidłowej lokalizacji</translation>
+    </message>
+    <message>
+        <source>Map canvas locked to location and movement direction</source>
+        <translation>Kanwa mapy zablokowana do lokalizacji i kierunku ruchu</translation>
+    </message>
+    <message>
+        <source>Map canvas follows location and movement direction</source>
+        <translation>Kanwa mapy podąża za lokalizacją i kierunkiem ruchu</translation>
+    </message>
+    <message>
+        <source>Failed to load 3D view</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Loading terrain...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Close 3D view</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>About %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Do you want to import &lt;b&gt;%1&lt;/b&gt; from &lt;b&gt;%2&lt;/b&gt; into %3?</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>

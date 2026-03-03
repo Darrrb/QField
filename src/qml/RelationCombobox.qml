@@ -19,6 +19,7 @@ Item {
   property var relation: undefined
   property var layerResolver: undefined
   property var currentKeyValue: value
+  readonly property alias count: comboBox.count
   property EmbeddedFeatureForm embeddedFeatureForm: embeddedPopupLoader.item
   readonly property alias searchPopup: searchFeaturePopup
   property color displayedTextColor: FeatureUtils.attributeIsNull(value) || value === "" || (!isEditable && isEditing) ? Theme.mainTextDisabledColor : Theme.mainTextColor
@@ -112,7 +113,7 @@ Item {
         anchors.top: searchBar.bottom
         model: featureListModel
         width: parent.width
-        height: searchFeaturePopup.height - searchBar.height - 50
+        height: searchFeaturePopup.height - searchBar.height - 60
         clip: true
         ScrollBar.vertical: QfScrollBar {}
         section.property: featureListModel ? featureListModel.groupField != "" ? "groupFieldValue" : "" : ""

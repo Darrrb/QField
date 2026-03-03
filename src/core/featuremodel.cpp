@@ -622,10 +622,31 @@ QgsExpressionContext FeatureModel::createExpressionContext() const
   return expressionContext;
 }
 
-bool FeatureModel::save()
+bool FeatureModel::changeGeometry( const QgsGeometry &geometry )
 {
   if ( !mLayer )
+  {
     return false;
+  }
+
+
+  if ( geometry.wkbType() != mLayer->wkbType() || mModelMode != SingleFeatureModel )
+  {
+    return false;
+  }
+
+  mFeature.setGeometry( geometry );
+  emit featureChanged();
+  updatePermissions();
+  return true;
+}
+
+bool FeatureModel::save( bool flushBuffer )
+{
+  if ( !mLayer )
+  {
+    return false;
+  }
 
   bool isSuccess = true;
 
@@ -639,6 +660,9 @@ bool FeatureModel::save()
   }
   else
   {
+    const bool wasEditing = isEditing();
+    flushBuffer = flushBuffer || !wasEditing;
+
     if ( !startEditing() )
     {
       isSuccess = false;
@@ -651,28 +675,37 @@ bool FeatureModel::save()
         // We take charge of default values that are set to be applied on feature update to take into account positioning and cloud context
         updateDefaultValues();
 
-        QgsFeature temporaryFeature = mFeature;
-        if ( !mLayer->updateFeature( temporaryFeature, true ) )
-          QgsMessageLog::logMessage( tr( "Cannot update feature" ), QStringLiteral( "QField" ), Qgis::Warning );
-
-        isSuccess &= commit();
-        if ( isSuccess )
+        QgsGeometry temporaryGeometry = mFeature.geometry();
+        QgsAttributeMap temporaryAttributeMap = mFeature.attributes().toMap();
+        bool changed = false;
+        changed = mLayer->changeGeometry( mFeature.id(), temporaryGeometry, true );
+        changed |= mLayer->changeAttributeValues( mFeature.id(), temporaryAttributeMap, QgsAttributeMap(), true );
+        if ( !changed )
         {
-          QgsFeature modifiedFeature;
-          if ( mLayer->getFeatures( QgsFeatureRequest().setFilterFid( mFeature.id() ) ).nextFeature( modifiedFeature ) )
+          QgsMessageLog::logMessage( tr( "Cannot update feature" ), QStringLiteral( "QField" ), Qgis::Warning );
+        }
+
+        if ( flushBuffer )
+        {
+          isSuccess &= commit( !wasEditing );
+          if ( isSuccess && !wasEditing )
           {
-            if ( modifiedFeature != mFeature )
+            QgsFeature modifiedFeature;
+            if ( mLayer->getFeatures( QgsFeatureRequest().setFilterFid( mFeature.id() ) ).nextFeature( modifiedFeature ) )
             {
-              setFeature( modifiedFeature );
+              if ( modifiedFeature != mFeature )
+              {
+                setFeature( modifiedFeature );
+              }
+              else
+              {
+                emit featureUpdated();
+              }
             }
             else
             {
-              emit featureUpdated();
+              QgsMessageLog::logMessage( tr( "Feature %1 could not be fetched after commit" ).arg( mFeature.id() ), QStringLiteral( "QField" ), Qgis::Warning );
             }
-          }
-          else
-          {
-            QgsMessageLog::logMessage( tr( "Feature %1 could not be fetched after commit" ).arg( mFeature.id() ), QStringLiteral( "QField" ), Qgis::Warning );
           }
         }
         break;
@@ -693,12 +726,38 @@ bool FeatureModel::save()
 
             feature.setAttribute( i, referenceFeature.attributes().at( i ) );
           }
-          if ( !mLayer->updateFeature( feature ) )
+
+          QgsExpressionContext expressionContext = createExpressionContext();
+          expressionContext.setFeature( mFeature );
+
+          QgsFields fields = mLayer->fields();
+          for ( int i = 0; i < fields.count(); ++i )
+          {
+            if ( fields.at( i ).defaultValueDefinition().isValid() && fields.at( i ).defaultValueDefinition().applyOnUpdate() )
+            {
+              QgsExpression exp( fields.at( i ).defaultValueDefinition().expression() );
+              exp.prepare( &expressionContext );
+              if ( exp.hasParserError() )
+                QgsMessageLog::logMessage( tr( "Default value expression for %1:%2 has parser error: %3" ).arg( mLayer->name(), fields.at( i ).name(), exp.parserErrorString() ), QStringLiteral( "QField" ) );
+
+              QVariant value = exp.evaluate( &expressionContext );
+              if ( exp.hasEvalError() )
+                QgsMessageLog::logMessage( tr( "Default value expression for %1:%2 has evaluation error: %3" ).arg( mLayer->name(), fields.at( i ).name(), exp.evalErrorString() ), QStringLiteral( "QField" ) );
+
+              feature.setAttribute( i, value );
+            }
+          }
+
+          if ( !mLayer->updateFeature( feature, true ) )
           {
             QgsMessageLog::logMessage( tr( "Cannot update feature" ), QStringLiteral( "QField" ), Qgis::Warning );
           }
         }
-        isSuccess &= commit();
+
+        if ( flushBuffer )
+        {
+          isSuccess &= commit( !wasEditing );
+        }
       }
     }
   }
@@ -881,7 +940,16 @@ bool FeatureModel::updateAttributesFromFeature( const QgsFeature &feature )
 void FeatureModel::applyGeometry( bool fromVertexModel )
 {
   if ( ( !fromVertexModel && !mGeometry ) || ( fromVertexModel && !mVertexModel ) )
+  {
     return;
+  }
+
+  const bool wasEditing = mLayer->editBuffer();
+  const bool requiresEditing = ( mProject && mProject->topologicalEditing() );
+  if ( !wasEditing && requiresEditing )
+  {
+    mLayer->startEditing();
+  }
 
   QString error;
   QgsGeometry geometry = fromVertexModel ? mVertexModel->geometry() : mGeometry->asQgsGeometry();
@@ -950,8 +1018,6 @@ void FeatureModel::applyGeometry( bool fromVertexModel )
           {
             if ( !modifiedFeatureIds.contains( mFeature.id() ) || modifiedFeatureIds.size() >= 2 )
             {
-              mLayer->startEditing();
-
               if ( mFeature.id() != FID_NULL )
               {
                 modifiedFeatureIds.remove( mFeature.id() );
@@ -999,8 +1065,6 @@ void FeatureModel::applyGeometry( bool fromVertexModel )
                   mLayer->changeGeometry( modifiedFeature.id(), modifiedGeometry );
                 }
               }
-
-              mLayer->commitChanges();
             }
           }
 
@@ -1032,6 +1096,11 @@ void FeatureModel::applyGeometry( bool fromVertexModel )
     applyGeometryTopography( geometry );
   }
 
+  if ( requiresEditing )
+  {
+    mLayer->commitChanges( !wasEditing );
+  }
+
   mFeature.setGeometry( geometry );
 }
 
@@ -1051,17 +1120,22 @@ void FeatureModel::setBatchMode( bool batchMode )
   {
     if ( mBatchMode )
     {
-      mLayer->startEditing();
+      mBatchModeWasEditing = isEditing();
+      if ( !mBatchModeWasEditing )
+      {
+        mLayer->startEditing();
+      }
     }
     else
     {
-      mLayer->commitChanges();
+      mLayer->commitChanges( !mBatchModeWasEditing );
     }
   }
 
   emit batchModeChanged();
 }
-bool FeatureModel::create()
+
+bool FeatureModel::create( bool flushBuffer )
 {
   if ( !mLayer || mFeatureAdditionLocked )
     return false;
@@ -1083,7 +1157,9 @@ bool FeatureModel::create()
   }
   else
   {
-    if ( !startEditing() )
+    const bool wasEditing = isEditing();
+
+    if ( !wasEditing && !startEditing() )
     {
       QgsMessageLog::logMessage( tr( "Cannot start editing on layer \"%1\" to create feature %2" ).arg( mLayer->name() ).arg( mFeature.id() ), QStringLiteral( "QField" ), Qgis::Critical );
       return false;
@@ -1116,6 +1192,7 @@ bool FeatureModel::create()
       }
     }
 
+    flushBuffer = flushBuffer || !wasEditing || hasRelations;
     if ( mLayer->addFeature( mFeature ) )
     {
       if ( mProject && mProject->topologicalEditing() && !mFeature.geometry().isEmpty() )
@@ -1123,49 +1200,52 @@ bool FeatureModel::create()
         applyGeometryTopography( mFeature.geometry() );
       }
 
-      if ( commit() )
+      if ( flushBuffer )
       {
-        QgsFeature feat;
-        if ( mLayer->getFeatures( QgsFeatureRequest().setFilterFid( createdFeatureId ) ).nextFeature( feat ) )
+        if ( commit( !wasEditing ) )
         {
-          setFeature( feat );
-
-          if ( hasRelations )
+          QgsFeature feat;
+          if ( mLayer->getFeatures( QgsFeatureRequest().setFilterFid( createdFeatureId ) ).nextFeature( feat ) )
           {
-            // Revisit relations in need of attribute updates
-            for ( const QPair<QgsRelation, QgsFeatureRequest> &revisitRelation : std::as_const( revisitRelations ) )
-            {
-              const QList<QgsRelation::FieldPair> fieldPairs = revisitRelation.first.fieldPairs();
-              revisitRelation.first.referencingLayer()->startEditing();
-              QgsFeatureIterator it = revisitRelation.first.referencingLayer()->getFeatures( revisitRelation.second );
-              QgsFeature childFeature;
-              while ( it.nextFeature( childFeature ) )
-              {
-                for ( const QgsRelation::FieldPair &fieldPair : fieldPairs )
-                {
-                  childFeature.setAttribute( fieldPair.referencingField(), feat.attribute( fieldPair.referencedField() ) );
-                }
-                revisitRelation.first.referencingLayer()->updateFeature( childFeature );
-              }
-              revisitRelation.first.referencingLayer()->commitChanges();
-            }
+            setFeature( feat );
 
-            // We need to update default values after creation to insure expression relying on relation children compute properly
-            updateDefaultValues();
-            save();
+            if ( hasRelations )
+            {
+              // Revisit relations in need of attribute updates
+              for ( const QPair<QgsRelation, QgsFeatureRequest> &revisitRelation : std::as_const( revisitRelations ) )
+              {
+                const QList<QgsRelation::FieldPair> fieldPairs = revisitRelation.first.fieldPairs();
+                revisitRelation.first.referencingLayer()->startEditing();
+                QgsFeatureIterator it = revisitRelation.first.referencingLayer()->getFeatures( revisitRelation.second );
+                QgsFeature childFeature;
+                while ( it.nextFeature( childFeature ) )
+                {
+                  for ( const QgsRelation::FieldPair &fieldPair : fieldPairs )
+                  {
+                    childFeature.setAttribute( fieldPair.referencingField(), feat.attribute( fieldPair.referencedField() ) );
+                  }
+                  revisitRelation.first.referencingLayer()->updateFeature( childFeature );
+                }
+                revisitRelation.first.referencingLayer()->commitChanges();
+              }
+
+              // We need to update default values after creation to insure expression relying on relation children compute properly
+              updateDefaultValues();
+              save();
+            }
+          }
+          else
+          {
+            QgsMessageLog::logMessage( tr( "Layer \"%1\" has been commited but the newly created feature %2 could not be fetched" ).arg( mLayer->name() ).arg( mFeature.id() ), QStringLiteral( "QField" ), Qgis::Critical );
+            isSuccess = false;
           }
         }
         else
         {
-          QgsMessageLog::logMessage( tr( "Layer \"%1\" has been commited but the newly created feature %2 could not be fetched" ).arg( mLayer->name() ).arg( mFeature.id() ), QStringLiteral( "QField" ), Qgis::Critical );
+          const QString msgs = mLayer->commitErrors().join( QStringLiteral( "\n" ) );
+          QgsMessageLog::logMessage( tr( "Layer \"%1\" cannot be commited with the newly created feature %2. Reason:\n%3" ).arg( mLayer->name() ).arg( mFeature.id() ).arg( msgs ), QStringLiteral( "QField" ), Qgis::Critical );
           isSuccess = false;
         }
-      }
-      else
-      {
-        const QString msgs = mLayer->commitErrors().join( QStringLiteral( "\n" ) );
-        QgsMessageLog::logMessage( tr( "Layer \"%1\" cannot be commited with the newly created feature %2. Reason:\n%3" ).arg( mLayer->name() ).arg( mFeature.id() ).arg( msgs ), QStringLiteral( "QField" ), Qgis::Critical );
-        isSuccess = false;
       }
     }
     else
@@ -1189,12 +1269,12 @@ bool FeatureModel::create()
 
 bool FeatureModel::deleteFeature()
 {
-  return LayerUtils::deleteFeature( mProject, mLayer, mFeature.id(), false );
+  return LayerUtils::deleteFeature( mProject, mLayer, mFeature.id(), true );
 }
 
-bool FeatureModel::commit()
+bool FeatureModel::commit( bool stopEditing )
 {
-  if ( !mLayer->commitChanges() )
+  if ( !mLayer->commitChanges( stopEditing ) )
   {
     QgsMessageLog::logMessage( tr( "Could not save changes. Rolling back." ), QStringLiteral( "QField" ), Qgis::Critical );
     mLayer->rollBack();
@@ -1206,11 +1286,18 @@ bool FeatureModel::commit()
   }
 }
 
+bool FeatureModel::isEditing() const
+{
+  return mLayer->editBuffer();
+}
+
 bool FeatureModel::startEditing()
 {
   // Already an edit session active
-  if ( mLayer->editBuffer() )
+  if ( isEditing() )
+  {
     return true;
+  }
 
   if ( !mLayer->startEditing() )
   {
@@ -1250,29 +1337,29 @@ void FeatureModel::applyGeometryTopography( const QgsGeometry &geometry )
   const QVector<QgsVectorLayer *> vectorLayers = mProject->layers<QgsVectorLayer *>();
   for ( QgsVectorLayer *vectorLayer : vectorLayers )
   {
-    if ( vectorLayer->readOnly() )
+    if ( vectorLayer->readOnly() || !vectorLayer->isSpatial() )
       continue;
 
     if ( vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_locked" ), false ).toBool() || vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_locked_expression_active" ), false ).toBool() || vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_editing_locked" ), false ).toBool() || vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_editing_locked_expression_active" ), false ).toBool() )
       continue;
 
-    bool requiresCommit = !vectorLayer->editBuffer();
     if ( vectorLayer != mLayer )
     {
       if ( !vectorLayer->getFeatures( request ).nextFeature( dummyFeature ) )
         continue;
     }
 
-    if ( requiresCommit )
+    const bool wasEditing = vectorLayer->editBuffer();
+    if ( vectorLayer != mLayer && !wasEditing )
     {
       vectorLayer->startEditing();
     }
 
     vectorLayer->addTopologicalPoints( geometry );
 
-    if ( requiresCommit )
+    if ( vectorLayer != mLayer )
     {
-      vectorLayer->commitChanges( true );
+      vectorLayer->commitChanges( !wasEditing );
     }
   }
 }
@@ -1288,6 +1375,7 @@ QgsFeatureIds FeatureModel::applyVertexModelTopography()
   const QVector<QgsPoint> pointsAdded = mVertexModel->verticesAdded();
   const QVector<QPair<QgsPoint, QgsPoint>> pointsMoved = mVertexModel->verticesMoved();
   const QVector<QgsPoint> pointsDeleted = mVertexModel->verticesDeleted();
+  QList<VertexModel::VertexChange> history = mVertexModel->history( true );
 
   QgsRectangle bbox;
   const double searchRadius = mLayer ? QgsVectorLayerEditUtils::getTopologicalSearchRadius( mLayer ) : 0.0;
@@ -1322,7 +1410,7 @@ QgsFeatureIds FeatureModel::applyVertexModelTopography()
   const QVector<QgsVectorLayer *> vectorLayers = mProject ? mProject->layers<QgsVectorLayer *>() : QVector<QgsVectorLayer *>() << mLayer;
   for ( QgsVectorLayer *vectorLayer : vectorLayers )
   {
-    if ( vectorLayer->readOnly() )
+    if ( vectorLayer->readOnly() || !vectorLayer->isSpatial() )
       continue;
 
     if ( vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_locked" ), false ).toBool() || vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_locked_expression_active" ), false ).toBool() || vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_editing_locked" ), false ).toBool() || vectorLayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_editing_locked_expression_active" ), false ).toBool() )
@@ -1334,34 +1422,53 @@ QgsFeatureIds FeatureModel::applyVertexModelTopography()
         continue;
     }
 
-    vectorLayer->startEditing();
-
-    for ( const auto &point : pointsAdded )
+    const bool wasEditing = vectorLayer->editBuffer();
+    if ( !wasEditing )
     {
-      vectorLayer->addTopologicalPoints( point );
+      vectorLayer->startEditing();
     }
 
     QgsPointLocator loc( vectorLayer );
-    const double tol = QgsTolerance::vertexSearchRadius( vectorLayer, mVertexModel->mapSettings()->mapSettings() );
-    for ( const auto &point : pointsMoved )
+    const double searchTolerance = QgsTolerance::vertexSearchRadius( vectorLayer, mVertexModel->mapSettings()->mapSettings() );
+    for ( const VertexModel::VertexChange &change : history )
     {
-      QgsPointLocator::MatchList matches = loc.verticesInRect( point.first, tol );
-      for ( int i = 0; i < matches.size(); i++ )
+      switch ( change.type )
       {
-        vectorLayer->moveVertex( point.second, matches.at( i ).featureId(), matches.at( i ).vertexIndex() );
+        case VertexModel::VertexAddition:
+        {
+          vectorLayer->addTopologicalPoints( change.vertex.point );
+          break;
+        }
+
+        case VertexModel::VertexMove:
+        {
+          QgsPointLocator::MatchList matches = loc.verticesInRect( change.vertex.originalPoint, searchTolerance );
+          for ( int i = 0; i < matches.size(); i++ )
+          {
+            vectorLayer->moveVertex( change.vertex.point, matches.at( i ).featureId(), matches.at( i ).vertexIndex() );
+          }
+          break;
+        }
+
+        case VertexModel::VertexDeletion:
+        {
+          QgsPointLocator::MatchList matches = loc.verticesInRect( change.vertex.point, searchTolerance );
+          for ( int i = 0; i < matches.size(); i++ )
+          {
+            vectorLayer->deleteVertex( matches.at( i ).featureId(), matches.at( i ).vertexIndex() );
+          }
+          break;
+        }
+
+        case VertexModel::NoChange:
+          break;
       }
     }
 
-    for ( const auto &point : pointsDeleted )
+    if ( vectorLayer != mLayer )
     {
-      QgsPointLocator::MatchList matches = loc.verticesInRect( point, tol );
-      for ( int i = 0; i < matches.size(); i++ )
-      {
-        vectorLayer->deleteVertex( matches.at( i ).featureId(), matches.at( i ).vertexIndex() );
-      }
+      vectorLayer->commitChanges( !wasEditing );
     }
-
-    vectorLayer->commitChanges( true );
   }
 
   disconnect( connection );

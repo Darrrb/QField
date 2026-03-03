@@ -125,6 +125,10 @@
 #include "qgsquickmapcanvasmap.h"
 #include "qgsquickmapsettings.h"
 #include "qgsquickmaptransform.h"
+#include "quick3dmaptexturedata.h"
+#include "quick3drubberbandgeometry.h"
+#include "quick3dterraingeometry.h"
+#include "quick3dterrainprovider.h"
 #include "recentprojectlistmodel.h"
 #include "referencingfeaturelistmodel.h"
 #include "relationutils.h"
@@ -137,6 +141,7 @@
 #include "snappingutils.h"
 #include "stringutils.h"
 #include "submodel.h"
+#include "theme.h"
 #include "trackingmodel.h"
 #include "urlutils.h"
 #include "valuemapmodel.h"
@@ -222,12 +227,6 @@ QgisMobileapp::QgisMobileapp( QgsApplication *app, QObject *parent )
   // Increase maximum concurrent connections allowed
   QgsApplication::settingsConnectionPoolMaximumConcurrentConnections->setValue( 10 );
 
-  // Set a nicer default hyperlink color to be used in QML Text items
-  QPalette palette = app->palette();
-  palette.setColor( QPalette::Link, QColor( 128, 204, 40 ) );
-  palette.setColor( QPalette::LinkVisited, QColor( 128, 204, 40 ) );
-  app->setPalette( palette );
-
   mUrlHandler.reset( new QFieldUrlHandler( mIface, this ) );
   QDesktopServices::setUrlHandler( QStringLiteral( "qfield" ), mUrlHandler.get(), "handleUrl" );
 
@@ -286,14 +285,21 @@ QgisMobileapp::QgisMobileapp( QgsApplication *app, QObject *parent )
     QgsApplication::instance()->localizedDataPathRegistry()->setPaths( localizedDataPaths );
   }
 
-  QFontDatabase::addApplicationFont( ":/fonts/Cadastra-Bold.ttf" );
-  QFontDatabase::addApplicationFont( ":/fonts/Cadastra-BoldItalic.ttf" );
-  QFontDatabase::addApplicationFont( ":/fonts/Cadastra-Condensed.ttf" );
-  QFontDatabase::addApplicationFont( ":/fonts/Cadastra-Italic.ttf" );
-  QFontDatabase::addApplicationFont( ":/fonts/Cadastra-Regular.ttf" );
-  QFontDatabase::addApplicationFont( ":/fonts/Cadastra-Semibolditalic.ttf" );
-  QFontDatabase::addApplicationFont( ":/fonts/CadastraSymbol-Mask.ttf" );
-  QFontDatabase::addApplicationFont( ":/fonts/CadastraSymbol-Regular.ttf" );
+  // Add app resource font(s)
+  const QDir resourceFontDir = QStringLiteral( ":/fonts/" );
+  const QStringList resourceFontExts = QStringList() << "*.ttf"
+                                                     << "*.TTF"
+                                                     << "*.otf"
+                                                     << "*.OTF";
+  const QStringList resourceFontFiles = resourceFontDir.entryList( resourceFontExts, QDir::Files );
+  for ( const QString &resourceFontFile : resourceFontFiles )
+  {
+    const int id = QFontDatabase::addApplicationFont( QStringLiteral( ":/fonts/%1" ).arg( resourceFontFile ) );
+    if ( id == -1 )
+    {
+      QgsMessageLog::logMessage( tr( "Could not load resource font: %1" ).arg( resourceFontFile ) );
+    }
+  }
 
   QgsApplication::fontManager()->enableFontDownloadsForSession();
 
@@ -347,7 +353,6 @@ QgisMobileapp::QgisMobileapp( QgsApplication *app, QObject *parent )
   PlatformUtilities::instance()->setScreenLockPermission( false );
 
   load( QUrl( "qrc:/qml/qgismobileapp.qml" ) );
-
   mMapCanvas = rootObjects().first()->findChild<QgsQuickMapCanvasMap *>();
   Q_ASSERT_X( mMapCanvas, "QML Init", "QgsQuickMapCanvasMap not found. It is likely that we failed to load the QML files. Check debug output for related messages." );
   mMapCanvas->mapSettings()->setProject( mProject );
@@ -457,6 +462,12 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qmlRegisterType<QgsQuickCoordinateTransformer>( "org.qfield", 1, 0, "CoordinateTransformer" );
   qmlRegisterType<QgsQuickElevationProfileCanvas>( "org.qgis", 1, 0, "ElevationProfileCanvas" );
   qmlRegisterType<QgsQuickMapTransform>( "org.qgis", 1, 0, "MapTransform" );
+
+  // Register 3D QML types
+  qmlRegisterType<Quick3DRubberbandGeometry>( "org.qfield", 1, 0, "Quick3DRubberbandGeometry" );
+  qmlRegisterType<Quick3DTerrainGeometry>( "org.qfield", 1, 0, "Quick3DTerrainGeometry" );
+  qmlRegisterType<Quick3DTerrainProvider>( "org.qfield", 1, 0, "Quick3DTerrainProvider" );
+  qmlRegisterType<Quick3DMapTextureData>( "org.qfield", 1, 0, "Quick3DMapTextureData" );
 
   // Register QField QML types
   qRegisterMetaType<PlatformUtilities::Capabilities>( "PlatformUtilities::Capabilities" );
@@ -574,6 +585,16 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qmlRegisterType<QgsLocatorContext>( "org.qgis", 1, 0, "QgsLocatorContext" );
   qmlRegisterType<QFieldLocatorFilter>( "org.qfield", 1, 0, "QFieldLocatorFilter" );
 
+  QScreen *screen = QGuiApplication::primaryScreen();
+  const qreal dpi = screen ? screen->logicalDotsPerInch() * screen->devicePixelRatio() : 96.0;
+  const qreal systemFontPointSize = PlatformUtilities::instance()->systemFontPointSize();
+  qmlRegisterSingletonType<Theme>( "org.qfield", 1, 0, "Theme", [dpi, systemFontPointSize]( QQmlEngine *, QJSEngine * ) -> QObject * {
+    Theme *t = new Theme();
+    t->setScreenPpi( dpi );
+    t->setSystemFontPointSize( systemFontPointSize );
+    return t;
+  } );
+
   REGISTER_SINGLETON( "org.qfield", ExpressionContextUtils, "ExpressionContextUtils" );
   REGISTER_SINGLETON( "org.qfield", GeometryEditorsModel, "GeometryEditorsModelSingleton" );
   REGISTER_SINGLETON( "org.qfield", GeometryUtils, "GeometryUtils" );
@@ -610,6 +631,7 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   engine->rootContext()->setContextProperty( "withNfc", QVariant( NearFieldReader::isSupported() ) );
   engine->rootContext()->setContextProperty( "systemFontPointSize", PlatformUtilities::instance()->systemFontPointSize() );
   engine->rootContext()->setContextProperty( "mouseDoubleClickInterval", QApplication::styleHints()->mouseDoubleClickInterval() );
+  engine->rootContext()->setContextProperty( "appName", qfield::appName );
   engine->rootContext()->setContextProperty( "appVersion", qfield::appVersion );
   engine->rootContext()->setContextProperty( "appVersionStr", qfield::appVersionStr );
   engine->rootContext()->setContextProperty( "gitRev", qfield::gitRev );
@@ -619,9 +641,6 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
 void QgisMobileapp::registerGlobalVariables()
 {
   // Calculate device pixels
-  qreal dpi = mApp ? mApp->primaryScreen()->logicalDotsPerInch() * mApp->primaryScreen()->devicePixelRatio() : 96;
-
-  rootContext()->setContextProperty( "ppi", dpi );
   rootContext()->setContextProperty( "qgisProject", mProject );
   rootContext()->setContextProperty( "iface", mIface );
   rootContext()->setContextProperty( "pluginManager", mPluginManager );
@@ -1270,7 +1289,7 @@ bool QgisMobileapp::print( const QString &layoutName )
   std::unique_ptr<QgsPrintLayout> templateLayout;
   if ( layoutName.isEmpty() && printLayouts.isEmpty() )
   {
-    QFile templateFile( QStringLiteral( "%1/qfield/templates/layout.qpt" ).arg( PlatformUtilities::instance()->systemSharedDataLocation() ) );
+    QFile templateFile( QStringLiteral( ":/templates/layout.qpt" ) );
     QDomDocument templateDoc;
     templateDoc.setContent( &templateFile );
 

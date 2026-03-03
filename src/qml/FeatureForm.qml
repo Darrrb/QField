@@ -311,8 +311,13 @@ Page {
         id: qmlItem
 
         property string code: containerCode
+        property var obj: undefined
+
         onCodeChanged: {
-          var obj = Qt.createQmlObject(code, qmlItem, 'qmlContent');
+          if (obj !== undefined) {
+            obj.destroy();
+          }
+          obj = Qt.createQmlObject(code, qmlItem, 'qmlContent');
         }
 
         height: childrenRect.height
@@ -646,7 +651,7 @@ Page {
 
               function onAboutToSave() {
                 // it may not be implemented
-                if (attributeEditorLoader.item.pushChanges) {
+                if (attributeEditorLoader.item && attributeEditorLoader.item.pushChanges) {
                   attributeEditorLoader.item.pushChanges(form.model.featureModel.feature);
                 }
               }
@@ -848,7 +853,7 @@ Page {
     rightPadding: 0
     bottomPadding: 0
 
-    height: visible ? form.topMargin + 48 : 0
+    height: visible ? form.topMargin + 58 : 0
     visible: form.state === 'Add'
     objectName: "toolbar"
     background: Rectangle {

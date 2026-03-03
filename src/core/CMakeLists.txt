@@ -4,6 +4,10 @@ set(QFIELD_CORE_SRCS
     cogo/cogooperationsmodel.cpp
     cogo/cogoregistry.cpp
     platforms/platformutilities.cpp
+    3d/quick3dterraingeometry.cpp
+    3d/quick3dterrainprovider.cpp
+    3d/quick3dmaptexturedata.cpp
+    3d/quick3drubberbandgeometry.cpp
     utils/coordinatereferencesystemutils.cpp
     utils/expressioncontextutils.cpp
     utils/featureutils.cpp
@@ -128,6 +132,7 @@ set(QFIELD_CORE_SRCS
     settings.cpp
     snappingresult.cpp
     submodel.cpp
+    theme.cpp
     tracker.cpp
     trackingmodel.cpp
     valuemapmodel.cpp
@@ -142,6 +147,10 @@ set(QFIELD_CORE_HDRS
     cogo/cogooperationsmodel.h
     cogo/cogoregistry.h
     platforms/platformutilities.h
+    3d/quick3dterraingeometry.h
+    3d/quick3dterrainprovider.h
+    3d/quick3dmaptexturedata.h
+    3d/quick3drubberbandgeometry.h
     utils/coordinatereferencesystemutils.h
     utils/expressioncontextutils.h
     utils/featureutils.h
@@ -267,6 +276,7 @@ set(QFIELD_CORE_HDRS
     settings.h
     snappingresult.h
     submodel.h
+    theme.h
     tracker.h
     trackingmodel.h
     valuemapmodel.h
@@ -355,6 +365,7 @@ target_include_directories(
          ${CMAKE_SOURCE_DIR}/src/core/locator
          ${CMAKE_SOURCE_DIR}/src/core/platforms
          ${CMAKE_SOURCE_DIR}/src/core/qgsquick
+         ${CMAKE_SOURCE_DIR}/src/core/3d
          ${CMAKE_SOURCE_DIR}/src/core/utils
          ${CMAKE_SOURCE_DIR}/src/core/positioning
          ${CMAKE_SOURCE_DIR}/src/core/processing
