@@ -1,14 +1,22 @@
 // qmllint /disable
 import QtQuick
+import QtQuick.Controls
+
 import QtMultimedia
 import org.qfield
-import qmllint
+import org.qgis
+import Theme
 
+import "qrc:/qml" as QFieldItems
 Item {
   id: root
 
+  // ---------- Plugin Info ----------
+  readonly property string pluginName: "Terrex Geofence Alarm"
+  readonly property string pluginVersion: "1.0.5"
+
   // ---------- Settings ----------
-  property int repeatSeconds: 5   // default (Breach) alarms repeat every N seconds while breaching
+  property int repeatSeconds: 3   // default (Breach) alarms repeat every N seconds while breaching
   property int warningRepeatSeconds: 10  // WARNING alarms repeat less frequently than breach
   property int infoRepeatSeconds: 60  // INFO alarms repeat less frequently
   property int rotationDegrees: 5  // For rotating map canvas clockwise and counterclockwise
@@ -68,19 +76,19 @@ Item {
   // ---------- Audio ----------
   SoundEffect {
     id: trespassSound
-    source: Qt.resolvedUrl("geofence_breach.wav")
+    source: Qt.resolvedUrl("assets/geofence_breach.wav")
     volume: 0.9
   }
 
   SoundEffect {
     id: warningSound
-    source: Qt.resolvedUrl("geofence_warning.wav")
+    source: Qt.resolvedUrl("assets/geofence_warning.wav")
     volume: 0.9
   }
 
   SoundEffect {
     id: infoSound
-    source: Qt.resolvedUrl("geofence_info.wav")
+    source: Qt.resolvedUrl("assets/geofence_info.wav")
     volume: 0.9
   }
 
@@ -93,6 +101,11 @@ Item {
   property string breachAreaName: ""
   property string alarmType: ""
   property bool alarmTestMenuVisible: false
+  property bool debugModeEnabled: false  // Hidden debug mode
+  property int downgradeConfirmChecks: 2
+  property string pendingDowngradeAreaName: ""
+  property string pendingDowngradeType: ""
+  property int pendingDowngradeHits: 0
   readonly property string alarmTypeNormalized: normalizeAlarmType(alarmType)
   readonly property bool isBreachType: alarmTypeNormalized === "BREACH"
   readonly property bool isWarningType: alarmTypeNormalized === "WARNING"
@@ -131,11 +144,68 @@ Item {
     return root.colorBreach
   }
 
+  function alarmSeverityFor(type) {
+    var t = normalizeAlarmType(type)
+    if (t === "BREACH") return 3
+    if (t === "WARNING") return 2
+    if (t === "INFO") return 1
+    return 3
+  }
+
+  function clearPendingDowngrade() {
+    root.pendingDowngradeAreaName = ""
+    root.pendingDowngradeType = ""
+    root.pendingDowngradeHits = 0
+  }
+
+  function shouldUpdateActiveAlarm(areaName, type) {
+    if (!root.breaching) return true
+
+    var nextType = normalizeAlarmType(type)
+    var currentType = normalizeAlarmType(root.alarmType)
+    var currentSeverity = root.alarmSeverityFor(currentType)
+    var nextSeverity = root.alarmSeverityFor(nextType)
+    var nextAreaName = String(areaName)
+    var currentAreaName = String(root.breachAreaName)
+    var areaChanged = nextAreaName !== currentAreaName
+    var typeChanged = nextType !== currentType
+
+    // Escalate immediately.
+    if (nextSeverity > currentSeverity) {
+      root.clearPendingDowngrade()
+      return true
+    }
+
+    // Same severity: keep state in sync without any debounce.
+    if (nextSeverity === currentSeverity) {
+      root.clearPendingDowngrade()
+      return areaChanged || typeChanged
+    }
+
+    // Downgrade only after repeated consistent lower-severity readings.
+    if (!areaChanged && !typeChanged) return false
+
+    if (root.pendingDowngradeAreaName === nextAreaName && root.pendingDowngradeType === nextType) {
+      root.pendingDowngradeHits += 1
+    } else {
+      root.pendingDowngradeAreaName = nextAreaName
+      root.pendingDowngradeType = nextType
+      root.pendingDowngradeHits = 1
+    }
+
+    if (root.pendingDowngradeHits >= root.downgradeConfirmChecks) {
+      root.clearPendingDowngrade()
+      return true
+    }
+
+    return false
+  }
+
   function checkAndHandleTrespass() {
     const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
     if (isTrespassMode && gf.isWithin) {
-      if (!root.breaching) {
-        const data = root.parseAreaData(gf.isWithinAreaName)
+      const data = root.parseAreaData(gf.isWithinAreaName)
+      if (root.shouldUpdateActiveAlarm(data.areaName, data.alarmType)) {
         root.startBreach(data.areaName, data.alarmType)
       }
     } else {
@@ -159,6 +229,7 @@ Item {
   }
 
   function startBreach(areaName, type) {
+    root.clearPendingDowngrade()
     root.breaching = true
     root.breachAreaName = areaName
     root.alarmType = type ? String(type) : ""
@@ -182,6 +253,7 @@ Item {
   }
 
   function stopBreach() {
+    root.clearPendingDowngrade()
     root.breaching = false
     root.breachAreaName = ""
     root.alarmType = ""
@@ -204,6 +276,7 @@ Item {
     // Match QField's "trespassed into" semantics:
     // behavior == AlertWhenInsideGeofencedArea AND isWithin == true
     onIsWithinChanged: root.checkAndHandleTrespass()
+    onPositionChanged: root.checkAndHandleTrespass()
     onBehaviorChanged: root.checkAndHandleTrespass()
     onActiveChanged: { if (!gf.active) root.stopBreach() }
   }
@@ -296,33 +369,34 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         width: parent.width
       }
+    }
+  }
 
-      // Acknowledge button (does NOT stop beeping; it changes messaging)
-      Rectangle {
-        id: ackButton
-        width: 260
-        height: 56
-        radius: 14
-        opacity: 0.95
-        border.width: 2
-        border.color: "#ffffff"
-        anchors.horizontalCenter: parent.horizontalCenter
-        visible: root.isBreachType
+  // Acknowledge button (outside overlay to avoid opacity inheritance)
+  Rectangle {
+    id: ackButton
+    visible: root.breachOverlayEnabled && root.breaching && root.isBreachType && !root.breachAcknowledged
+    z: root.zIndexOverlay + 5
+    width: 260
+    height: 56
+    radius: 14
+    color: "#d32f2f"
+    border.width: 3
+    border.color: "#ffffff"
 
-        Text {
-          anchors.centerIn: parent
-          text: root.breachAcknowledged ? "Acknowledged" : "Acknowledge"
-          font.pixelSize: 18
-        }
+    Text {
+      anchors.centerIn: parent
+      text: "Acknowledge"
+      font.pixelSize: 18
+      color: "white"
+      font.bold: true
+    }
 
-        MouseArea {
-          anchors.fill: parent
-          enabled: root.isBreachType && !root.breachAcknowledged
-          onClicked: {
-            root.breachAcknowledged = true
-            root.toast("Breach acknowledged (alarm will continue until zone exited)")
-          }
-        }
+    MouseArea {
+      anchors.fill: parent
+      onClicked: {
+        root.breachAcknowledged = true
+        root.toast("Breach acknowledged (alarm will continue until zone exited)")
       }
     }
   }
@@ -370,7 +444,7 @@ Item {
       font.pixelSize: 14
       wrapMode: Text.Wrap
       text:
-        "Geofence trespass alarm\n" +
+        root.pluginName + " v" + root.pluginVersion + "\n" +
         "active=" + gf.active +
         " behavior=" + gf.behavior +
         " areasLayerSet=" + (gf.areasLayer !== null) + "\n" +
@@ -384,27 +458,136 @@ Item {
   }
 
   // ============================================================
-  // BUTTONS (middle-left)
+  // TOOLBAR BUTTONS
   // ============================================================
+  QfToolButtonDrawer {
+    id: terrexToolbar
+    bgcolor: Theme.darkGray
+    iconSource: Qt.resolvedUrl("assets/terrex_icon.svg")
+    round: true
 
-  // 🧪 toggles alarm test menu
-  Rectangle {
-    id: alarmTestButton
-    width: 38
-    height: 38
-    radius: 19
-    z: root.zIndexBase + 1
-    opacity: 0.88
-    color: root.alarmTestMenuVisible ? root.colorActive : root.colorInactive
+    QfToolButton {
+      id: alarmTestButton
+      bgcolor: root.alarmTestMenuVisible ? root.colorActive : root.colorInactive
+      iconColor: "white"
+      text: "🧪"
+      width: 38
+      height: 38
+      round: true
+      font.pixelSize: 16
+      padding: 0
 
-    Text { anchors.centerIn: parent; text: "🧪"; font.pixelSize: 16 }
-
-    MouseArea {
-      anchors.fill: parent
       onClicked: {
         root.alarmTestMenuVisible = !root.alarmTestMenuVisible
         root.toast("Alarm test menu " + (root.alarmTestMenuVisible ? "ON" : "OFF"))
       }
+
+      onPressAndHold: {
+        root.debugModeEnabled = !root.debugModeEnabled
+        root.toast("Debug mode " + (root.debugModeEnabled ? "ENABLED" : "DISABLED"), root.debugModeEnabled ? "success" : "")
+      }
+    }
+
+    QfToolButton {
+      id: debugButton
+      visible: root.debugModeEnabled
+      bgcolor: root.debugOverlayEnabled ? root.colorActive : root.colorInactive
+      iconColor: "white"
+      text: "🐞"
+      width: 38
+      height: root.debugModeEnabled ? 38 : 0
+      round: true
+      font.pixelSize: 18
+      padding: 0
+
+      onClicked: {
+        root.debugOverlayEnabled = !root.debugOverlayEnabled
+        root.toast("Debug panel " + (root.debugOverlayEnabled ? "ON" : "OFF"))
+      }
+    }
+
+    QfToolButton {
+      id: breachButton
+      visible: root.debugModeEnabled
+      bgcolor: root.breachOverlayEnabled ? root.colorActive : root.colorInactive
+      iconColor: "white"
+      text: "🚨"
+      width: 38
+      height: root.debugModeEnabled ? 38 : 0
+      round: true
+      font.pixelSize: 18
+      padding: 0
+
+      onClicked: {
+        root.breachOverlayEnabled = !root.breachOverlayEnabled
+        root.toast("Breach overlay " + (root.breachOverlayEnabled ? "ON" : "OFF"))
+      }
+    }
+
+    QfToolButton {
+      id: syncButton
+      visible: true
+      bgcolor: root.colorInactive
+      iconColor: "white"
+      text: "💾"
+      width: 38
+      height: 38
+      round: true
+      font.pixelSize: 15
+      padding: 0
+
+      onClicked: {
+        var cloudBtn = iface.findItemByObjectName("CloudButton")
+        if (cloudBtn) {
+          cloudBtn.clicked()
+          root.toast("Opening QFieldCloud sync")
+        } else {
+          root.toast("Cloud button not found", "error")
+        }
+      }
+    }
+
+    QfToolButton {
+      id: saveButton
+      visible: root.debugModeEnabled
+      bgcolor: root.colorInactive
+      iconColor: "white"
+      text: "🔄"
+      width: 38
+      height: root.debugModeEnabled ? 38 : 0
+      round: true
+      font.pixelSize: 15
+      padding: 0
+
+      onClicked: root.onSavePressed()
+    }
+
+    QfToolButton {
+      id: rotateClockwiseButton
+      bgcolor: root.colorInactive
+      iconColor: "white"
+      text: "↩️"
+      width: 38
+      height: 38
+      round: true
+      font.pixelSize: 20
+      padding: 0
+
+      onClicked: root.rotateClockwise()
+    }
+
+    QfToolButton {
+      id: rotateCounterClockwiseButton
+      bgcolor: root.colorInactive
+      iconColor: "white"
+      text: "↪️"
+      width: 38
+      height: 38
+      round: true
+      font.pixelSize: 20
+      padding: 0
+
+      onClicked: root.rotateCounterClockwise()
     }
   }
 
@@ -412,13 +595,13 @@ Item {
     id: alarmTestMenu
     visible: root.alarmTestMenuVisible
     width: 220
-    height: 230
+    height: 288
     radius: 10
     opacity: 0.80
     color: "#202020"
     border.width: 2
     border.color: "#ffffff"
-    z: root.zIndexBase + 2
+    z: root.zIndexOverlay
 
     Column {
       anchors.fill: parent
@@ -482,139 +665,24 @@ Item {
           }
         }
       }
-    }
-  }
 
-  // 🐞 toggles debug panel
-  Rectangle {
-    id: debugButton
-    width: 38
-    height: 38
-    radius: 19
-    z: root.zIndexBase + 1
-    opacity: 0.88
-    color: root.debugOverlayEnabled ? root.colorActive : root.colorInactive
-
-    Text { anchors.centerIn: parent; text: "🐞"; font.pixelSize: 18 }
-
-    MouseArea {
-      anchors.fill: parent
-      onClicked: {
-        root.debugOverlayEnabled = !root.debugOverlayEnabled
-        root.toast("Debug panel " + (root.debugOverlayEnabled ? "ON" : "OFF"))
+      Rectangle {
+        width: parent.width
+        height: 34
+        radius: 8
+        color: "#616161"
+        Text { anchors.centerIn: parent; text: "Close Menu"; font.pixelSize: 14 }
+        MouseArea {
+          anchors.fill: parent
+          onClicked: {
+            root.stopBreach()
+            root.alarmTestMenuVisible = false
+            root.toast("Menu closed")
+          }
+        }
       }
     }
   }
-
-  // 🚨 toggles BIG breach overlay (feature toggle)
-  Rectangle {
-    id: breachButton
-    width: 38
-    height: 38
-    radius: 19
-    z: root.zIndexBase + 1
-    opacity: 0.88
-    color: root.breachOverlayEnabled ? root.colorActive : root.colorInactive
-
-    Text { anchors.centerIn: parent; text: "🚨"; font.pixelSize: 18 }
-
-    MouseArea {
-      anchors.fill: parent
-      onClicked: {
-        root.breachOverlayEnabled = !root.breachOverlayEnabled
-        root.toast("Breach overlay " + (root.breachOverlayEnabled ? "ON" : "OFF"))
-      }
-    }
-  }
-
-  // Sync placeholder button
-  Rectangle {
-    id: syncButton
-    width: 38
-    height: 38
-    radius: 19
-    z: root.zIndexBase + 1
-    opacity: 0.88
-    color: root.colorInactive
-
-    Text {
-      anchors.centerIn: parent
-      text: "🔄"
-      font.pixelSize: 15
-    }
-
-    MouseArea {
-      anchors.fill: parent
-      onClicked: root.onSyncPressed()
-    }
-  }
-
-  // Save placeholder button
-  Rectangle {
-    id: saveButton
-    width: 38
-    height: 38
-    radius: 19
-    z: root.zIndexBase + 1
-    opacity: 0.88
-    color: root.colorInactive
-
-    Text {
-      anchors.centerIn: parent
-      text: "💾"
-      font.pixelSize: 15
-    }
-
-    MouseArea {
-      anchors.fill: parent
-      onClicked: root.onSavePressed()
-    }
-  }
-
-  // Rotate map clockwise button
-  Rectangle {
-    id: rotateClockwiseButton
-    width: 38
-    height: 38
-    radius: 19
-    z: root.zIndexBase + 1
-    opacity: 0.88
-    color: root.colorInactive
-
-    Text {
-      anchors.centerIn: parent
-      text: "↩️"
-      font.pixelSize: 20
-    }
-
-    MouseArea {
-      anchors.fill: parent
-      onClicked: root.rotateClockwise()
-    }
-  }
-
-  // Rotate map counter-clockwise button
-  Rectangle {
-    id: rotateCounterClockwiseButton
-    width: 38
-    height: 38
-    radius: 19
-    z: root.zIndexBase + 1
-    opacity: 0.88
-    color: root.colorInactive
-
-    Text {
-      anchors.centerIn: parent
-      text: "↪️"
-      font.pixelSize: 20
-    }
-
-    MouseArea {
-      anchors.fill: parent
-      onClicked: root.rotateCounterClockwise()
-    }
-  }
-  
 
   // ============================================================
   // Wiring / parenting into visible UI
@@ -625,96 +693,52 @@ Item {
     // Stop any alarm if not in the right mode / not active / no layer
     if (!gf.active || gf.areasLayer === null) stopBreach()
 
-    // Re-evaluate breach state after applying settings
-    const isTrespassMode = (gf.behavior === Geofencer.AlertWhenInsideGeofencedArea)
-    if (gf.active && isTrespassMode && gf.isWithin) {
-      if (!root.breaching) {
-        const data = root.parseAreaData(gf.isWithinAreaName)
-        root.startBreach(data.areaName, data.alarmType)
-      }
-    }
+    // Re-evaluate alarm state after applying settings.
+    root.checkAndHandleTrespass()
   }
 
-  Timer {
-    interval: 600
-    running: true
-    repeat: false
-    onTriggered: {
-      toast("✅ Terrex Geofence trespass alarm loaded")
+  Component.onCompleted: {
+    toast("✅ " + root.pluginName + " v" + root.pluginVersion + " loaded")
 
-      // Parent debug panel
-      panel.parent = iface.mainWindow().contentItem
-      panel.anchors.left = panel.parent.left
-      panel.anchors.bottom = panel.parent.bottom
-      panel.anchors.margins = 16
+    // Register toolbar with QField
+    iface.addItemToPluginsToolbar(terrexToolbar)
 
-      // Parent breach overlay (full screen)
-      breachOverlay.parent = iface.mainWindow().contentItem
-      breachOverlay.anchors.fill = breachOverlay.parent
+    // Parent debug panel
+    panel.parent = iface.mainWindow().contentItem
+    panel.anchors.left = panel.parent.left
+    panel.anchors.bottom = panel.parent.bottom
+    panel.anchors.margins = 16
 
-      // Parent acknowledged badge (top-center)
-      acknowledgedBadge.parent = iface.mainWindow().contentItem
-      acknowledgedBadge.anchors.horizontalCenter = acknowledgedBadge.parent.horizontalCenter
-      acknowledgedBadge.anchors.top = acknowledgedBadge.parent.top
-      acknowledgedBadge.anchors.topMargin = 16
+    // Parent breach overlay (full screen)
+    breachOverlay.parent = iface.mainWindow().contentItem
+    breachOverlay.anchors.fill = breachOverlay.parent
 
-      // Parent buttons (middle-left)
-      alarmTestButton.parent = iface.mainWindow().contentItem
-      alarmTestButton.anchors.left = alarmTestButton.parent.left
-      alarmTestButton.anchors.top = alarmTestButton.parent.top
-      alarmTestButton.anchors.leftMargin = root.buttonMargin
-      alarmTestButton.anchors.topMargin = root.buttonTopOffset
+    // Parent acknowledge button (centered below text)
+    ackButton.parent = iface.mainWindow().contentItem
+    ackButton.anchors.horizontalCenter = ackButton.parent.horizontalCenter
+    ackButton.anchors.verticalCenter = ackButton.parent.verticalCenter
+    ackButton.anchors.verticalCenterOffset = 120
 
-      alarmTestMenu.parent = iface.mainWindow().contentItem
-      alarmTestMenu.anchors.left = alarmTestButton.right
-      alarmTestMenu.anchors.leftMargin = root.buttonSpacing
-      alarmTestMenu.anchors.verticalCenter = alarmTestButton.verticalCenter
+    // Parent acknowledged badge (top-center)
+    acknowledgedBadge.parent = iface.mainWindow().contentItem
+    acknowledgedBadge.anchors.horizontalCenter = acknowledgedBadge.parent.horizontalCenter
+    acknowledgedBadge.anchors.top = acknowledgedBadge.parent.top
+    acknowledgedBadge.anchors.topMargin = 16
 
-      debugButton.parent = iface.mainWindow().contentItem
-      debugButton.anchors.left = debugButton.parent.left
-      debugButton.anchors.top = alarmTestButton.bottom
-      debugButton.anchors.topMargin = root.buttonSpacing
-      debugButton.anchors.leftMargin = root.buttonMargin
+    // Parent alarm test menu - center it on screen
+    alarmTestMenu.parent = iface.mainWindow().contentItem
+    alarmTestMenu.anchors.horizontalCenter = alarmTestMenu.parent.horizontalCenter
+    alarmTestMenu.anchors.top = alarmTestMenu.parent.top
+    alarmTestMenu.anchors.topMargin = 80
 
-      breachButton.parent = iface.mainWindow().contentItem
-      breachButton.anchors.left = breachButton.parent.left
-      breachButton.anchors.top = debugButton.bottom
-      breachButton.anchors.topMargin = root.buttonSpacing
-      breachButton.anchors.leftMargin = root.buttonMargin
+    positionSource = iface.findItemByObjectName("positionSource")
+    mapCanvas = iface.findItemByObjectName("mapCanvas")
 
-      syncButton.parent = iface.mainWindow().contentItem
-      syncButton.anchors.left = syncButton.parent.left
-      syncButton.anchors.top = breachButton.bottom
-      syncButton.anchors.topMargin = root.buttonSpacing
-      syncButton.anchors.leftMargin = root.buttonMargin
+    if (!positionSource) toast("positionSource NOT FOUND", "error")
+    if (!mapCanvas) toast("mapCanvas NOT FOUND", "error")
 
-      saveButton.parent = iface.mainWindow().contentItem
-      saveButton.anchors.left = saveButton.parent.left
-      saveButton.anchors.top = syncButton.bottom
-      saveButton.anchors.topMargin = root.buttonSpacing
-      saveButton.anchors.leftMargin = root.buttonMargin
-
-      rotateClockwiseButton.parent = iface.mainWindow().contentItem
-      rotateClockwiseButton.anchors.left = rotateClockwiseButton.parent.left
-      rotateClockwiseButton.anchors.top = saveButton.bottom
-      rotateClockwiseButton.anchors.topMargin = root.buttonSpacing
-      rotateClockwiseButton.anchors.leftMargin = root.buttonMargin
-
-      rotateCounterClockwiseButton.parent = iface.mainWindow().contentItem
-      rotateCounterClockwiseButton.anchors.left = rotateCounterClockwiseButton.parent.left
-      rotateCounterClockwiseButton.anchors.top = rotateClockwiseButton.bottom
-      rotateCounterClockwiseButton.anchors.topMargin = root.buttonSpacing
-      rotateCounterClockwiseButton.anchors.leftMargin = root.buttonMargin
-
-      positionSource = iface.findItemByObjectName("positionSource")
-      mapCanvas = iface.findItemByObjectName("mapCanvas")
-
-      if (!positionSource) toast("positionSource NOT FOUND", "error")
-      if (!mapCanvas) toast("mapCanvas NOT FOUND", "error")
-
-      applySettings("t=0.6s")
-      retry.running = true
-    }
+    applySettings("initial")
+    retry.running = true
   }
 
   Timer {

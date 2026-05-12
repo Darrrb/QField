@@ -1,8 +1,8 @@
 @echo off
 REM Copy QField plugin to tracking folder
 
-set SOURCE=C:\Users\damie\Documents\GitHub\QField\src\plugins\TGS3D_Overview_Banyo_qfield.qml
-set DEST=D:\_Tracking\qfieldout
+set SOURCE=C:\Users\damie\Documents\GitHub\QField\src\plugins\QGC_Yepppon_Qfield_cloud.qml
+set DEST=D:\_Tracking\QGC_Yepppon_Qfield\QGC_Yepppon_Qfield.qml
 
 echo Copying QField plugin...
 echo From: %SOURCE%
