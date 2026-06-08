@@ -1,5 +1,5 @@
-set(QGIS_REF e0c3959ffc57116664d48f4b687686d0360c6c89)
-set(QGIS_SHA512 07120e1754e1bcfd5a4f05a3225e266d8cc11525f85d933b50677c3aefff35b3d2b9c73db61795233eca8f472c631d509034d02461173095b4f7bbd66d88b641)
+set(QGIS_REF final-4_0_3)
+set(QGIS_SHA512 661387b8efa42344d6827753eec9e7af2505662789b90954f47dc9b5b70f6d13c518c677519343ea15996a03f89280af0564628c5c11b568973716c24f077186)
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
@@ -10,12 +10,12 @@ vcpkg_from_github(
     PATCHES
         qgspython.patch # Make qgis support python's debug library
         libxml2.patch
-        exiv2.patch
-        mesh.patch
         crssync-no-install.patch
         include-qthread.patch
         processing.patch # Needed to avoid link issue with tinygltf (ATM embedded into QGIS) and _GEOSQueryCallback defined multiple times
-        wfsfilter.patch
+        mesh.patch
+        compatibility.patch
+        metadata.patch
 )
 
 
@@ -29,6 +29,7 @@ vcpkg_find_acquire_program(FLEX)
 vcpkg_find_acquire_program(BISON)
 
 list(APPEND QGIS_OPTIONS "-DENABLE_TESTS:BOOL=OFF")
+list(APPEND QGIS_OPTIONS "-DWITH_QTWEBENGINE:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DWITH_QTWEBKIT:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DWITH_QTPRINTER:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DWITH_GRASS7:BOOL=OFF")
@@ -36,6 +37,7 @@ list(APPEND QGIS_OPTIONS "-DWITH_SPATIALITE:BOOL=ON")
 list(APPEND QGIS_OPTIONS "-DWITH_QSPATIALITE:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DWITH_PDAL:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DWITH_DRACO:BOOL=ON")
+list(APPEND QGIS_OPTIONS "-DWITH_PYTHON:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DWITH_INTERNAL_POLY2TRI:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DWITH_INTERNAL_MESHOPTIMIZER:BOOL=OFF")
 list(APPEND QGIS_OPTIONS "-DPREFER_INTERNAL_LIBS:BOOL=OFF")
@@ -170,6 +172,10 @@ endif()
 
 if(VCPKG_TARGET_IS_IOS)
     list(APPEND QGIS_OPTIONS -DWITH_QTSERIALPORT=FALSE)
+endif()
+
+if(VCPKG_TARGET_IS_OSX OR VCPKG_TARGET_IS_IOS)
+    list(APPEND QGIS_OPTIONS -DQGIS_MAC_BUNDLE=OFF)
 endif()
 
 # Build crssync only runs when building natively.

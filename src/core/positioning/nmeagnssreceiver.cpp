@@ -26,13 +26,19 @@ NmeaGnssReceiver::NmeaGnssReceiver( QObject *parent )
 {
 }
 
+AbstractGnssReceiver::Capabilities NmeaGnssReceiver::capabilities() const
+{
+  return AbstractGnssReceiver::Capabilities() | AbstractGnssReceiver::OrthometricAltitude | AbstractGnssReceiver::Logging;
+}
+
 void NmeaGnssReceiver::initNmeaConnection( QIODevice *ioDevice )
 {
+  mIODevice = ioDevice;
   mNmeaConnection = std::make_unique<QgsNmeaConnection>( ioDevice );
 
-  //QgsGpsConnection state changed (received location string)
+  ////QgsGpsConnection state changed (received location string)
   connect( mNmeaConnection.get(), &QgsGpsConnection::stateChanged, this, &NmeaGnssReceiver::stateChanged );
-  connect( mNmeaConnection.get(), &QgsGpsConnection::nmeaSentenceReceived, this, &NmeaGnssReceiver::nmeaSentenceReceived );
+  connect( mNmeaConnection.get(), &QgsGpsConnection::nmeaSentenceReceived, this, &NmeaGnssReceiver::onNmeaSentenceReceived );
 }
 
 void NmeaGnssReceiver::stateChanged( const QgsGpsInformation &info )
@@ -86,8 +92,10 @@ void NmeaGnssReceiver::stateChanged( const QgsGpsInformation &info )
                                                                  0, QStringLiteral( "nmea" ) );
 }
 
-void NmeaGnssReceiver::nmeaSentenceReceived( const QString &substring )
+void NmeaGnssReceiver::onNmeaSentenceReceived( const QString &substring )
 {
+  emit nmeaSentenceReceived( substring );
+
   if ( mLogFile.isOpen() )
   {
     mLogStream << substring << Qt::endl;
@@ -107,8 +115,10 @@ void NmeaGnssReceiver::handleStartLogging( const QString &path )
       handleStopLogging();
 
     mLogFile.setFileName( QStringLiteral( "%1/nmea-%2.log" ).arg( path, QDateTime::currentDateTime().toString( QStringLiteral( "yyyy-MM-ddThh:mm:ss" ) ) ) );
-    mLogFile.open( QIODevice::WriteOnly );
-    mLogStream.setDevice( &mLogFile );
+    if ( mLogFile.open( QIODevice::WriteOnly ) )
+    {
+      mLogStream.setDevice( &mLogFile );
+    }
   }
 }
 
@@ -203,4 +213,17 @@ void NmeaGnssReceiver::processImuSentence( const QString &sentence )
   mImuPosition.steeringZ = parameters[18].toDouble();
 
   mImuPosition.valid = true;
+}
+
+void NmeaGnssReceiver::onCorrectionDataReceived( const QByteArray &data )
+{
+  if ( !mIODevice || !mIODevice->isOpen() )
+  {
+    return;
+  }
+  qint64 bytesWritten = mIODevice->write( data );
+  if ( bytesWritten == -1 )
+  {
+    qInfo() << "Failed to write corrections to NMEA receiver socket:" << mIODevice->errorString();
+  }
 }

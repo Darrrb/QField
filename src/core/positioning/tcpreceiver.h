@@ -35,6 +35,8 @@ class TcpReceiver : public NmeaGnssReceiver
     explicit TcpReceiver( const QString &address = QString(), const int port = 0, QObject *parent = nullptr );
     ~TcpReceiver();
 
+    AbstractGnssReceiver::Capabilities capabilities() const override;
+
     static QLatin1String identifier;
 
   public slots:
@@ -50,6 +52,7 @@ class TcpReceiver : public NmeaGnssReceiver
     QTcpSocket *mSocket = nullptr;
 
     bool mReconnectOnDisconnect = false;
+    int mConnectionFailureCount = 0;
     QTimer mReconnectTimer;
 };
 

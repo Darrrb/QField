@@ -15,6 +15,7 @@
  ***************************************************************************/
 
 #ifdef WITH_BLUETOOTH
+#include "bluetoothlowenergyreceiver.h"
 #include "bluetoothreceiver.h"
 #endif
 #ifdef WITH_SERIALPORT
@@ -23,11 +24,14 @@
 #include "egenioussreceiver.h"
 #include "filereceiver.h"
 #include "internalgnssreceiver.h"
+#include "nmeagnssreceiver.h"
+#include "ntripclient.h"
 #include "positioningsource.h"
 #include "positioningutils.h"
 #include "tcpreceiver.h"
 #include "udpreceiver.h"
 
+#include <QDateTime>
 #include <QStandardPaths>
 
 QString PositioningSource::backgroundFilePath = QStringLiteral( "%1/positioning.background" ).arg( QStandardPaths::writableLocation( QStandardPaths::AppDataLocation ) );
@@ -59,7 +63,7 @@ void PositioningSource::setActive( bool active )
     }
     else
     {
-      mReceiver->connectDevice();
+      triggerConnectDevice();
     }
     if ( !QSensor::sensorsForType( QCompass::sensorType ).isEmpty() )
     {
@@ -115,10 +119,18 @@ void PositioningSource::setLogging( bool logging )
     if ( mLogging && !mLoggingPath.isEmpty() )
     {
       mReceiver->startLogging( mLoggingPath );
+      if ( mNtripClient )
+      {
+        mNtripClient->startLogging( mLoggingPath );
+      }
     }
     else
     {
       mReceiver->stopLogging();
+      if ( mNtripClient )
+      {
+        mNtripClient->stopLogging();
+      }
     }
   }
 
@@ -135,6 +147,10 @@ void PositioningSource::setLoggingPath( const QString &path )
   if ( mReceiver && mLogging )
   {
     mReceiver->startLogging( mLoggingPath );
+    if ( mNtripClient )
+    {
+      mNtripClient->startLogging( mLoggingPath );
+    }
   }
 
   emit loggingPathChanged();
@@ -159,6 +175,45 @@ void PositioningSource::setBackgroundMode( bool backgroundMode )
   emit backgroundModeChanged();
 }
 
+
+void PositioningSource::setEnableNtrip( bool enableNtrip )
+{
+  if ( mEnableNtrip == enableNtrip )
+  {
+    return;
+  }
+
+  mEnableNtrip = enableNtrip;
+
+  if ( mEnableNtrip )
+  {
+    startNtripClient();
+  }
+  else
+  {
+    stopNtripClient();
+  }
+
+  emit enableNtripChanged();
+}
+
+void PositioningSource::setNtripSettings( const NtripSettings &ntripSettings )
+{
+  if ( mNtripSettings == ntripSettings )
+  {
+    return;
+  }
+
+  mNtripSettings = ntripSettings;
+
+  if ( mEnableNtrip )
+  {
+    startNtripClient();
+  }
+
+  emit ntripSettingsChanged();
+}
+
 QList<GnssPositionInformation> PositioningSource::getBackgroundPositionInformation() const
 {
   QList<GnssPositionInformation> positionInformationList;
@@ -166,15 +221,17 @@ QList<GnssPositionInformation> PositioningSource::getBackgroundPositionInformati
   QFile file( QStringLiteral( "%1.information" ).arg( backgroundFilePath ) );
   if ( file.exists() )
   {
-    file.open( QFile::ReadOnly );
-    QDataStream stream( &file );
-    while ( !stream.atEnd() )
+    if ( file.open( QFile::ReadOnly ) )
     {
-      GnssPositionInformation positionInformation;
-      stream >> positionInformation;
-      positionInformationList << positionInformation;
+      QDataStream stream( &file );
+      while ( !stream.atEnd() )
+      {
+        GnssPositionInformation positionInformation;
+        stream >> positionInformation;
+        positionInformationList << positionInformation;
+      }
+      file.close();
     }
-    file.close();
   }
 
   return positionInformationList;
@@ -204,14 +261,19 @@ void PositioningSource::setupDevice()
 {
   if ( mReceiver )
   {
-    mReceiver->disconnectDevice();
+    triggerDisconnectDevice();
     mReceiver->stopLogging();
+
     disconnect( mReceiver.get(), &AbstractGnssReceiver::lastGnssPositionInformationChanged, this, &PositioningSource::lastGnssPositionInformationChanged );
     disconnect( mReceiver.get(), &AbstractGnssReceiver::lastErrorChanged, this, &PositioningSource::deviceLastErrorChanged );
     disconnect( mReceiver.get(), &AbstractGnssReceiver::socketStateChanged, this, &PositioningSource::deviceSocketStateChanged );
     disconnect( mReceiver.get(), &AbstractGnssReceiver::socketStateStringChanged, this, &PositioningSource::deviceSocketStateStringChanged );
+    disconnect( mReceiver.get(), &AbstractGnssReceiver::socketStateChanged, this, &PositioningSource::onDeviceSocketStateChanged );
+    disconnect( mReceiver.get(), &AbstractGnssReceiver::batteryLevelChanged, this, &PositioningSource::deviceBatteryLevelChanged );
+
     mReceiver->deleteLater();
     mReceiver.reset();
+    stopNtripClient();
   }
 
   if ( mDeviceId.isEmpty() )
@@ -260,12 +322,18 @@ void PositioningSource::setupDevice()
       mReceiver = std::make_unique<SerialPortReceiver>( address, this );
     }
 #endif
+#ifdef WITH_BLUETOOTH
+    else if ( mDeviceId.startsWith( BluetoothLowEnergyReceiver::identifier + ":" ) )
+    {
+      const qsizetype prefixLength = BluetoothLowEnergyReceiver::identifier.length() + 1;
+      const QString address = mDeviceId.mid( prefixLength );
+      mReceiver = std::make_unique<BluetoothLowEnergyReceiver>( address, this );
+    }
     else
     {
-#ifdef WITH_BLUETOOTH
       mReceiver = std::make_unique<BluetoothReceiver>( mDeviceId, this );
-#endif
     }
+#endif
   }
 
   // Reset the position information to insure no cross contamination between receiver types
@@ -273,10 +341,14 @@ void PositioningSource::setupDevice()
   connect( mReceiver.get(), &AbstractGnssReceiver::lastGnssPositionInformationChanged, this, &PositioningSource::lastGnssPositionInformationChanged );
   connect( mReceiver.get(), &AbstractGnssReceiver::lastErrorChanged, this, &PositioningSource::deviceLastErrorChanged );
   connect( mReceiver.get(), &AbstractGnssReceiver::socketStateChanged, this, &PositioningSource::deviceSocketStateChanged );
+  connect( mReceiver.get(), &AbstractGnssReceiver::socketStateChanged, this, &PositioningSource::onDeviceSocketStateChanged );
   connect( mReceiver.get(), &AbstractGnssReceiver::socketStateStringChanged, this, &PositioningSource::deviceSocketStateStringChanged );
+  connect( mReceiver.get(), &AbstractGnssReceiver::batteryLevelChanged, this, &PositioningSource::deviceBatteryLevelChanged );
+
   setValid( mReceiver->valid() );
 
   emit deviceChanged();
+  emit deviceBatteryLevelChanged();
 
   if ( mLogging && !mLoggingPath.isEmpty() )
   {
@@ -285,7 +357,7 @@ void PositioningSource::setupDevice()
 
   if ( mActive )
   {
-    mReceiver->connectDevice();
+    triggerConnectDevice();
   }
 
   return;
@@ -334,10 +406,12 @@ void PositioningSource::lastGnssPositionInformationChanged( const GnssPositionIn
   else
   {
     QFile file( QStringLiteral( "%1.information" ).arg( backgroundFilePath ) );
-    file.open( QFile::Append );
-    QDataStream stream( &file );
-    stream << mPositionInformation;
-    file.close();
+    if ( file.open( QFile::Append ) )
+    {
+      QDataStream stream( &file );
+      stream << mPositionInformation;
+      file.close();
+    }
   }
 }
 
@@ -363,11 +437,35 @@ void PositioningSource::processCompassReading()
   }
 }
 
+void PositioningSource::onDeviceSocketStateChanged()
+{
+  if ( mReceiver )
+  {
+    QAbstractSocket::SocketState state = mReceiver->socketState();
+
+    // Stop NTRIP client when receiver is disconnected or has connection error
+    if ( mNtripClient && ( state == QAbstractSocket::UnconnectedState || state == QAbstractSocket::ClosingState ) )
+    {
+      stopNtripClient();
+    }
+    // Start NTRIP client when external receiver connects and setting is enabled
+    else if ( !mNtripClient && mEnableNtrip && !mDeviceId.isEmpty() && state == QAbstractSocket::ConnectedState )
+    {
+      startNtripClient();
+    }
+  }
+}
+
 void PositioningSource::triggerConnectDevice()
 {
   if ( mReceiver )
   {
     mReceiver->connectDevice();
+
+    if ( mEnableNtrip )
+    {
+      startNtripClient();
+    }
   }
 }
 
@@ -376,5 +474,109 @@ void PositioningSource::triggerDisconnectDevice()
   if ( mReceiver )
   {
     mReceiver->disconnectDevice();
+    stopNtripClient();
   }
+}
+
+void PositioningSource::startNtripClient()
+{
+  if ( !mNtripSettings.isValid() )
+  {
+    return;
+  }
+
+  if ( !mReceiver || !( mReceiver->capabilities() & AbstractGnssReceiver::NtripCorrection ) )
+  {
+    return;
+  }
+
+  if ( !mNtripClient )
+  {
+    mNtripClient = std::make_unique<NtripClient>( this );
+
+    connect( mNtripClient.get(), &NtripClient::streamConnected, this, [this]() {
+      setNtripState( NtripState::Connected );
+      setNtripLastError( QString() );
+    } );
+
+    connect( mNtripClient.get(), &NtripClient::streamDisconnected, this, [this]() {
+      setNtripState( NtripState::Disconnected );
+    } );
+
+    connect( mNtripClient.get(), &NtripClient::errorOccurred, this, [this]( const QString &msg ) {
+      setNtripLastError( msg );
+      qInfo() << "NTRIP Client Error:" << msg;
+    } );
+
+    connect( mNtripClient.get(), &NtripClient::bytesSentChanged, this, [this]() {
+      mNtripBytesSent = mNtripClient->bytesSent();
+      emit ntripBytesSentChanged();
+    } );
+
+    connect( mNtripClient.get(), &NtripClient::bytesReceivedChanged, this, [this]() {
+      mNtripBytesReceived = mNtripClient->bytesReceived();
+      mNtripLastBytesReceivedUtcDateTime = QDateTime::currentDateTimeUtc();
+      emit ntripBytesReceivedChanged();
+      emit ntripLastBytesReceivedUtcDateTimeChanged();
+    } );
+  }
+
+  mNtripBytesSent = 0;
+  mNtripBytesReceived = 0;
+  mNtripLastBytesReceivedUtcDateTime = QDateTime();
+  emit ntripBytesSentChanged();
+  emit ntripBytesReceivedChanged();
+  emit ntripLastBytesReceivedUtcDateTimeChanged();
+  setNtripState( NtripState::Disconnected );
+
+  if ( mLogging )
+  {
+    mNtripClient->startLogging( mLoggingPath );
+  }
+
+  mNtripClient->start( mNtripSettings, mReceiver.get() );
+  setNtripState( NtripState::Connecting );
+}
+
+void PositioningSource::stopNtripClient()
+{
+  if ( mNtripClient )
+  {
+    mNtripClient->stop();
+    if ( mLogging )
+    {
+      mNtripClient->stopLogging();
+    }
+    mNtripClient.reset();
+
+    setNtripState( NtripState::Disconnected );
+    setNtripLastError( QString() );
+  }
+}
+
+void PositioningSource::setNtripState( NtripState state )
+{
+  if ( mNtripState == state )
+  {
+    return;
+  }
+
+  mNtripState = state;
+  emit ntripStateChanged();
+}
+
+void PositioningSource::setNtripLastError( const QString &error )
+{
+  if ( mNtripLastError == error )
+  {
+    return;
+  }
+
+  mNtripLastError = error;
+  emit ntripLastErrorChanged();
+}
+
+int PositioningSource::deviceCapabilities() const
+{
+  return mReceiver ? mReceiver->capabilities() : AbstractGnssReceiver::NoCapabilities;
 }

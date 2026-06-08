@@ -85,8 +85,10 @@ class QFieldCloudConnection : public QObject
 
     Q_PROPERTY( QList<AuthenticationProvider> availableProviders READ availableProviders NOTIFY availableProvidersChanged )
     Q_PROPERTY( bool isFetchingAvailableProviders READ isFetchingAvailableProviders NOTIFY isFetchingAvailableProvidersChanged )
-    Q_PROPERTY( bool isReachable READ isReachable NOTIFY isReachableChanged )
 
+    Q_PROPERTY( CloudServerInformation serverInformation READ serverInformation NOTIFY serverInformationChanged )
+
+    Q_PROPERTY( bool isReachable READ isReachable NOTIFY isReachableChanged )
 
   public:
     enum class ConnectionStatus
@@ -123,6 +125,7 @@ class QFieldCloudConnection : public QObject
     };
 
     QFieldCloudConnection();
+    ~QFieldCloudConnection();
 
     //!Returns an error string to be shown to the user if \a reply has an error.
     static QString errorString( QNetworkReply *reply );
@@ -168,9 +171,14 @@ class QFieldCloudConnection : public QObject
     Q_INVOKABLE void login( const QString &password = QString() );
     Q_INVOKABLE void logout();
 
-    Q_INVOKABLE void getAuthenticationProviders();
+    Q_INVOKABLE void getUserOrganizations( const QString &user );
+    Q_INVOKABLE void getSubscriptionInformation( const QString &user );
+
+    Q_INVOKABLE void getServerInformation();
     QList<AuthenticationProvider> availableProviders() const;
     bool isFetchingAvailableProviders() const;
+
+    CloudServerInformation serverInformation() const { return mServerInformation; }
 
     ConnectionStatus status() const;
     ConnectionState state() const;
@@ -259,9 +267,13 @@ class QFieldCloudConnection : public QObject
 
     void availableProvidersChanged();
     void isFetchingAvailableProvidersChanged();
+    void serverInformationChanged();
 
     void isReachableChanged();
     void queuedProjectPushRequested( const QString &projectId );
+
+    void userOrganizationsReceived( const QStringList &organizations );
+    void subscriptionInformationReceived( const CloudSubscriptionInformation &subscriptionInformation );
 
   private:
     void setStatus( ConnectionStatus status );
@@ -269,6 +281,10 @@ class QFieldCloudConnection : public QObject
     void setToken( const QByteArray &token );
     void invalidateToken();
     void processPendingAttachments();
+    void fetchLegacyAuthenticationProviders();
+
+    void saveCookies();
+    void restoreCookies();
 
     QString mUrl;
 
@@ -281,6 +297,8 @@ class QFieldCloudConnection : public QObject
     bool mIsFetchingAvailableProviders = false;
     QString mProvider;
     QString mProviderConfigId;
+
+    CloudServerInformation mServerInformation;
 
     QString mAvatarUrl;
     CloudUserInformation mUserInformation;

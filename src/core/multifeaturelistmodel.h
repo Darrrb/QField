@@ -56,7 +56,12 @@ class MultiFeatureListModel : public QSortFilterProxyModel
       GeometryRole,
       CrsRole,
       DeleteFeatureRole,
-      EditGeometryRole
+      EditGeometryRole,
+      ConditionalTextColorRole,
+      ConditionalBackgroundColorRole,
+      ConditionalFontItalicRole,
+      ConditionalFontUnderlineRole,
+      ConditionalFontStrikeOutRole,
     };
 
     explicit MultiFeatureListModel( QObject *parent = nullptr );
@@ -150,8 +155,11 @@ class MultiFeatureListModel : public QSortFilterProxyModel
     //! Duplicates selected features onto their associated layer
     Q_INVOKABLE bool duplicateSelection();
 
-    //! Moves selected features along a given \a vector.
-    Q_INVOKABLE bool moveSelection( const double x, const double y );
+    /**
+     * Moves selected feature(s) geometry by \a x and \a y. For a single feature with a singlepart point
+     * geometry containing Z and/or M values will adopt non-null values from the \a destinationPoint.
+     */
+    Q_INVOKABLE bool moveSelection( const double x, const double y, const QgsPoint &destinationPoint );
 
     //! Rotate selected features along a given \a vector.
     Q_INVOKABLE bool rotateSelection( const double angle );

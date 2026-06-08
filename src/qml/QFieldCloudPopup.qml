@@ -13,9 +13,11 @@ Popup {
   leftPadding: mainWindow.sceneLeftMargin
   rightPadding: mainWindow.sceneRightMargin
 
+  property QFieldCloudStatus cloudServiceStatus: null
   property string pendingAction: ""
   property string pendingCreationTitle: ""
   property string pendingUploadPath: ""
+  property string lastSubscriptionUser: ""
 
   onAboutToHide: {
     pendingAction = "";
@@ -72,25 +74,17 @@ Popup {
         RowLayout {
           id: connectionInformation
 
-          Text {
-            id: welcomeText
+          QfMeterBar {
+            id: storageMeterBar
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            padding: 10
-            text: switch (cloudConnection.status) {
-            case QFieldCloudConnection.Disconnected:
-              '';
-              break;
-            case QFieldCloudConnection.Connecting:
-              qsTr('Connecting to the cloud.');
-              break;
-            case QFieldCloudConnection.LoggedIn:
-              qsTr('Greetings <strong>%1</strong>.').arg(cloudConnection.username);
-              break;
-            }
-            wrapMode: Text.WordWrap
-            font: Theme.tipFont
-            color: Theme.mainTextColor
+            Layout.margins: 10
+            Layout.alignment: Qt.AlignVCenter
+            visible: false
+          }
+
+          Item {
+            Layout.fillWidth: true
+            visible: !storageMeterBar.visible
           }
 
           Rectangle {
@@ -100,14 +94,14 @@ Popup {
             width: 48
             height: 48
             radius: width / 2
-            border.color: Theme.mainColor
-            border.width: 1
-            clip: true
+            color: Theme.controlBackgroundAlternateColor
+            layer.enabled: true
 
             Rectangle {
               id: cloudAvatarMask
-              anchors.fill: parent
-              anchors.margins: 1
+              anchors.centerIn: parent
+              width: cloudAvatar.width
+              height: cloudAvatar.height
               radius: width / 2
               color: "white"
               visible: false
@@ -116,11 +110,10 @@ Popup {
 
             Image {
               id: cloudAvatar
-              anchors.fill: parent
-              anchors.margins: 1
+              anchors.centerIn: parent
               fillMode: Image.PreserveAspectCrop
               smooth: true
-              source: cloudConnection.avatarUrl !== '' ? cloudConnection.avatarUrl : 'qrc:/images/qfieldcloud_logo.svg'
+              source: cloudConnection.avatarUrl !== '' ? cloudConnection.avatarUrl : 'qrc:/images/nyuki.svg'
               width: 48
               height: 48
               sourceSize.width: width * screen.devicePixelRatio
@@ -133,7 +126,7 @@ Popup {
               onStatusChanged: {
                 // In case the avatar URL fails to load or the image is corrupted, revert to our lovely Nyuki
                 if (status == Image.Error) {
-                  source = 'qrc:/images/qfieldcloud_logo.svg';
+                  source = 'qrc:/images/nyuki.svg';
                 }
               }
 
@@ -143,15 +136,18 @@ Popup {
                 onClicked: {
                   if (cloudConnection.status !== QFieldCloudConnection.LoggedIn || !cloudProjectsModel.currentProject || cloudProjectsModel.currentProject.status !== QFieldCloudProject.Idle)
                     return;
-                  if (!connectionSettings.visible) {
-                    connectionSettings.visible = true;
-                  } else {
-                    connectionSettings.visible = false;
-                  }
+                  connectionSettings.visible = !connectionSettings.visible;
+                  storageMeterBar.visible = Qt.binding(() => (storageMeterBar.value > 0 || storageMeterBar.loading) && !connectionSettings.visible);
                 }
               }
             }
           }
+        }
+
+        QFieldCloudStatusBanner {
+          cloudServiceStatus: popup.cloudServiceStatus
+          Layout.margins: 10
+          visible: cloudServiceStatus && cloudServiceStatus.hasProblem && !connectionSettings.visible
         }
 
         Text {
@@ -587,34 +583,36 @@ Popup {
               if (!cloudProjectsModel.currentProject) {
                 return '';
               }
-              var exportText = '';
-              var exportDt = cloudProjectsModel.currentProject.lastLocalExportedAt;
-              var timeDeltaMinutes = null;
-              if (exportDt) {
-                exportDt = new Date(exportDt);
-                timeDeltaMinutes = parseInt(Math.max(new Date() - exportDt, 0) / (60 * 1000));
-                if (timeDeltaMinutes < 1)
+
+              let timeDeltaMinutes = 0;
+              let exportText = '';
+              let exportDt = cloudProjectsModel.currentProject.lastLocalExportedAt;
+              timeDeltaMinutes = parseInt(Math.max(new Date() - exportDt, 0) / (60 * 1000));
+              if (!isNaN(timeDeltaMinutes)) {
+                if (timeDeltaMinutes < 1) {
                   exportText = qsTr('Last synchronized just now');
-                else if (timeDeltaMinutes < 60)
+                } else if (timeDeltaMinutes < 60) {
                   exportText = qsTr('Last synchronized %1 minutes ago').arg(timeDeltaMinutes);
-                else if (exportDt.toLocaleDateString() === new Date().toLocaleDateString())
+                } else if (exportDt.toLocaleDateString() === new Date().toLocaleDateString()) {
                   exportText = qsTr('Last synchronized at %1').arg(exportDt.toLocaleTimeString());
-                else
+                } else {
                   exportText = qsTr('Last synchronized on %1').arg(exportDt.toLocaleString());
+                }
               }
-              var pushText = '';
-              var pushDt = cloudProjectsModel.currentProject.lastLocalPushDeltas;
-              if (pushDt) {
-                pushDt = new Date(pushDt);
-                timeDeltaMinutes = parseInt(Math.max(new Date() - pushDt, 0) / (60 * 1000));
-                if (timeDeltaMinutes < 1)
+
+              let pushText = '';
+              let pushDt = cloudProjectsModel.currentProject.lastLocalPushDeltas;
+              timeDeltaMinutes = parseInt(Math.max(new Date() - pushDt, 0) / (60 * 1000));
+              if (!isNaN(timeDeltaMinutes)) {
+                if (timeDeltaMinutes < 1) {
                   pushText = qsTr('Last changes pushed just now');
-                else if (timeDeltaMinutes < 60)
+                } else if (timeDeltaMinutes < 60) {
                   pushText = qsTr('Last changes pushed %1 minutes ago').arg(timeDeltaMinutes);
-                else if (pushDt.toLocaleDateString() === new Date().toLocaleDateString())
+                } else if (pushDt.toLocaleDateString() === new Date().toLocaleDateString()) {
                   pushText = qsTr('Last changes pushed at %1').arg(pushDt.toLocaleTimeString());
-                else
+                } else {
                   pushText = qsTr('Last changes pushed on %1').arg(pushDt.toLocaleString());
+                }
               } else {
                 pushText = qsTr('No changes pushed yet');
               }
@@ -657,6 +655,7 @@ Popup {
               id: qfieldCloudLogin
               isVisible: connectionSettings.visible
               width: parent.parent.width
+              cloudServiceStatus: popup.cloudServiceStatus
             }
           }
 
@@ -720,12 +719,17 @@ Popup {
 
     function onStatusChanged() {
       if (cloudConnection.status == QFieldCloudConnection.LoggedIn) {
+        fetchSubscriptionInformation();
         if (popup.pendingAction === "cloudify") {
           popup.pendingAction = "";
           cloudify(pendingCreationTitle, pendingUploadPath);
         } else if (popup.pendingAction == "connect") {
           popup.visible = false;
         }
+      } else if (cloudConnection.status === QFieldCloudConnection.Disconnected) {
+        lastSubscriptionUser = "";
+        storageMeterBar.visible = false;
+        storageMeterBar.value = 0;
       }
     }
 
@@ -741,6 +745,13 @@ Popup {
     function onPendingAttachmentsUploadFinished() {
       uploadLabel.text = "";
     }
+
+    function onSubscriptionInformationReceived(subscriptionInformation) {
+      storageMeterBar.loading = false;
+      if (subscriptionInformation.storageTotal > 0) {
+        showStorageBar(subscriptionInformation.storageUsed, subscriptionInformation.storageTotal, subscriptionInformation.plan, subscriptionInformation.storageThresholdWarning, subscriptionInformation.storageThresholdCritical);
+      }
+    }
   }
 
   Connections {
@@ -753,10 +764,20 @@ Popup {
       }
     }
 
-    function onProjectDownloaded(projectId, projectName, hasError, errorString) {
-      transferError.hasError = hasError;
-      if (transferError.visible) {
-        transferError.detailsText = errorString;
+    function onProjectDownloaded(projectId, projectName, projectOwner, hasError, errorString) {
+      if (hasError) {
+        if (errorString.indexOf(`"code":"${QFieldCloudUtils.errorCodeOverQuota}"`) >= 0) {
+          // Let the storage meter and the toast message inviting users to upgrade subscription
+          transferError.hasError = false;
+          if (transferError.visible) {
+            transferError.detailsText = "";
+          }
+        } else {
+          transferError.hasError = hasError;
+          if (transferError.visible) {
+            transferError.detailsText = errorString;
+          }
+        }
       }
       const cloudProject = cloudProjectsModel.findProject(projectId);
       if (cloudProject.packagedLayerErrors.length !== 0) {
@@ -858,7 +879,10 @@ Popup {
       if ((cloudConnection.hasToken || cloudConnection.hasProviderConfiguration)) {
         cloudConnection.login();
       }
-      cloudConnection.getAuthenticationProviders();
+      cloudConnection.getServerInformation();
+    }
+    if (cloudConnection.status === QFieldCloudConnection.LoggedIn) {
+      fetchSubscriptionInformation();
     }
     if (cloudConnection.status === QFieldCloudConnection.Connecting) {
       displayToast(qsTr('Connecting cloud'));
@@ -871,6 +895,17 @@ Popup {
   }
 
   function projectPush(shouldDownloadUpdates) {
+    if (shouldDownloadUpdates && storageMeterBar.value >= 1.0) {
+      if (storageMeterBar.relatedUrl != "") {
+        displayToast(qsTr("Project %1 cannot be packaged as your available storage is full.").arg(ProjectUtils.title(qgisProject)), 'info', qsTr('Upgrade storage'), function () {
+          Qt.openUrlExternally(storageMeterBar.relatedUrl);
+        });
+      } else {
+        displayToast(qsTr("Project %1 cannot be packaged as the project owner's available storage is full.").arg(ProjectUtils.title(qgisProject)), 'warning');
+      }
+      return;
+    }
+
     if (cloudProjectsModel.currentProject && cloudProjectsModel.currentProject.status === QFieldCloudProject.Idle) {
       cloudProjectsModel.projectPush(cloudProjectsModel.currentProjectId, shouldDownloadUpdates);
     }
@@ -906,5 +941,35 @@ Popup {
     } else {
       popup.pendingAction = "cloudify";
     }
+  }
+
+  function fetchSubscriptionInformation() {
+    if (cloudConnection.status === QFieldCloudConnection.LoggedIn) {
+      const owner = cloudProjectsModel.currentProject ? cloudProjectsModel.currentProject.owner : cloudConnection.username;
+      const isOwnSubscription = !cloudProjectsModel.currentProject || owner === cloudConnection.username;
+      if (owner !== lastSubscriptionUser) {
+        storageMeterBar.visible = false;
+        storageMeterBar.value = 0;
+      }
+      if (isOwnSubscription) {
+        storageMeterBar.loading = true;
+        storageMeterBar.visible = true;
+      }
+      cloudConnection.getSubscriptionInformation(owner);
+    }
+  }
+
+  function showStorageBar(usedBytes, totalBytes, plan, thresholdWarningBytes, thresholdCriticalBytes) {
+    const owner = cloudProjectsModel.currentProject ? cloudProjectsModel.currentProject.owner : cloudConnection.username;
+    lastSubscriptionUser = owner;
+    const usageRatio = usedBytes / totalBytes;
+    const warnRatio = thresholdWarningBytes > 0 ? 1.0 - (thresholdWarningBytes / totalBytes) : 0.8;
+    const critRatio = thresholdCriticalBytes > 0 ? 1.0 - (thresholdCriticalBytes / totalBytes) : 0.95;
+    storageMeterBar.value = usageRatio;
+    storageMeterBar.usageText = qsTr("Used %1 of %2").arg(FileUtils.representFileSize(usedBytes, true)).arg(FileUtils.representFileSize(totalBytes, true));
+    storageMeterBar.relatedUrl = QFieldCloudUtils.subscriptionManagementUrl(cloudConnection.url, plan, cloudProjectsModel.currentProject ? cloudProjectsModel.currentProject.owner : "", cloudConnection.username);
+    storageMeterBar.warningThreshold = warnRatio;
+    storageMeterBar.criticalThreshold = critRatio;
+    storageMeterBar.visible = true;
   }
 }

@@ -13,7 +13,8 @@ EditorWidgetBase {
   enabled: true
 
   readonly property int toggleButtonsThreshold: currentLayer && currentLayer.customProperty('QFieldSync/value_map_button_interface_threshold') !== undefined ? currentLayer.customProperty('QFieldSync/value_map_button_interface_threshold') : 0
-  property bool useToggleButtons: !listModel.groupField && (!listModel.allowMulti ? valueRelationCombobox.count : repeater.count) < toggleButtonsThreshold
+  property bool useToggleButtons: listModel.groupField === "" && listModel.count > 0 && listModel.count < toggleButtonsThreshold
+
   state: useToggleButtons ? "toggleButtonsView" : "defaultView"
 
   states: [
@@ -69,6 +70,9 @@ EditorWidgetBase {
 
   FeatureCheckListModel {
     id: listModel
+
+    property int count: 0
+
     allowMulti: Number(config['AllowMulti']) === 1
     attributeField: field
     currentLayer: layerResolver.currentLayer
@@ -90,10 +94,18 @@ EditorWidgetBase {
     sortCheckedFirst: allowMulti && !isEnabled
 
     onListUpdated: {
+      if (searchTerm == "") {
+        count = rowCount();
+      }
+
       valueChangeRequested(attributeValue, attributeValue === "");
     }
 
     onModelReset: {
+      if (searchTerm == "") {
+        count = rowCount();
+      }
+
       if (useToggleButtons) {
         toggleButtons.selectedIndex = listModel.findKey(currentKeyValue);
       }
@@ -104,6 +116,7 @@ EditorWidgetBase {
     id: toggleButtons
     anchors.left: parent.left
     anchors.right: parent.right
+    anchors.bottomMargin: 5
     visible: false
 
     model: valueRelation.useToggleButtons ? listModel : null
@@ -140,7 +153,7 @@ EditorWidgetBase {
     layerResolver: layerResolver
     allowAddFeature: currentLayer && currentLayer.customProperty('QFieldSync/allow_value_relation_feature_addition') !== undefined ? currentLayer.customProperty('QFieldSync/allow_value_relation_feature_addition') : false
 
-    displayedTextColor: (!isEditable && isEditing) ? Theme.mainTextDisabledColor : Theme.mainTextColor
+    displayedTextColor: FeatureUtils.attributeIsNull(value) || value === "" || (!isEditable && isEditing) ? Theme.mainTextDisabledColor : Theme.mainTextColor
     onRequestJumpToPoint: function (center, scale, handleMargins) {
       valueRelation.requestJumpToPoint(center, scale, handleMargins);
     }
@@ -158,7 +171,7 @@ EditorWidgetBase {
       id: searchBar
       objectName: "ValueRelationSearchBar"
       width: parent.width
-      height: 40
+      height: searchHeight
       visible: enabled
       enabled: isEnabled
 
@@ -195,7 +208,7 @@ EditorWidgetBase {
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.top: parent.top
-          columns: config['NofColumns'] && !listModel.groupField === "" ? Math.min(config['NofColumns'], parent.width / 100) : 1
+          columns: config['NofColumns'] && listModel.groupField === "" ? Math.min(config['NofColumns'], parent.width / 100) : 1
           columnSpacing: 1
           rowSpacing: 0
 

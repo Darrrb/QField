@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
+
 import org.qfield
 import Theme
 
@@ -52,12 +54,21 @@ Popup {
 
   Rectangle {
     id: toastContent
+
+    property int contentPadding: 20
+    property int topPadding: toastLayout.columns === 1 ? 8 : 10
+    property int bottomPadding: toastLayout.columns === 1 ? 12 : 10
+    property int actionWidth: toastAction.visible ? toastAction.width + 10 : 0
+    property int absoluteMessageWidth: toastFontMetrics.boundingRect(toastMessage.text).width + actionWidth + 10
+    property int unrestrainedWidth: contentPadding * 2 + toastFontMetrics.boundingRect(toastMessage.text).width + actionWidth + 10
+
     z: 1
-    width: toastRow.width + 20
-    height: toastMessage.contentHeight + 10
+    width: Math.min(unrestrainedWidth, toast.width - 20)
+    height: toastLayout.height + topPadding + bottomPadding
     anchors.centerIn: parent
 
-    color: "#66212121"
+    color: "#CC202020"
+    border.color: "#CC404040"
     radius: 4
     opacity: 0
 
@@ -78,7 +89,7 @@ Popup {
       padding: 2
       anchors.fill: parent
       visible: timeoutFeedback
-      z: toastRow.z - 1
+      z: toastLayout.z - 1
       value: animationTimer.position / toastTimer.interval
 
       background: Item {
@@ -98,44 +109,47 @@ Popup {
       }
     }
 
-    Row {
-      id: toastRow
-      anchors.centerIn: parent
-      spacing: 10
+    Rectangle {
+      id: toastIndicator
+      anchors.left: parent.left
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      width: 5
+      topLeftRadius: toastContent.radius
+      bottomLeftRadius: toastContent.radius
+      topRightRadius: 0
+      bottomRightRadius: 0
+      color: toast.type === 'error' ? Theme.errorColor : Theme.warningColor
+      visible: toast.type != 'info'
+    }
 
-      Rectangle {
-        id: toastIndicator
-        anchors.verticalCenter: parent.verticalCenter
-        width: 10
-        height: 10
-        radius: 5
-        color: toast.type === 'error' ? Theme.errorColor : Theme.warningColor
-        visible: toast.type != 'info'
-      }
+    GridLayout {
+      id: toastLayout
+      width: parent.width - toastContent.contentPadding * 2
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.topMargin: toastContent.topPadding
+      anchors.leftMargin: toastContent.contentPadding
+      columnSpacing: 10
+      rowSpacing: 12
+      columns: toastContent.absoluteMessageWidth > mainWindow.width * 1.75 ? 1 : 2
 
       Text {
         id: toastMessage
-
-        property int absoluteWidth: toastFontMetrics.boundingRect(text).width + 10
-
-        width: 40 + absoluteWidth + (toastIndicator.visible ? toastIndicator.width + 10 : 0) + (toastAction.visible ? toastAction.width + 10 : 0) > toast.width ? toast.width - (toastIndicator.visible ? toastIndicator.width + 10 : 0) - (toastAction.visible ? toastAction.width + 10 : 0) - 40 : absoluteWidth
+        Layout.fillWidth: true
         wrapMode: Text.Wrap
-        topPadding: 3
-        bottomPadding: 3
         color: Theme.light
 
         font: Theme.defaultFont
-        horizontalAlignment: Text.AlignHCenter
+        horizontalAlignment: Text.AlignLeft
       }
 
       QfButton {
         id: toastAction
-
+        Layout.alignment: (toastLayout.columns === 1 ? Qt.AlignLeft : Qt.AlignHCenter) | Qt.AlignVCenter
         visible: text != ''
-        height: toastMessage.height
-
         radius: 4
-        bgcolor: "#99000000"
+        bgcolor: "#00000000"
         color: Theme.mainColor
         font.pointSize: Theme.tipFont.pointSize
 
@@ -212,6 +226,7 @@ Popup {
         }
       }
     }
+
     toastMessage.text = text;
     toast.type = type || 'info';
     if (timeout_feedback !== undefined) {

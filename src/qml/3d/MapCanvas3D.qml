@@ -8,20 +8,30 @@ import Theme
 Item {
   id: mapArea
   focus: true
-  visible: !isLoading
+  visible: !isFirstLoad || !isLoading
 
   property alias mapSettings: mapTerrainProvider.mapSettings
-  property bool isLoading: mapTerrainProvider.isLoading
-  property bool wireframeMode: false
+  property alias terrainExtent: mapTerrainProvider.extent
+  property alias terrainGeometry: terrainMesh.mapTerrainGeometry
+
+  property bool isLoading: mapTerrainProvider.isLoading || mapTextureData.isRendering
+  property bool isFirstLoad: true
+  property bool eyeDomeLightingMode: false
+  property alias extentMode: cameraController.extentMode
 
   property bool gnssActive: false
   property var gnssPosition: null
   property real gnssSpeed: -1
   property real gnssDirection: -1
+  property color gnssMarkerColor: "#2060ff"
+  property color gnssMarkerSemiOpaqueColor: Qt.hsla(gnssMarkerColor.hslHue, gnssMarkerColor.hslSaturation, gnssMarkerColor.hslLightness, 0.4)
+
+  property FeatureListModelSelection selectionModel: null
 
   property TrackingModel trackingModel: null
 
   signal cameraInteractionDetected
+  signal featureIdentifyRequested(point screenPoint)
 
   Quick3DTerrainProvider {
     id: mapTerrainProvider
@@ -34,26 +44,31 @@ Item {
         return;
       }
 
-      positionCameraForTerrain();
+      terrainGeometry.buildMetagridFromProvider(mapTerrainProvider);
       mapTextureData.render();
 
-      Qt.callLater(mapArea.playOpeningAnimation);
+      if (isFirstLoad) {
+        isFirstLoad = false;
+        positionCameraForTerrain();
+        Qt.callLater(mapArea.playOpeningAnimation);
+      }
     }
   }
 
   Quick3DMapTextureData {
     id: mapTextureData
     mapSettings: mapArea.mapSettings
-    extent: mapTerrainProvider.extent
+    extent: mapTerrainProvider.normalizedDataExtent
     incrementalRendering: true
     forceDeferredLayersRepaint: mapArea.trackingModel ? mapArea.trackingModel.count > 0 : false
-  }
 
-  Texture {
-    id: mapTexture
-    textureData: mapTextureData
-    generateMipmaps: true
-    mipFilter: Texture.Linear
+    onTextureUpdated: {
+      if (mapTerrainProvider.isTransitioning) {
+        // Apply offsets and scale now that new texture is ready
+        mapTerrainProvider.endTransition();
+        terrainGeometry.restoreHeightsFromProvider(mapTerrainProvider);
+      }
+    }
   }
 
   View3D {
@@ -65,6 +80,23 @@ Item {
       backgroundMode: SceneEnvironment.Color
       antialiasingMode: SceneEnvironment.MSAA
       antialiasingQuality: SceneEnvironment.High
+      depthPrePassEnabled: mapArea.eyeDomeLightingMode
+
+      effects: [
+        Effect {
+          id: eyeDomeLightingEffect
+
+          property real edlRadius: mapArea.eyeDomeLightingMode ? 2.5 * screen.devicePixelRatio : 0
+          property real edlStrength: 25000
+
+          passes: Pass {
+            shaders: Shader {
+              stage: Shader.Fragment
+              shader: "qrc:/3d/eye_dome_lighting.frag"
+            }
+          }
+        }
+      ]
     }
 
     PerspectiveCamera {
@@ -76,7 +108,7 @@ Item {
 
     DirectionalLight {
       eulerRotation: Qt.vector3d(-45, -45, 0)
-      brightness: 1.0
+      brightness: 1
       ambientColor: Qt.rgba(0.3, 0.3, 0.35, 1.0)
     }
 
@@ -87,26 +119,29 @@ Item {
 
     TerrainMesh {
       id: terrainMesh
+
       mapTerrainGeometry.gridSize: mapTerrainProvider.gridSize
       mapTerrainGeometry.size: mapTerrainProvider.size
       mapTerrainGeometry.heightData: mapTerrainProvider.normalizedData
-      texture: mapTexture
-      textureReady: mapTextureData.ready
+      mapTerrainGeometry.offsetVector: mapTerrainProvider.offsetVector
+      mapTerrainGeometry.offsetScale: mapTerrainProvider.offsetScale
+
+      mapTextureData: mapTextureData
     }
 
     Node {
       id: gnssMarker
-      visible: pos3d !== null
+      visible: mapArea.gnssActive && mapArea.gnssPosition && !isNaN(gnssMarkerMapToScreen3D.viewPoint.x)
 
-      property var pos3d: {
-        if (!mapArea.gnssActive || !mapArea.gnssPosition) {
-          return null;
-        }
-        return mapArea.geoTo3D(mapArea.gnssPosition.x, mapArea.gnssPosition.y);
-      }
-
-      position: pos3d || Qt.vector3d(0, 0, 0)
+      position: gnssMarkerMapToScreen3D.viewPoint
       eulerRotation: mapArea.gnssSpeed > 0 && mapArea.gnssDirection >= 0 ? Qt.vector3d(0, -mapArea.gnssDirection, 0) : Qt.vector3d(0, 0, 0)
+
+      MapToView3D {
+        id: gnssMarkerMapToScreen3D
+        terrainProvider: mapTerrainProvider
+        mapPoint: mapArea.gnssPosition
+        heightOffset: 15
+      }
 
       Model {
         source: "#Sphere"
@@ -115,7 +150,7 @@ Item {
         pickable: true
 
         materials: PrincipledMaterial {
-          baseColor: "#4080ff"
+          baseColor: mapArea.gnssMarkerSemiOpaqueColor
           opacity: 0.4
           alphaMode: PrincipledMaterial.Blend
         }
@@ -150,7 +185,7 @@ Item {
           pickable: true
 
           materials: PrincipledMaterial {
-            baseColor: "#2060ff"
+            baseColor: mapArea.gnssMarkerColor
             metalness: 0.7
             roughness: 0.1
           }
@@ -164,7 +199,7 @@ Item {
           pickable: true
 
           materials: PrincipledMaterial {
-            baseColor: "#2060ff"
+            baseColor: mapArea.gnssMarkerColor
             metalness: 0.6
             roughness: 0.2
           }
@@ -178,7 +213,7 @@ Item {
           pickable: true
 
           materials: PrincipledMaterial {
-            baseColor: "#4080ff"
+            baseColor: mapArea.gnssMarkerSemiOpaqueColor
             metalness: 0.5
             roughness: 0.3
           }
@@ -193,11 +228,18 @@ Item {
         pickable: true
 
         materials: PrincipledMaterial {
-          baseColor: "#2060ff"
+          baseColor: mapArea.gnssMarkerColor
           metalness: 0.6
           roughness: 0.2
         }
       }
+    }
+
+    FeatureListSelectionHighlight3D {
+      id: selectionHighlight
+      selectionModel: mapArea.selectionModel
+      terrainProvider: mapTerrainProvider
+      visible: mapArea.selectionModel !== null
     }
 
     Repeater3D {
@@ -221,15 +263,38 @@ Item {
     camera: camera
     onSingleTapped: function (x, y) {
       const pickResult = view3d.pick(x, y);
-      if (pickResult.objectHit) {
-        const pos3d = gnssMarker.pos3d;
-        if (pos3d) {
-          cameraController.lookAtPoint(pos3d, 500);
-        }
+      if (!pickResult.objectHit) {
+        return;
       }
+
+      let node = pickResult.objectHit;
+      while (node && node !== gnssMarker) {
+        node = node.parent;
+      }
+      if (node === gnssMarker && gnssMarker.visible) {
+        cameraController.lookAtPoint(gnssMarkerMapToScreen3D.viewPoint, 500);
+        return;
+      }
+
+      const geoPoint = mapTerrainProvider.scene3DToGeo(pickResult.scenePosition.x, pickResult.scenePosition.z);
+      mapArea.featureIdentifyRequested(mapArea.mapSettings.coordinateToScreen(geoPoint));
     }
     onUserInteractionStarted: {
       mapArea.cameraInteractionDetected();
+    }
+
+    onExtentPan: function (sceneX, sceneZ) {
+      mapTerrainProvider.pan(sceneX, sceneZ);
+    }
+    onExtentPanFinished: {
+      mapTerrainProvider.beginTransition();
+    }
+
+    onExtentZoom: function (factor) {
+      mapTerrainProvider.zoom(factor);
+    }
+    onExtentZoomFinished: {
+      mapTerrainProvider.beginTransition();
     }
   }
 

@@ -30,6 +30,7 @@ class AttributeFormModel : public QSortFilterProxyModel
     Q_OBJECT
 
     Q_PROPERTY( FeatureModel *featureModel READ featureModel WRITE setFeatureModel NOTIFY featureModelChanged )
+    Q_PROPERTY( bool isWizard READ isWizard NOTIFY isWizardChanged )
     Q_PROPERTY( bool hasTabs READ hasTabs NOTIFY hasTabsChanged )
     Q_PROPERTY( bool hasRemembrance READ hasRemembrance NOTIFY hasRemembranceChanged )
     Q_PROPERTY( bool hasConstraints READ hasConstraints NOTIFY hasConstraintsChanged )
@@ -75,6 +76,7 @@ class AttributeFormModel : public QSortFilterProxyModel
 
     explicit AttributeFormModel( QObject *parent = nullptr );
 
+    bool isWizard() const;
     bool hasTabs() const;
     bool hasRemembrance() const;
     bool hasConstraints() const;
@@ -132,12 +134,15 @@ class AttributeFormModel : public QSortFilterProxyModel
     //! Deactivate all available value that can be remembered and reused.
     Q_INVOKABLE void deactivateAllRememberValues();
 
+    //! Creates an expression context
+    QgsExpressionContext createExpressionContext() const;
+
   signals:
     void featureModelChanged();
+    void isWizardChanged();
     void hasTabsChanged();
     void hasRemembranceChanged();
     void hasConstraintsChanged();
-    void featureChanged();
     void constraintsHardValidChanged();
     void constraintsSoftValidChanged();
 

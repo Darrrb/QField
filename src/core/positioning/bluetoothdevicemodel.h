@@ -18,9 +18,11 @@
 #define BLUETOOTHDEVICEMODEL_H
 
 #include <QAbstractListModel>
+#include <QtBluetooth/QBluetoothDeviceDiscoveryAgent>
+#include <QtBluetooth/QBluetoothDeviceInfo>
 #include <QtBluetooth/QBluetoothLocalDevice>
-#include <QtBluetooth/QBluetoothServiceDiscoveryAgent>
-#include <QtBluetooth/QBluetoothServiceInfo>
+#include <QtBluetooth/QBluetoothUuid>
+
 
 /**
  * A model that provides all paired bluetooth devices name/address that are accessible over the serial port.
@@ -31,6 +33,7 @@ class BluetoothDeviceModel : public QAbstractListModel
     Q_OBJECT
 
     Q_PROPERTY( ScanningStatus scanningStatus READ scanningStatus NOTIFY scanningStatusChanged )
+    Q_PROPERTY( qsizetype lastDiscoveredCount READ lastDiscoveredCount NOTIFY lastDiscoveredCountChanged )
     Q_PROPERTY( QString lastError READ lastError NOTIFY lastErrorChanged )
 
   public:
@@ -39,14 +42,16 @@ class BluetoothDeviceModel : public QAbstractListModel
     {
       DeviceAddressRole = Qt::UserRole + 1,
       DeviceNameRole,
+      DeviceClassicSupportRole,
+      DeviceLowEnergySupportRole,
+      DeviceLowEnergyByDefaultRole,
     };
     Q_ENUM( BluetoothDeviceRoles )
 
     //! The status telling the result of the scanning
     enum ScanningStatus
     {
-      FastScanning,
-      FullScanning,
+      Discovering,
       Succeeded,
       Failed,
       Canceled,
@@ -76,12 +81,12 @@ class BluetoothDeviceModel : public QAbstractListModel
      * Starts a scan to discover nearby Bluetooth devices, sequentially
      * going through a fast scan then a full, deeper scan for devices.
      */
-    Q_INVOKABLE void startServiceDiscovery();
+    Q_INVOKABLE void startDeviceDiscovery();
 
     /**
      * Stops any ongoing scan to discover nearby Bluetooth devices.
      */
-    Q_INVOKABLE void stopServiceDiscovery();
+    Q_INVOKABLE void stopDeviceDiscovery();
 
     /**
      * Returns the row index for a given Bluetooth device address
@@ -89,17 +94,23 @@ class BluetoothDeviceModel : public QAbstractListModel
     Q_INVOKABLE int findIndexFromAddress( const QString &address ) const;
 
     ScanningStatus scanningStatus() const { return mScanningStatus; };
+
+    qsizetype lastDiscoveredCount() const { return mLastDiscoveredCount; }
+
     QString lastError() const { return mLastError; };
+
+    QString deviceAddress( const QBluetoothDeviceInfo &info ) const;
 
   signals:
 
-    void scanningStatusChanged( ScanningStatus scanningStatus );
+    void scanningStatusChanged( BluetoothDeviceModel::ScanningStatus scanningStatus );
+    void lastDiscoveredCountChanged();
     void lastErrorChanged( QString lastError );
 
   private slots:
-    void setScanningStatus( const ScanningStatus scanningStatus );
+    void setScanningStatus( const BluetoothDeviceModel::ScanningStatus scanningStatus );
     void setLastError( const QString &lastError );
-    void serviceDiscovered( const QBluetoothServiceInfo &service );
+    void deviceDiscovered( const QBluetoothDeviceInfo &info );
 
   private:
     void initiateDiscoveryAgent();
@@ -108,9 +119,11 @@ class BluetoothDeviceModel : public QAbstractListModel
     bool mLocationPermissionChecked = false;
 
     std::unique_ptr<QBluetoothLocalDevice> mLocalDevice;
-    std::unique_ptr<QBluetoothServiceDiscoveryAgent> mServiceDiscoveryAgent;
-    QList<QPair<QString, QString>> mDiscoveredDevices;
+    std::unique_ptr<QBluetoothDeviceDiscoveryAgent> mDeviceDiscoveryAgent;
+    QList<QBluetoothDeviceInfo> mDiscoveredDevices;
     ScanningStatus mScanningStatus = NoStatus;
+
+    qsizetype mLastDiscoveredCount;
     QString mLastError;
 };
 

@@ -2,7 +2,7 @@
 # CMake settings
 cmake_minimum_required(VERSION 3.19)
 
-set(VCPKG_TAG 604697b05b6bf8c75518d2c133a149ff7ecb3c8b)
+set(VCPKG_TAG 57987637aac17d62bac535bc839baca3754490e6)
 
 set(QML_IMPORT_PATH ${CMAKE_SOURCE_DIR}/src/qml/imports CACHE PATH "QML import path for Qt Creator to detect custom modules properly")
 
@@ -104,6 +104,13 @@ endif()
 if (APP_BUNDLED_PLUGINS)
   file(MAKE_DIRECTORY ${CMAKE_INSTALL_DATADIR}/qfield/plugins)
   install(DIRECTORY APP_BUNDLED_PLUGINS DESTINATION ${CMAKE_INSTALL_DATADIR}/qfield/plugins)
+endif()
+
+if (CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+  message (STATUS "QField debug output enabled")
+  set(QFIELDDEBUG TRUE)
+else()
+  set(QFIELDDEBUG FALSE)
 endif()
 
 set(QT_MIN_VERSION 6.6.0)
@@ -309,7 +316,7 @@ if(WITH_VCPKG)
     COMMAND ${CMAKE_COMMAND} -E make_directory "${SHARE_DIR}/qgis/svg"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${VCPKG_BASE_DIR}/share/qgis/resources" "${SHARE_DIR}/qgis/resources"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${VCPKG_BASE_DIR}/share/qgis/svg" "${SHARE_DIR}/qgis/svg"
-    COMMAND ${CMAKE_COMMAND} -E rm -- "${SHARE_DIR}/qgis/resources/data/world_map.gpkg"
+    COMMAND ${CMAKE_COMMAND} -E rm -R -- "${SHARE_DIR}/qgis/resources/data"
     COMMAND ${CMAKE_COMMAND} -E rm -R -- "${SHARE_DIR}/qgis/resources/cpt-city-qgis-min"
   )
 

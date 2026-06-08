@@ -22,6 +22,7 @@
 #include <QQuickImageProvider>
 #include <QQuickImageResponse>
 #include <qgsrasterdataprovider.h>
+#include <qobjectuniqueptr.h>
 
 class QgsLayerTreeModel;
 class QgsLayerTree;
@@ -52,6 +53,7 @@ class AsyncLegendImageResponse : public QQuickImageResponse
 {
   public:
     AsyncLegendImageResponse( QgsRasterDataProvider *dataProvider = nullptr, const QgsMapSettings *mapSettings = nullptr );
+    ~AsyncLegendImageResponse();
 
     QQuickTextureFactory *textureFactory() const override;
 
@@ -61,7 +63,7 @@ class AsyncLegendImageResponse : public QQuickImageResponse
 
   private:
     std::unique_ptr<QgsRasterDataProvider> mDataProvider;
-    std::unique_ptr<QgsImageFetcher> mFetcher;
+    QPointer<QgsImageFetcher> mFetcher;
 
     QImage mImage;
 };

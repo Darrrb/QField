@@ -26,10 +26,13 @@ TcpReceiver::TcpReceiver( const QString &address, const int port, QObject *paren
 {
   connect( mSocket, qOverload<QAbstractSocket::SocketError>( &QAbstractSocket::errorOccurred ), this, &TcpReceiver::handleError );
   connect( mSocket, &QTcpSocket::stateChanged, this, [this]( QAbstractSocket::SocketState state ) {
-    setSocketState( state );
     if ( state == QAbstractSocket::SocketState::UnconnectedState && mReconnectOnDisconnect )
     {
       mReconnectTimer.start( 2000 );
+    }
+    else
+    {
+      setSocketState( state );
     }
   } );
 
@@ -54,6 +57,11 @@ TcpReceiver::~TcpReceiver()
   mSocket = nullptr;
 }
 
+AbstractGnssReceiver::Capabilities TcpReceiver::capabilities() const
+{
+  return AbstractGnssReceiver::Capabilities() | AbstractGnssReceiver::OrthometricAltitude | AbstractGnssReceiver::Logging | AbstractGnssReceiver::NtripCorrection;
+}
+
 void TcpReceiver::handleConnectDevice()
 {
   if ( mAddress.isEmpty() || mPort == 0 )
@@ -61,6 +69,8 @@ void TcpReceiver::handleConnectDevice()
     return;
   }
   qInfo() << QStringLiteral( "TcpReceiver: Initiating connection to address %1 (port %2)" ).arg( mAddress, QString::number( mPort ) );
+  mConnectionFailureCount = 0;
+  mReconnectOnDisconnect = true;
   mSocket->connectToHost( mAddress, mPort, QTcpSocket::ReadWrite );
 }
 
@@ -100,5 +110,18 @@ void TcpReceiver::handleError( QAbstractSocket::SocketError error )
   }
   qInfo() << QStringLiteral( "TcpReceiver: Error: %1" ).arg( mLastError );
 
-  emit lastErrorChanged( mLastError );
+  if ( mReconnectOnDisconnect )
+  {
+    mConnectionFailureCount++;
+  }
+
+  if ( mConnectionFailureCount > 10 )
+  {
+    mReconnectOnDisconnect = false;
+  }
+
+  if ( !mReconnectOnDisconnect || mSocket->state() != QAbstractSocket::SocketState::UnconnectedState )
+  {
+    emit lastErrorChanged( mLastError );
+  }
 }

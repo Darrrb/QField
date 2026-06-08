@@ -24,6 +24,7 @@ email                : mohsen@opengis.ch
 #include <QSize>
 #include <QVariantList>
 #include <QVector3D>
+#include <qgspoint.h>
 #include <qgsproject.h>
 #include <qgsrectangle.h>
 
@@ -70,6 +71,18 @@ class Quick3DTerrainProvider : public QObject
     //! Normalized height data array [0.0-1.0] for terrain mesh generation
     Q_PROPERTY( QVariantList normalizedData READ normalizedData NOTIFY normalizedDataChanged )
 
+    //! Geographic extent used for terrain data
+    Q_PROPERTY( QgsRectangle normalizedDataExtent READ normalizedDataExtent NOTIFY normalizedDataChanged )
+
+    //! Offset vector from the last generated terrain data
+    Q_PROPERTY( QVector3D offsetVector READ offsetVector NOTIFY offsetVectorChanged )
+
+    //! Offset scale from the last generated terrain data
+    Q_PROPERTY( double offsetScale READ offsetScale NOTIFY offsetScaleChanged )
+
+    //! Whether a transition to apply pan/zoom offsets has begun
+    Q_PROPERTY( bool isTransitioning READ isTransitioning NOTIFY isTransitioningChanged )
+
     //! Whether terrain data is currently being loaded
     Q_PROPERTY( bool isLoading READ isLoading NOTIFY isLoadingChanged )
 
@@ -95,16 +108,27 @@ class Quick3DTerrainProvider : public QObject
     void setForceSquareSize( bool forceSquareSize );
 
     //! Returns the grid dimensions for terrain sampling.
-    QSize gridSize() const;
+    QSize gridSize() const { return mGridSize; }
 
-    //! Returns the geographic extent for terrain data retrieval.
-    QgsRectangle extent() const;
+    //! Returns the current extent taking into account offsets.
+    QgsRectangle extent() const { return mExtent; }
+
+    //! Returns the geographic extent for the retrieved terrain data.
+    QgsRectangle normalizedDataExtent() const { return mNormalizedDataExtent; }
 
     //! Returns the size of the terrain.
-    QSizeF size() const;
+    QSizeF size() const { return mSize; }
 
     //! Returns the normalized height data array [0.0-1.0].
     QVariantList normalizedData() const;
+
+    //! Returns the offset scale from the last generated terrain data
+    QVector3D offsetVector() const { return mOffsetVector; }
+
+    //! Returns the offset scale from the last generated terrain data
+    double offsetScale() const { return mOffsetScale; }
+
+    bool isTransitioning() const { return mIsTransitioning; }
 
     //! Returns TRUE if terrain data is currently being loaded.
     bool isLoading() const;
@@ -135,10 +159,22 @@ class Quick3DTerrainProvider : public QObject
     Q_INVOKABLE QVector3D geoTo3D( double geoX, double geoY, float heightOffset = 0.0f ) const;
 
     /**
-     * Calculates recommended vertical exaggeration factor based on terrain height range.
-     * \returns Exaggeration multiplier to enhance terrain visibility
+     * Converts a 3D scene position back to geographic coordinates in map CRS.
+     * Inverse of geoTo3D(); returns an empty QgsPoint when the extent is invalid.
      */
-    Q_INVOKABLE double calculateVisualExaggeration() const;
+    Q_INVOKABLE QgsPoint scene3DToGeo( double sceneX, double sceneZ ) const;
+
+    //! Regenerates the extent and terrain data from current offset
+    Q_INVOKABLE void beginTransition();
+
+    //! Applies offsets and reset values to zeros
+    Q_INVOKABLE void endTransition();
+
+    //! Applies X/Z offsets to the stored terrain based on pan action
+    Q_INVOKABLE void pan( double x, double z );
+
+    //! Applies scale offset to the stored terrain based on zoom action
+    Q_INVOKABLE void zoom( double factor );
 
   signals:
     void projectChanged();
@@ -151,12 +187,18 @@ class Quick3DTerrainProvider : public QObject
     void terrainDataReady();
 
     void normalizedDataChanged();
+    void offsetVectorChanged();
+    void offsetScaleChanged();
+    void isTransitioningChanged();
+
     void isLoadingChanged();
 
   private:
     void updateTerrainProvider();
     void updateFromMapSettings();
+    void updateExtentFromOffsets();
     void calculateResolution();
+    void generateData();
 
     //! Calculates terrain heights asynchronously in a worker thread and normalizes the data
     void calcNormalizedData();
@@ -177,12 +219,19 @@ class Quick3DTerrainProvider : public QObject
 
     QSize mGridSize = QSize( 64, 64 );
     QVariantList mNormalizedData;
+    QgsRectangle mNormalizedDataExtent;
+
+    bool mIsLoading = false;
+    bool mIsTransitioning = false;
+
+    QVector3D mOffsetVector = QVector3D( 0, 0, 0 );
+    double mOffsetScale = 1.0;
 
     double mMinRealHeight = 0.0;
     double mMaxRealHeight = 0.0;
 
-    bool mIsLoading = false;
     QFutureWatcher<QVector<double>> *mFutureWatcher = nullptr;
+    QgsRectangle mFutureExtent;
 };
 
 #endif // QUICK3DTERRAINPROVIDER_H

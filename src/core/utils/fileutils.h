@@ -45,19 +45,21 @@ class QFIELD_CORE_EXPORT FileUtils : public QObject
     //! Returns TRUE if the provided mimetype is a supported image
     Q_INVOKABLE static bool isImageMimeTypeSupported( const QString &mimeType );
     //! Returns the filename of a \a filePath - if no file name exists it's empty
-    Q_INVOKABLE static QString fileName( const QString &filePath );
+    Q_INVOKABLE static QString fileName( const QString &filePath, bool includeSuffix = true );
     //! Returns true if the \a filePath exists (false if it's a directory)
     Q_INVOKABLE static bool fileExists( const QString &filePath );
     //! Returns the suffix (extension)
     Q_INVOKABLE static QString fileSuffix( const QString &filePath );
     //! Returns a human-friendly size from bytes
-    Q_INVOKABLE static QString representFileSize( qint64 bytes );
+    Q_INVOKABLE static QString representFileSize( qint64 bytes, bool decimalRepresentation = false );
     //! Tries to convert the given \a filePath with path to a cross OS valid file name with path
     Q_INVOKABLE static QString sanitizeFilePath( const QString &filePath, const QString &replacement = QLatin1String( "_" ) );
     //! Tries to convert the given \a filePathPart to a cross OS valid file name part
     Q_INVOKABLE static QString sanitizeFilePathPart( const QString &filePathPart, const QString &replacement = QLatin1String( "_" ) );
     //! Returns the absolute path of the folder containing the \a filePath.
     Q_INVOKABLE static QString absolutePath( const QString &filePath );
+    //! Returns the \a filePath with '/' separators converted to separators that are appropriate for the underlying operating system.
+    Q_INVOKABLE static QString nativeSeparatorsPath( const QString &filePath );
 
     /**
     * Checks if a file path is securely within the current project directory.

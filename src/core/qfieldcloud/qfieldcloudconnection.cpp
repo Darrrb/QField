@@ -42,7 +42,13 @@ QFieldCloudConnection::QFieldCloudConnection()
   , mTokenConfigId( QSettings().value( QStringLiteral( "/QFieldCloud/tokenConfigId" ) ).toString() )
   , mProvider( QSettings().value( QStringLiteral( "/QFieldCloud/provider" ) ).toString() )
   , mProviderConfigId( QSettings().value( QStringLiteral( "/QFieldCloud/providerConfigId" ) ).toString() )
+  , mServerInformation( QSettings().value( QStringLiteral( "/QFieldCloud/serverInformation" ) ).toMap() )
 {
+  if ( mUrl == defaultUrl() && mServerInformation.signupUrl.isEmpty() )
+  {
+    mServerInformation.signupUrl = QStringLiteral( "https://app.qfield.cloud/accounts/signup/" );
+  }
+
   if ( !QgsApplication::authManager()->availableAuthMethodConfigs().contains( mProviderConfigId ) )
   {
     mProviderConfigId.clear();
@@ -72,6 +78,13 @@ QFieldCloudConnection::QFieldCloudConnection()
                tryFlushQueuedProjectPushes();
              } );
   }
+
+  restoreCookies();
+}
+
+QFieldCloudConnection::~QFieldCloudConnection()
+{
+  saveCookies();
 }
 
 void QFieldCloudConnection::queueProjectPush( const QString &projectId )
@@ -178,6 +191,13 @@ void QFieldCloudConnection::setUrl( const QString &url )
 
   mUrl = url;
   QSettings().setValue( QStringLiteral( "/QFieldCloud/url" ), url );
+
+  if ( mServerInformation != CloudServerInformation() )
+  {
+    mServerInformation = CloudServerInformation();
+    QSettings().remove( QStringLiteral( "/QFieldCloud/serverInformation" ) );
+    emit serverInformationChanged();
+  }
 
   if ( mStatus != ConnectionStatus::Disconnected )
   {
@@ -290,7 +310,7 @@ QList<AuthenticationProvider> QFieldCloudConnection::availableProviders() const
   return mAvailableProviders.values();
 }
 
-void QFieldCloudConnection::getAuthenticationProviders()
+void QFieldCloudConnection::getServerInformation()
 {
   if ( !mAvailableProviders.isEmpty() )
   {
@@ -301,6 +321,61 @@ void QFieldCloudConnection::getAuthenticationProviders()
   mIsFetchingAvailableProviders = true;
   emit isFetchingAvailableProvidersChanged();
 
+  QNetworkRequest request;
+  request.setHeader( QNetworkRequest::ContentTypeHeader, "application/json" );
+  request.setAttribute( QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::RedirectPolicy::NoLessSafeRedirectPolicy );
+  NetworkReply *reply = get( request, "/api/v1/server/info/" );
+
+  connect( reply, &NetworkReply::finished, this, [this, reply]() {
+    QNetworkReply *rawReply = reply->currentRawReply();
+
+    Q_ASSERT( reply->isFinished() );
+    Q_ASSERT( rawReply );
+
+    reply->deleteLater();
+    rawReply->deleteLater();
+
+    const int httpCode = rawReply->attribute( QNetworkRequest::HttpStatusCodeAttribute ).toInt();
+
+    if ( rawReply->error() != QNetworkReply::NoError )
+    {
+      if ( httpCode == 404 )
+      {
+        fetchLegacyAuthenticationProviders();
+        return;
+      }
+
+      mIsFetchingAvailableProviders = false;
+      emit isFetchingAvailableProvidersChanged();
+      return;
+    }
+
+    const QVariantMap payload = QJsonDocument::fromJson( rawReply->readAll() ).toVariant().toMap();
+
+    const CloudServerInformation serverInformation( payload );
+    if ( serverInformation != mServerInformation )
+    {
+      mServerInformation = serverInformation;
+      QSettings().setValue( QStringLiteral( "/QFieldCloud/serverInformation" ), mServerInformation.toVariantMap() );
+      emit serverInformationChanged();
+    }
+
+    const QVariantList providers = payload.value( QStringLiteral( "auth_providers" ) ).toList();
+    for ( const QVariant &provider : providers )
+    {
+      const QVariantMap providerDetails = provider.toMap();
+      const QString providerId = providerDetails.value( QStringLiteral( "id" ) ).toString();
+      mAvailableProviders[providerId] = AuthenticationProvider( providerId, providerDetails.value( QStringLiteral( "name" ) ).toString(), providerDetails );
+    }
+
+    mIsFetchingAvailableProviders = false;
+    emit isFetchingAvailableProvidersChanged();
+    emit availableProvidersChanged();
+  } );
+}
+
+void QFieldCloudConnection::fetchLegacyAuthenticationProviders()
+{
   QNetworkRequest request;
   request.setHeader( QNetworkRequest::ContentTypeHeader, "application/json" );
   request.setAttribute( QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::RedirectPolicy::NoLessSafeRedirectPolicy );
@@ -438,7 +513,6 @@ void QFieldCloudConnection::login( const QString &password )
     }
 
     QByteArray token = resp.value( QStringLiteral( "token" ) ).toString().toUtf8();
-
     if ( !token.isEmpty() )
     {
       setToken( token );
@@ -461,6 +535,9 @@ void QFieldCloudConnection::login( const QString &password )
       settings.setValue( QStringLiteral( "/QFieldCloud/urls" ), savedUrls );
       emit urlsChanged();
     }
+
+    saveCookies();
+
     setStatus( ConnectionStatus::LoggedIn );
   } );
 }
@@ -497,8 +574,72 @@ void QFieldCloudConnection::logout()
   {
     QgsNetworkAccessManager::instance()->cookieJar()->deleteCookie( cookie );
   }
+  saveCookies();
 
   setStatus( ConnectionStatus::Disconnected );
+}
+
+void QFieldCloudConnection::getUserOrganizations( const QString &user )
+{
+  if ( mStatus != ConnectionStatus::LoggedIn )
+  {
+    return;
+  }
+
+  NetworkReply *reply = get( QStringLiteral( "/api/v1/users/%1/organizations/" ).arg( user ) );
+
+  connect( reply, &NetworkReply::finished, this, [this, reply]() {
+    QNetworkReply *rawReply = reply->currentRawReply();
+    reply->deleteLater();
+
+    if ( rawReply->error() != QNetworkReply::NoError )
+    {
+      QgsMessageLog::logMessage( QStringLiteral( "Failed to fetch user organizations: %1" ).arg( rawReply->errorString() ), QStringLiteral( "QFieldCloud" ) );
+      return;
+    }
+
+    const QJsonDocument doc = QJsonDocument::fromJson( rawReply->readAll() );
+    const QJsonArray array = doc.array();
+
+    QStringList organizations;
+    for ( const auto &value : array )
+    {
+      const QString username = value.toObject().value( QStringLiteral( "username" ) ).toString();
+      if ( !username.isEmpty() )
+      {
+        organizations.append( username );
+      }
+    }
+
+    emit userOrganizationsReceived( organizations );
+  } );
+}
+
+void QFieldCloudConnection::getSubscriptionInformation( const QString &user )
+{
+  if ( mStatus != ConnectionStatus::LoggedIn )
+  {
+    return;
+  }
+
+  NetworkReply *reply = get( QStringLiteral( "/api/v1/subscriptions/%1/current/" ).arg( user ) );
+
+  connect( reply, &NetworkReply::finished, this, [this, reply]() {
+    QNetworkReply *rawReply = reply->currentRawReply();
+    reply->deleteLater();
+
+    if ( rawReply->error() != QNetworkReply::NoError )
+    {
+      QgsMessageLog::logMessage( QStringLiteral( "Failed to fetch subscription information: %1" ).arg( rawReply->errorString() ), QStringLiteral( "QFieldCloud" ) );
+      return;
+    }
+
+    const QJsonDocument doc = QJsonDocument::fromJson( rawReply->readAll() );
+    const QJsonObject obj = doc.object();
+
+    const CloudSubscriptionInformation subscriptionInformation( obj );
+    emit subscriptionInformationReceived( subscriptionInformation );
+  } );
 }
 
 QFieldCloudConnection::ConnectionStatus QFieldCloudConnection::status() const
@@ -674,7 +815,7 @@ void QFieldCloudConnection::setToken( const QByteArray &token )
     QgsAuthMethodConfig config;
     if ( QgsApplication::authManager()->availableAuthMethodConfigs().contains( mTokenConfigId ) )
     {
-      QgsApplication::authManager()->loadAuthenticationConfig( mProviderConfigId, config, true );
+      QgsApplication::authManager()->loadAuthenticationConfig( mTokenConfigId, config, true );
     }
     else
     {
@@ -1030,4 +1171,36 @@ void QFieldCloudConnection::processPendingAttachments()
     break;
   }
   return;
+}
+
+void QFieldCloudConnection::restoreCookies()
+{
+  QSettings settings;
+  settings.beginGroup( "/QFieldCloud/cookies" );
+  const QStringList cookieKeys = settings.childKeys();
+  for ( const QString &cookieKey : cookieKeys )
+  {
+    QList<QNetworkCookie> cookies = QNetworkCookie::parseCookies( settings.value( cookieKey ).toByteArray() );
+    if ( !cookies.isEmpty() )
+    {
+      if ( QDateTime::currentSecsSinceEpoch() < cookies[0].expirationDate().toSecsSinceEpoch() )
+      {
+        QgsNetworkAccessManager::instance()->cookieJar()->insertCookie( cookies[0] );
+      }
+    }
+  }
+}
+
+void QFieldCloudConnection::saveCookies()
+{
+  QSettings settings;
+  settings.remove( QStringLiteral( "/QFieldCloud/cookies" ) );
+  const QList<QNetworkCookie> cookies = QgsNetworkAccessManager::instance()->cookieJar()->cookiesForUrl( mUrl );
+  for ( int idx = 0; idx < cookies.count(); idx++ )
+  {
+    if ( !cookies[idx].isSessionCookie() && QDateTime::currentSecsSinceEpoch() < cookies[idx].expirationDate().toSecsSinceEpoch() )
+    {
+      settings.setValue( QStringLiteral( "/QFieldCloud/cookies/%1" ), cookies[idx].toRawForm() );
+    }
+  }
 }

@@ -23,6 +23,11 @@ Popup {
 
   property bool captureLoaderActivated: false
 
+  property bool allowCaptureModeToggle: false
+
+  readonly property int panelExtraSpace: allowCaptureModeToggle ? 70 : 0
+  readonly property int captureOffset: allowCaptureModeToggle ? -25 : 0
+
   function requiredPermissionsGranted() {
     if (cameraPermission.status !== Qt.PermissionStatus.Granted) {
       return false;
@@ -164,12 +169,18 @@ Popup {
           property alias camera: camera
           property alias imageCapture: imageCapture
           property alias recorder: recorder
-          property alias videoOutput: videoOutput   // expose it
+          property alias videoOutput: videoOutput
+          property alias orientationNormalizer: orientationNormalizer
+
+          CameraOrientationNormalizer {
+            id: orientationNormalizer
+          }
 
           VideoOutput {
             id: videoOutput
             anchors.fill: parent
             visible: cameraItem.state == "PhotoCapture" || cameraItem.state == "VideoCapture"
+            orientation: orientationNormalizer.previewRotation
           }
 
           CaptureSession {
@@ -185,11 +196,11 @@ Popup {
                   let fallbackIndex = -1;
                   let i = 0;
                   for (let format of camera.cameraDevice.videoFormats) {
-                    if (format.resolution === cameraSettings.resolution && format.pixelFormat === cameraSettings.pixelFormat) {
+                    if (format.resolution == cameraSettings.resolution && format.pixelFormat == cameraSettings.pixelFormat) { // coercion required
                       camera.cameraFormat = format;
                       fallbackIndex = -1;
                       break;
-                    } else if (format.resolution === cameraSettings.resolution) {
+                    } else if (format.resolution == cameraSettings.resolution) { // coercion required
                       // If we can't match the pixel format and resolution, go for resolution match across devices
                       fallbackIndex = i;
                     }
@@ -224,14 +235,17 @@ Popup {
             imageCapture: ImageCapture {
               id: imageCapture
 
+              fileFormat: ImageCapture.JPEG
+              quality: ImageCapture.VeryHighQuality
+
               onImageSaved: (requestId, path) => {
                 currentPath = path;
+                orientationNormalizer.normalizeImageOrientation(currentPath);
+                photoPreview.source = "file://" + currentPath;
               }
 
               onPreviewChanged: {
                 cameraItem.state = "PhotoPreview";
-                photoPreview.source = "";
-                Qt.callLater(() => photoPreview.source = imageCapture.preview);
               }
             }
 
@@ -256,7 +270,7 @@ Popup {
         let cameraPicked = false;
         if (cameraSettings.deviceId != '') {
           for (const device of mediaDevices.videoInputs) {
-            if (device.id === cameraSettings.deviceId) {
+            if (device.id == cameraSettings.deviceId) { // coercion required
               item.camera.cameraDevice = device;
               cameraPicked = true;
             }
@@ -370,7 +384,6 @@ Popup {
       id: photoPreview
 
       visible: cameraItem.state == "PhotoPreview"
-
       anchors.fill: parent
       cache: false
       fillMode: Image.PreserveAspectFit
@@ -430,16 +443,16 @@ Popup {
     }
 
     Rectangle {
-      width: cameraItem.isPortraitMode ? parent.width : 100 + mainWindow.sceneBottomMargin
-      height: cameraItem.isPortraitMode ? 100 + mainWindow.sceneRightMargin : parent.height
+      width: cameraItem.isPortraitMode ? parent.width : 100 + mainWindow.sceneBottomMargin + cameraItem.panelExtraSpace
+      height: cameraItem.isPortraitMode ? 100 + cameraItem.panelExtraSpace + mainWindow.sceneRightMargin : parent.height
       x: cameraItem.isPortraitMode ? 0 : parent.width - width
       y: cameraItem.isPortraitMode ? parent.height - height : 0
 
       color: Theme.darkGraySemiOpaque
 
       Rectangle {
-        width: cameraItem.isPortraitMode ? parent.width : 100 + mainWindow.sceneBottomMargin
-        height: cameraItem.isPortraitMode ? 100 + mainWindow.sceneRightMargin : parent.height
+        width: cameraItem.isPortraitMode ? parent.width : 100 + mainWindow.sceneBottomMargin + cameraItem.panelExtraSpace
+        height: cameraItem.isPortraitMode ? 100 + cameraItem.panelExtraSpace + mainWindow.sceneRightMargin : parent.height
         x: cameraItem.isPortraitMode ? 0 : parent.width - width
         y: cameraItem.isPortraitMode ? parent.height - height : 0
 
@@ -454,6 +467,8 @@ Popup {
           Rectangle {
             id: captureRing
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: cameraItem.isPortraitMode ? cameraItem.captureOffset : 0
+            anchors.horizontalCenterOffset: !cameraItem.isPortraitMode ? cameraItem.captureOffset : 0
             width: 64
             height: 64
             radius: 32
@@ -480,6 +495,7 @@ Popup {
                   platformUtilities.createDir(qgisProject.homePath, 'DCIM');
                   captureLoader.item.imageCapture.captureToFile(qgisProject.homePath + '/DCIM/');
                   captureFlashAnimation.start();
+                  captureLoader.item.orientationNormalizer.recordCaptureOrientation();
                   if (positionSource.active) {
                     currentPosition = positionSource.positionInformation;
                     currentProjectedPosition = positionSource.projectedPosition;
@@ -517,12 +533,106 @@ Popup {
             }
           }
 
+          QfSwitch {
+            id: modeSwitch
+
+            readonly property int slotSize: 36
+            readonly property int highlightInset: 1
+
+            visible: cameraItem.allowCaptureModeToggle && cameraItem.isCapturing && captureLoader.item && captureLoader.item.recorder.recorderState === MediaRecorder.StoppedState
+
+            width: slotSize * 2 + 4
+            height: 40
+            padding: 0
+
+            rotation: cameraItem.isPortraitMode ? 0 : -90
+
+            x: cameraItem.isPortraitMode ? captureRing.x + captureRing.width / 2 - width / 2 : captureRing.x + captureRing.width + 10 - (width - height) / 2
+            y: cameraItem.isPortraitMode ? captureRing.y + captureRing.height + 10 : captureRing.y + captureRing.height / 2 - height / 2
+
+            checked: cameraItem.state == "VideoCapture"
+
+            indicator: Rectangle {
+              implicitHeight: modeSwitch.slotSize
+              implicitWidth: modeSwitch.slotSize * 2
+              x: (modeSwitch.width - implicitWidth) / 2
+              radius: 4
+              color: "transparent"
+              anchors.verticalCenter: parent.verticalCenter
+
+              QfToolButton {
+                width: modeSwitch.slotSize
+                height: modeSwitch.slotSize
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                round: false
+                iconSource: Theme.getThemeVectorIcon('ic_camera_photo_black_24dp')
+                iconColor: "white"
+                bgcolor: 'transparent'
+                enabled: false
+                opacity: 0.35
+                rotation: cameraItem.isPortraitMode ? 0 : 90
+              }
+
+              QfToolButton {
+                width: modeSwitch.slotSize
+                height: modeSwitch.slotSize
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                round: false
+                iconSource: Theme.getThemeVectorIcon('ic_camera_video_black_24dp')
+                iconColor: "white"
+                bgcolor: 'transparent'
+                enabled: false
+                opacity: 0.35
+                rotation: cameraItem.isPortraitMode ? 0 : 90
+              }
+
+              Rectangle {
+                readonly property int inset: modeSwitch.highlightInset
+                x: modeSwitch.checked ? parent.width - width - inset : inset
+                y: inset
+                width: modeSwitch.slotSize - inset * 2
+                height: modeSwitch.slotSize - inset * 2
+                radius: 3
+                color: Theme.darkGraySemiOpaque
+                border.color: "#66FFFFFF"
+                border.width: 1
+                clip: true
+
+                QfToolButton {
+                  width: modeSwitch.slotSize
+                  height: modeSwitch.slotSize
+                  anchors.centerIn: parent
+                  round: false
+                  hoverEnabled: false
+                  iconSource: modeSwitch.checked ? Theme.getThemeVectorIcon('ic_camera_video_black_24dp') : Theme.getThemeVectorIcon('ic_camera_photo_black_24dp')
+                  iconColor: "white"
+                  bgcolor: 'transparent'
+                  enabled: false
+                  rotation: cameraItem.isPortraitMode ? 0 : 90
+                }
+
+                Behavior on x {
+                  PropertyAnimation {
+                    duration: 100
+                    easing.type: Easing.OutQuart
+                  }
+                }
+              }
+            }
+
+            onClicked: {
+              cameraItem.state = checked ? "VideoCapture" : "PhotoCapture";
+            }
+          }
+
           QfToolButton {
             id: zoomButton
-            visible: cameraItem.isCapturing && captureLoader.item && (captureLoader.item.camera.maximumZoomFactor !== 1.0 || captureLoader.item.camera.minimumZoomFactor !== 1.0)
+            visible: true//cameraItem.isCapturing && captureLoader.item && (captureLoader.item.camera.maximumZoomFactor !== 1.0 || captureLoader.item.camera.minimumZoomFactor !== 1.0)
 
-            x: cameraItem.isPortraitMode ? (parent.width / 4) - (width / 2) : (parent.width - width) / 2
-            y: cameraItem.isPortraitMode ? (parent.height - height) / 2 : (parent.height / 4) * 3 - (height / 2)
+            x: cameraItem.isPortraitMode ? (parent.width / 4) - (width / 2) : (parent.width - width) / 2 + cameraItem.captureOffset
+            y: cameraItem.isPortraitMode ? (parent.height - height) / 2 + cameraItem.captureOffset : (parent.height / 4) * 3 - (height / 2)
 
             iconColor: Theme.toolButtonColor
             bgcolor: Theme.toolButtonBackgroundSemiOpaqueColor
@@ -540,10 +650,10 @@ Popup {
 
           QfToolButton {
             id: flashButton
-            visible: cameraItem.isCapturing && captureLoader.item && captureLoader.item.camera.isFlashModeSupported(Camera.FlashOn)
+            visible: true//cameraItem.isCapturing && captureLoader.item && captureLoader.item.camera.isFlashModeSupported(Camera.FlashOn)
 
-            x: cameraItem.isPortraitMode ? (parent.width / 4) * 3 - (width / 2) : (parent.width - width) / 2
-            y: cameraItem.isPortraitMode ? (parent.height - height) / 2 : (parent.height / 4) - (height / 2)
+            x: cameraItem.isPortraitMode ? (parent.width / 4) * 3 - (width / 2) : (parent.width - width) / 2 + cameraItem.captureOffset
+            y: cameraItem.isPortraitMode ? (parent.height - height) / 2 + cameraItem.captureOffset : (parent.height / 4) - (height / 2)
 
             iconSource: {
               if (!captureLoader.item)

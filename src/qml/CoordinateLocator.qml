@@ -14,6 +14,10 @@ Item {
   property MapSettings mapSettings
   property color mainColor: "#CFD8DC"
   property color highlightColor: "#263238"
+  property color cursorFillColor: "#000000"
+  property color cursorOutlineColor: "#FFFFFF"
+  property real cursorSizeScale: 1.0
+  readonly property real crossHalfLength: cursorSizeScale >= 2.0 ? 16 : cursorSizeScale >= 1.5 ? 14 : 8
 
   /**
    * Set the current layer on which snapping should be performed.
@@ -47,7 +51,7 @@ Item {
   //! Overwritten by stylus / hoverHandler.
   property variant sourceLocation: undefined // Screen coordinate
 
-  readonly property variant currentCoordinate: !!overrideLocation ? overrideLocation : snappingUtils.snappedCoordinate
+  readonly property variant currentCoordinate: !!overrideLocation && overrideLocation.x ? overrideLocation : snappingUtils.snappedCoordinate
 
   // some trickery here: the first part (!mapSettings.visibleExtent) is only there to get a signal when
   // the map canvas extent changes (user pans/zooms) and the calculation of the display position is retriggered
@@ -199,7 +203,7 @@ Item {
     property real halfWidth: width / 2
     property real arcSpacing: isSnapped ? 0 : 20
 
-    width: isSnapped ? 32 : 48
+    width: (isSnapped ? 32 : 48) * locator.cursorSizeScale
     height: width
 
     x: displayPosition.x - halfWidth
@@ -227,14 +231,14 @@ Item {
 
     ShapePath {
       id: crosshairPathBuffer
-      strokeColor: "#FFFFFF"
+      strokeColor: locator.cursorOutlineColor
       strokeWidth: crosshairPath.strokeWidth + 2
       fillColor: "transparent"
     }
 
     ShapePath {
       id: crosshairPath
-      strokeColor: overrideLocation !== undefined ? Theme.positionColor : "#000000"
+      strokeColor: !!overrideLocation && overrideLocation.x ? Qt.darker(Theme.positionColor, 1.25) : locator.cursorFillColor
       strokeWidth: 2
       fillColor: "transparent"
 
@@ -272,18 +276,18 @@ Item {
       }
       PathMove {
         x: crosshairCircle.halfWidth
-        y: crosshairCircle.halfWidth - 8
+        y: crosshairCircle.halfWidth - locator.crossHalfLength
       }
       PathLine {
         x: crosshairCircle.halfWidth
-        y: crosshairCircle.halfWidth + 8
+        y: crosshairCircle.halfWidth + locator.crossHalfLength
       }
       PathMove {
-        x: crosshairCircle.halfWidth - 8
+        x: crosshairCircle.halfWidth - locator.crossHalfLength
         y: crosshairCircle.halfWidth
       }
       PathLine {
-        x: crosshairCircle.halfWidth + 8
+        x: crosshairCircle.halfWidth + locator.crossHalfLength
         y: crosshairCircle.halfWidth
       }
     }

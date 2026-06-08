@@ -101,9 +101,13 @@ QString QFieldCloudUtils::userFriendlyErrorString( const QString &errorString )
 {
   QString resultErrorString = errorString.startsWith( "[QF/" ) ? tr( "A server error has occured, please try again." ) : tr( "A network error has occured, please try again." );
 
-  if ( errorString.contains( errorCodeOverQuota ) )
+  if ( errorString.contains( errorCodeOverQuota() ) )
   {
-    resultErrorString = tr( "Your account's available storage is full." );
+    resultErrorString = tr( "The project owner's available storage is full." );
+  }
+  else if ( errorString.contains( errorCodePlanInsufficient() ) )
+  {
+    resultErrorString = tr( "The project owner's subscription plan is insufficient." );
   }
 
   return resultErrorString;
@@ -111,14 +115,12 @@ QString QFieldCloudUtils::userFriendlyErrorString( const QString &errorString )
 
 QString QFieldCloudUtils::documentationFromErrorString( const QString &errorString )
 {
-  QString linkToDocumentation;
-
-  if ( errorString.contains( errorCodeOverQuota ) )
+  if ( errorString.contains( errorCodeOverQuota() ) )
   {
-    linkToDocumentation = "https://docs.qfield.org/get-started/storage-qfc/#adding-qfieldcloud-storage";
+    return QStringLiteral( "https://docs.qfield.org/get-started/storage-qfc/#adding-qfieldcloud-storage" );
   }
 
-  return linkToDocumentation;
+  return QString();
 }
 
 void QFieldCloudUtils::setProjectSetting( const QString &projectId, const QString &setting, const QVariant &value )
@@ -148,15 +150,17 @@ const QMultiMap<QString, QString> QFieldCloudUtils::getPendingAttachments( const
     // Step 1: Load the already existing legacy `attachments.csv` file contents in the memory.
     QMultiMap<QString, QString> migrationFiles;
     QFile migrationFile( QStringLiteral( "%1/attachments.csv" ).arg( QFieldCloudUtils::localCloudDirectory() ) );
-    migrationFile.open( QFile::ReadWrite | QFile::Text );
-    QTextStream migrationStream( &migrationFile );
-    while ( !migrationStream.atEnd() )
+    if ( migrationFile.open( QFile::ReadWrite | QFile::Text ) )
     {
-      const QString line = migrationStream.readLine().trimmed();
-      const QStringList values = StringUtils::csvToStringList( line );
-      if ( values.size() >= 2 )
+      QTextStream migrationStream( &migrationFile );
+      while ( !migrationStream.atEnd() )
       {
-        migrationFiles.insert( values.at( 0 ), values.at( 1 ) );
+        const QString line = migrationStream.readLine().trimmed();
+        const QStringList values = StringUtils::csvToStringList( line );
+        if ( values.size() >= 2 )
+        {
+          migrationFiles.insert( values.at( 0 ), values.at( 1 ) );
+        }
       }
     }
 
@@ -212,18 +216,20 @@ const QMultiMap<QString, QString> QFieldCloudUtils::getPendingAttachments( const
       return files;
     }
 
-    attachmentsFile.open( QFile::ReadWrite | QFile::Text );
-    QTextStream attachmentsStream( &attachmentsFile );
-    while ( !attachmentsStream.atEnd() )
+    if ( attachmentsFile.open( QFile::ReadWrite | QFile::Text ) )
     {
-      const QString line = attachmentsStream.readLine().trimmed();
-      const QStringList values = StringUtils::csvToStringList( line );
-
-      // The expected CSV format must have two columns:
-      // project_id,file_path
-      if ( values.size() >= 2 )
+      QTextStream attachmentsStream( &attachmentsFile );
+      while ( !attachmentsStream.atEnd() )
       {
-        files.insert( values.at( 0 ), values.at( 1 ) );
+        const QString line = attachmentsStream.readLine().trimmed();
+        const QStringList values = StringUtils::csvToStringList( line );
+
+        // The expected CSV format must have two columns:
+        // project_id,file_path
+        if ( values.size() >= 2 )
+        {
+          files.insert( values.at( 0 ), values.at( 1 ) );
+        }
       }
     }
   }
@@ -288,22 +294,24 @@ void QFieldCloudUtils::writeToAttachmentsFile( const QString &username, const QS
   if ( attachmentsLock.tryLock( 10000 ) )
   {
     QFile attachmentsFile( QStringLiteral( "%1/attachments.csv" ).arg( localCloudUSerDirectory ) );
-    attachmentsFile.open( QFile::Append | QFile::Text );
-    QTextStream attachmentsStream( &attachmentsFile );
-
-    for ( const QString &fileName : fileNames )
+    if ( attachmentsFile.open( QFile::Append | QFile::Text ) )
     {
-      QFileInfo fi( QDir::cleanPath( fileName ) );
-      if ( fi.isDir() )
+      QTextStream attachmentsStream( &attachmentsFile );
+
+      for ( const QString &fileName : fileNames )
       {
-        writeFilesFromDirectory( fileName, projectId, fileChecksumMap, checkSumCheck, attachmentsStream );
+        QFileInfo fi( QDir::cleanPath( fileName ) );
+        if ( fi.isDir() )
+        {
+          writeFilesFromDirectory( fileName, projectId, fileChecksumMap, checkSumCheck, attachmentsStream );
+        }
+        else if ( fi.isFile() )
+        {
+          writeFileDetails( fileName, projectId, fileChecksumMap, checkSumCheck, attachmentsStream );
+        }
       }
-      else if ( fi.isFile() )
-      {
-        writeFileDetails( fileName, projectId, fileChecksumMap, checkSumCheck, attachmentsStream );
-      }
+      attachmentsFile.close();
     }
-    attachmentsFile.close();
 
     if ( cloudConnection )
       emit cloudConnection->pendingAttachmentsAdded();
@@ -359,19 +367,42 @@ void QFieldCloudUtils::removePendingAttachment( const QString &username, const Q
     const QString lineToRemove = StringUtils::stringListToCsv( QStringList() << projectId << fileName );
     QString output;
     QFile attachmentsFile( QStringLiteral( "%1/attachments.csv" ).arg( localCloudUSerDirectory ) );
-    attachmentsFile.open( QFile::ReadWrite | QFile::Text );
-    QTextStream attachmentsStream( &attachmentsFile );
-    while ( !attachmentsStream.atEnd() )
+    if ( attachmentsFile.open( QFile::ReadWrite | QFile::Text ) )
     {
-      const QString line = attachmentsStream.readLine();
-      if ( !line.isEmpty() && !line.startsWith( lineToRemove ) )
+      QTextStream attachmentsStream( &attachmentsFile );
+      while ( !attachmentsStream.atEnd() )
       {
-        output += line + QChar( '\n' );
+        const QString line = attachmentsStream.readLine();
+        if ( !line.isEmpty() && !line.startsWith( lineToRemove ) )
+        {
+          output += line + QChar( '\n' );
+        }
       }
+      attachmentsFile.resize( 0 );
+      attachmentsStream.reset();
+      attachmentsStream << output;
+      attachmentsFile.close();
     }
-    attachmentsFile.resize( 0 );
-    attachmentsStream.reset();
-    attachmentsStream << output;
-    attachmentsFile.close();
   }
+}
+
+QString QFieldCloudUtils::subscriptionManagementUrl( const QString &serverUrl, const QString &plan, const QString &projectOwner, const QString &username )
+{
+  if ( serverUrl != QFieldCloudConnection::defaultUrl() )
+  {
+    return QString();
+  }
+
+  // TODO: change to plan_code once opengisch/QFieldCloud#1539 merged
+  if ( plan.compare( QStringLiteral( "Community" ), Qt::CaseInsensitive ) == 0 )
+  {
+    return QStringLiteral( "https://app.qfield.cloud/plans" );
+  }
+
+  if ( projectOwner.isEmpty() || projectOwner == username )
+  {
+    return QStringLiteral( "https://app.qfield.cloud/settings/%1/billing" ).arg( username );
+  }
+
+  return QString();
 }

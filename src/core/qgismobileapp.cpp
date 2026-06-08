@@ -40,10 +40,12 @@
 #include "appexpressioncontextscopesgenerator.h"
 #include "appinterface.h"
 #include "attributeformmodel.h"
+#include "audioanalyzer.h"
 #include "audiorecorder.h"
 #include "badlayerhandler.h"
 #include "barcodedecoder.h"
 #include "barcodeimageprovider.h"
+#include "cameraorientationnormalizer.h"
 #include "changelogcontents.h"
 #include "cogoexecutor.h"
 #include "cogooperation.h"
@@ -67,7 +69,6 @@
 #include "featuremodel.h"
 #include "featureutils.h"
 #include "fileutils.h"
-#include "focusstack.h"
 #include "geofencer.h"
 #include "geometry.h"
 #include "geometryeditorsmodel.h"
@@ -87,12 +88,15 @@
 #include "locatormodelsuperbridge.h"
 #include "maplayermodel.h"
 #include "maptoscreen.h"
+#include "maptoview3d.h"
 #include "messagelogmodel.h"
 #include "navigation.h"
 #include "navigationmodel.h"
 #include "nearfieldreader.h"
+#include "ntripsettings.h"
+#include "ntripsourcetablefetcher.h"
 #include "orderedrelationmodel.h"
-#include "parametizedimage.h"
+#include "parameterizedimage.h"
 #include "permissions.h"
 #include "platformutilities.h"
 #include "pluginmodel.h"
@@ -113,6 +117,7 @@
 #include "qfieldcloudconnection.h"
 #include "qfieldcloudproject.h"
 #include "qfieldcloudprojectsmodel.h"
+#include "qfieldcloudstatus.h"
 #include "qfieldcloudutils.h"
 #include "qfieldlocatorfilter.h"
 #include "qfieldurlhandler.h"
@@ -125,6 +130,7 @@
 #include "qgsquickmapcanvasmap.h"
 #include "qgsquickmapsettings.h"
 #include "qgsquickmaptransform.h"
+#include "quick3dgeometry.h"
 #include "quick3dmaptexturedata.h"
 #include "quick3drubberbandgeometry.h"
 #include "quick3dterraingeometry.h"
@@ -244,6 +250,8 @@ QgisMobileapp::QgisMobileapp( QgsApplication *app, QObject *parent )
 
   QgsNetworkAccessManager::settingsNetworkTimeout->setValue( 60 * 1000 );
 
+  QgsNetworkAccessManager::instance()->setupDefaultProxyAndCache();
+
   // we cannot use "/" as separator, since QGIS puts a suffix QGIS/31700 anyway
   const QString userAgent = QStringLiteral( "qfield|%1|%2|%3|" ).arg( qfield::appVersion, qfield::appVersionStr.normalized( QString::NormalizationForm_KD ), qfield::gitRev );
   settings.setValue( QStringLiteral( "/qgis/networkAndProxy/userAgent" ), userAgent );
@@ -311,7 +319,8 @@ QgisMobileapp::QgisMobileapp( QgsApplication *app, QObject *parent )
     }
   } );
 
-  mTrackingModel = new TrackingModel();
+  mTrackingModel = new TrackingModel( this );
+  mFocusStack = std::make_unique<FocusStack>( this );
   mGpkgFlusher = std::make_unique<QgsGpkgFlusher>( mProject );
   mLayerObserver = std::make_unique<LayerObserver>( mProject );
   mFeatureHistory = std::make_unique<FeatureHistory>( mProject, mTrackingModel );
@@ -409,7 +418,6 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
 
   // Register QGIS QML types
   qmlRegisterType<QgsSnappingUtils>( "org.qgis", 1, 0, "SnappingUtils" );
-  qmlRegisterType<QgsMapLayerProxyModel>( "org.qgis", 1, 0, "MapLayerModel" );
   qmlRegisterType<QgsVectorLayer>( "org.qgis", 1, 0, "VectorLayer" );
   qmlRegisterType<QgsMapThemeCollection>( "org.qgis", 1, 0, "MapThemeCollection" );
   qmlRegisterType<QgsLocatorProxyModel>( "org.qgis", 1, 0, "QgsLocatorProxyModel" );
@@ -433,6 +441,9 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qRegisterMetaType<QgsField>( "QgsField" );
   qRegisterMetaType<QgsDefaultValue>( "QgsDefaultValue" );
   qRegisterMetaType<QgsFieldConstraints>( "QgsFieldConstraints" );
+  qRegisterMetaType<QgsCoordinateReferenceSystem>( "QgsCoordinateReferenceSystem" );
+  qRegisterMetaType<QgsUnitTypes>( "QgsUnitTypes" );
+  qRegisterMetaType<QgsWkbTypes>( "QgsWkbTypes" );
 
   qRegisterMetaType<Qgis::GeometryType>( "Qgis::GeometryType" );
   qRegisterMetaType<Qgis::WkbType>( "Qgis::WkbType" );
@@ -444,14 +455,11 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qRegisterMetaType<Qgis::DeviceConnectionStatus>( "Qgis::DeviceConnectionStatus" );
   qRegisterMetaType<Qgis::SnappingMode>( "Qgis::SnappingMode" );
 
-  qmlRegisterUncreatableType<Qgis>( "org.qgis", 1, 0, "Qgis", "" );
+  qmlRegisterUncreatableMetaObject( Qgis::staticMetaObject, "org.qgis", 1, 0, "Qgis", "Used to access enum values" );
 
   qmlRegisterUncreatableType<QgsProject>( "org.qgis", 1, 0, "Project", "" );
   qmlRegisterUncreatableType<QgsProjectDisplaySettings>( "org.qgis", 1, 0, "ProjectDisplaySettings", "" );
-  qmlRegisterUncreatableType<QgsCoordinateReferenceSystem>( "org.qgis", 1, 0, "CoordinateReferenceSystem", "" );
-  qmlRegisterUncreatableType<QgsUnitTypes>( "org.qgis", 1, 0, "QgsUnitTypes", "" );
   qmlRegisterUncreatableType<QgsRelationManager>( "org.qgis", 1, 0, "RelationManager", "The relation manager is available from the QgsProject. Try `qgisProject.relationManager`" );
-  qmlRegisterUncreatableType<QgsWkbTypes>( "org.qgis", 1, 0, "QgsWkbTypes", "" );
   qmlRegisterUncreatableType<QgsMapLayer>( "org.qgis", 1, 0, "MapLayer", "" );
   qmlRegisterUncreatableType<QgsRasterLayer>( "org.qgis", 1, 0, "RasterLayer", "" );
   qmlRegisterUncreatableType<QgsVectorLayer>( "org.qgis", 1, 0, "VectorLayerStatic", "" );
@@ -468,6 +476,8 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qmlRegisterType<Quick3DTerrainGeometry>( "org.qfield", 1, 0, "Quick3DTerrainGeometry" );
   qmlRegisterType<Quick3DTerrainProvider>( "org.qfield", 1, 0, "Quick3DTerrainProvider" );
   qmlRegisterType<Quick3DMapTextureData>( "org.qfield", 1, 0, "Quick3DMapTextureData" );
+  qmlRegisterType<Quick3DGeometry>( "org.qfield", 1, 0, "Quick3DGeometry" );
+  qmlRegisterType<MapToView3D>( "org.qfield", 1, 0, "MapToView3D" );
 
   // Register QField QML types
   qRegisterMetaType<PlatformUtilities::Capabilities>( "PlatformUtilities::Capabilities" );
@@ -479,9 +489,9 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qRegisterMetaType<QFieldCloudProject::ProjectModification>( "QFieldCloudProject::ProjectModification" );
   qRegisterMetaType<Tracker::MeasureType>( "Tracker::MeasureType" );
   qRegisterMetaType<PositioningSource::ElevationCorrectionMode>( "PositioningSource::ElevationCorrectionMode" );
+  qRegisterMetaType<PositioningSource::NtripState>( "PositioningSource::NtripState" );
 
   qmlRegisterType<MultiFeatureListModel>( "org.qfield", 1, 0, "MultiFeatureListModel" );
-  qmlRegisterType<FeatureIterator>( "org.qfield", 1, 0, "FeatureIterator" );
   qmlRegisterType<FeatureListModel>( "org.qfield", 1, 0, "FeatureListModel" );
   qmlRegisterType<FeatureListModelSelection>( "org.qfield", 1, 0, "FeatureListModelSelection" );
   qmlRegisterType<FeatureListExtentController>( "org.qfield", 1, 0, "FeaturelistExtentController" );
@@ -493,12 +503,15 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qmlRegisterType<ProjectSource>( "org.qfield", 1, 0, "ProjectSource" );
   qmlRegisterType<ViewStatus>( "org.qfield", 1, 0, "ViewStatus" );
   qmlRegisterType<GridModel>( "org.qfield", 1, 0, "GridModel" );
-  qmlRegisterUncreatableType<GridAnnotation>( "org.qfield", 1, 0, "GridAnnotation", "" );
+  qmlRegisterType<CameraOrientationNormalizer>( "org.qfield", 1, 0, "CameraOrientationNormalizer" );
+  qmlRegisterUncreatableType<GridAnnotation>( "org.qfield", 1, 0, "gridAnnotation", "Used for property values" );
+  qmlRegisterUncreatableMetaObject( GridAnnotation::staticMetaObject, "org.qfield", 1, 0, "GridAnnotation", "Used to access enum values" );
 
   qmlRegisterType<CogoExecutor>( "org.qfield", 1, 0, "CogoExecutor" );
   qmlRegisterType<CogoOperationsModel>( "org.qfield", 1, 0, "CogoOperationsModel" );
-  qmlRegisterUncreatableType<CogoParameter>( "org.qfield", 1, 0, "CogoParameter", "" );
-  qmlRegisterUncreatableType<CogoVisualGuide>( "org.qfield", 1, 0, "CogoVisualGuide", "" );
+  qmlRegisterUncreatableType<CogoParameter>( "org.qfield", 1, 0, "cogoParameter", "Used for property values" );
+  qmlRegisterUncreatableType<CogoVisualGuide>( "org.qfield", 1, 0, "cogoVisualGuide", "Used for property values" );
+  qmlRegisterUncreatableMetaObject( CogoVisualGuide::staticMetaObject, "org.qfield", 1, 0, "CogoVisualGuide", "Used to access enum values" );
 
   qmlRegisterType<Geofencer>( "org.qfield", 1, 0, "Geofencer" );
   qmlRegisterType<DigitizingLogger>( "org.qfield", 1, 0, "DigitizingLogger" );
@@ -513,7 +526,7 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qmlRegisterType<SnappingUtils>( "org.qfield", 1, 0, "SnappingUtils" );
   qmlRegisterType<DistanceArea>( "org.qfield", 1, 0, "DistanceArea" );
   qmlRegisterType<FocusStack>( "org.qfield", 1, 0, "FocusStack" );
-  qmlRegisterType<ParametizedImage>( "org.qfield", 1, 0, "ParametizedImage" );
+  qmlRegisterType<ParameterizedImage>( "org.qfield", 1, 0, "ParameterizedImage" );
   qmlRegisterType<PrintLayoutListModel>( "org.qfield", 1, 0, "PrintLayoutListModel" );
   qmlRegisterType<VertexModel>( "org.qfield", 1, 0, "VertexModel" );
   qmlRegisterType<MapLayerModel>( "org.qfield", 1, 0, "MapLayerModel" );
@@ -546,13 +559,13 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   engine->rootContext()->setContextProperty( "withSerialPort", QVariant( false ) );
 #endif
   qmlRegisterType<NearFieldReader>( "org.qfield", 1, 0, "NearFieldReader" );
-  engine->rootContext()->setContextProperty( "withNfc", QVariant( NearFieldReader::isSupported() ) );
   qmlRegisterType<ChangelogContents>( "org.qfield", 1, 0, "ChangelogContents" );
   qmlRegisterType<LayerResolver>( "org.qfield", 1, 0, "LayerResolver" );
   qmlRegisterType<QFieldCloudConnection>( "org.qfield", 1, 0, "QFieldCloudConnection" );
   qmlRegisterType<QFieldCloudProject>( "org.qfield", 1, 0, "QFieldCloudProject" );
   qmlRegisterType<QFieldCloudProjectsModel>( "org.qfield", 1, 0, "QFieldCloudProjectsModel" );
   qmlRegisterType<QFieldCloudProjectsFilterModel>( "org.qfield", 1, 0, "QFieldCloudProjectsFilterModel" );
+  qmlRegisterType<QFieldCloudStatus>( "org.qfield", 1, 0, "QFieldCloudStatus" );
   qmlRegisterType<DeltaListModel>( "org.qfield", 1, 0, "DeltaListModel" );
   qmlRegisterType<ScaleBarMeasurement>( "org.qfield", 1, 0, "ScaleBarMeasurement" );
   qmlRegisterType<SensorListModel>( "org.qfield", 1, 0, "SensorListModel" );
@@ -561,8 +574,11 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qmlRegisterType<Positioning>( "org.qfield", 1, 0, "Positioning" );
   qmlRegisterType<PositioningInformationModel>( "org.qfield", 1, 0, "PositioningInformationModel" );
   qmlRegisterType<PositioningDeviceModel>( "org.qfield", 1, 0, "PositioningDeviceModel" );
+  qmlRegisterType<NtripSourceTableFetcher>( "org.qfield", 1, 0, "NtripSourceTableFetcher" );
+  qRegisterMetaType<NtripMountPoint>( "NtripMountPoint" );
   qmlRegisterType<WebdavConnection>( "org.qfield", 1, 0, "WebdavConnection" );
   qmlRegisterType<AppExpressionContextScopesGenerator>( "org.qfield", 1, 0, "AppExpressionContextScopesGenerator" );
+  qmlRegisterType<AudioAnalyzer>( "org.qfield", 1, 0, "AudioAnalyzer" );
   qmlRegisterType<AudioRecorder>( "org.qfield", 1, 0, "AudioRecorder" );
   qmlRegisterType<BarcodeDecoder>( "org.qfield", 1, 0, "BarcodeDecoder" );
   qmlRegisterType<CameraPermission>( "org.qfield", 1, 0, "QfCameraPermission" );
@@ -570,20 +586,25 @@ void QgisMobileapp::initDeclarative( QQmlEngine *engine )
   qmlRegisterUncreatableType<QAbstractSocket>( "org.qfield", 1, 0, "QAbstractSocket", "" );
   qmlRegisterUncreatableType<AbstractGnssReceiver>( "org.qfield", 1, 0, "AbstractGnssReceiver", "" );
   qmlRegisterUncreatableType<Tracker>( "org.qfield", 1, 0, "Tracker", "" );
-  qmlRegisterUncreatableType<GnssPositionInformation>( "org.qfield", 1, 0, "GnssPositionInformation", "Access to enums and properties only; cannot instantiate in QML." );
 
+  qmlRegisterUncreatableType<NtripSettings>( "org.qfield", 1, 0, "NtripSettings", "Used for property values" );
+  qmlRegisterUncreatableMetaObject( NtripSettings::staticMetaObject, "org.qfield", 1, 0, "NtripSettings", "Used to access to enum values" );
+
+  qmlRegisterUncreatableType<GnssPositionInformation>( "org.qfield", 1, 0, "gnssPositionInformation", "Used for property values" );
+  qmlRegisterUncreatableMetaObject( GnssPositionInformation::staticMetaObject, "org.qfield", 1, 0, "GnssPositionInformation", "Used to access to enum values" );
   qRegisterMetaType<GnssPositionDetails>( "GnssPositionDetails" );
-  qRegisterMetaType<PluginInformation>( "PluginInformation" );
 
+  qRegisterMetaType<PluginInformation>( "PluginInformation" );
   qmlRegisterType<PluginModel>( "org.qfield", 1, 0, "PluginModel" );
   qmlRegisterType<PluginProxyModel>( "org.qfield", 1, 0, "PluginProxyModel" );
+  qmlRegisterType<FeatureIterator>( "org.qfield", 1, 0, "featureIterator" );
 
   qmlRegisterType<ProcessingAlgorithm>( "org.qfield", 1, 0, "ProcessingAlgorithm" );
   qmlRegisterType<ProcessingAlgorithmParametersModel>( "org.qfield", 1, 0, "ProcessingAlgorithmParametersModel" );
   qmlRegisterType<ProcessingAlgorithmsModel>( "org.qfield", 1, 0, "ProcessingAlgorithmsModel" );
 
-  qmlRegisterType<QgsLocatorContext>( "org.qgis", 1, 0, "QgsLocatorContext" );
   qmlRegisterType<QFieldLocatorFilter>( "org.qfield", 1, 0, "QFieldLocatorFilter" );
+  qmlRegisterUncreatableType<QgsLocatorContext>( "org.qgis", 1, 0, "locatorContext", "Used as parameter type in invokable function" );
 
   QScreen *screen = QGuiApplication::primaryScreen();
   const qreal dpi = screen ? screen->logicalDotsPerInch() * screen->devicePixelRatio() : 96.0;
@@ -646,7 +667,8 @@ void QgisMobileapp::registerGlobalVariables()
   rootContext()->setContextProperty( "pluginManager", mPluginManager );
   rootContext()->setContextProperty( "settings", &mSettings );
   rootContext()->setContextProperty( "flatLayerTree", mFlatLayerTree );
-  rootContext()->setContextProperty( "CrsFactory", QVariant::fromValue<QgsCoordinateReferenceSystem>( mCrsFactory ) );
+  rootContext()->setContextProperty( "focusstack", mFocusStack.get() );
+  rootContext()->setContextProperty( "WkbTypes", QVariant::fromValue<QgsWkbTypes>( mWkbTypes ) );
   rootContext()->setContextProperty( "UnitTypes", QVariant::fromValue<QgsUnitTypes>( mUnitTypes ) );
   rootContext()->setContextProperty( "ExifTools", QVariant::fromValue<QgsExifTools>( mExifTools ) );
   rootContext()->setContextProperty( "bookmarkModel", mBookmarkModel );
@@ -681,56 +703,6 @@ void QgisMobileapp::loadProjectQuirks()
 
   if ( autoSetupOnFirstLayer )
     mLayerTreeCanvasBridge->setAutoSetupOnFirstLayer( true );
-}
-
-void QgisMobileapp::removeRecentProject( const QString &path )
-{
-  QList<QPair<QString, QString>> projects = recentProjects();
-  for ( int idx = 0; idx < projects.count(); idx++ )
-  {
-    if ( projects.at( idx ).second == path )
-    {
-      projects.removeAt( idx );
-      break;
-    }
-  }
-  saveRecentProjects( projects );
-}
-
-QList<QPair<QString, QString>> QgisMobileapp::recentProjects()
-{
-  QSettings settings;
-  QList<QPair<QString, QString>> projects;
-
-  settings.beginGroup( "/qgis/recentProjects" );
-  const QStringList projectKeysList = settings.childGroups();
-  QList<int> projectKeys;
-  // This is overdoing it since we're clipping the recent projects list to five items at the moment, but might as well be futureproof
-  for ( const QString &key : projectKeysList )
-  {
-    projectKeys.append( key.toInt() );
-  }
-  for ( int i = 0; i < projectKeys.count(); i++ )
-  {
-    settings.beginGroup( QString::number( projectKeys.at( i ) ) );
-    projects << qMakePair( settings.value( QStringLiteral( "title" ) ).toString(), settings.value( QStringLiteral( "path" ) ).toString() );
-    settings.endGroup();
-  }
-  settings.endGroup();
-  return projects;
-}
-
-void QgisMobileapp::saveRecentProjects( const QList<QPair<QString, QString>> &projects )
-{
-  QSettings settings;
-  settings.remove( QStringLiteral( "/qgis/recentProjects" ) );
-  for ( int idx = 0; idx < projects.count() && idx < 5; idx++ )
-  {
-    settings.beginGroup( QStringLiteral( "/qgis/recentProjects/%1" ).arg( idx ) );
-    settings.setValue( QStringLiteral( "title" ), projects.at( idx ).first );
-    settings.setValue( QStringLiteral( "path" ), projects.at( idx ).second );
-    settings.endGroup();
-  }
 }
 
 void QgisMobileapp::onAfterFirstRendering()
@@ -909,18 +881,17 @@ void QgisMobileapp::readProjectFile()
     title = mProject->title().isEmpty() ? mProjectFileName : mProject->title();
   }
 
-  QList<QPair<QString, QString>> projects = recentProjects();
+  QList<RecentProjectListModel::RecentProject> projects = RecentProjectListModel::recentProjects();
   for ( int idx = 0; idx < projects.count(); idx++ )
   {
-    if ( projects.at( idx ).second == mProjectFilePath )
+    if ( projects.at( idx ).path == mProjectFilePath )
     {
       projects.removeAt( idx );
       break;
     }
   }
-  QPair<QString, QString> project = qMakePair( title, mProjectFilePath );
-  projects.insert( 0, project );
-  saveRecentProjects( projects );
+  projects.insert( 0, RecentProjectListModel::RecentProject( RecentProjectListModel::LocalProject, title, mProjectFilePath ) );
+  RecentProjectListModel::saveRecentProjects( projects );
 
   QList<QgsMapLayer *> vectorLayers;
   QList<QgsMapLayer *> rasterLayers;
@@ -1246,7 +1217,15 @@ void QgisMobileapp::readProjectFile()
   const QString projectPluginPath = PluginManager::findProjectPlugin( mProjectFilePath );
   if ( !projectPluginPath.isEmpty() )
   {
-    mPluginManager->loadPlugin( projectPluginPath, tr( "Project Plugin" ), false, true );
+    bool skipPermission = false;
+
+    const QString cloudProjectId = QFieldCloudUtils::getProjectId( projectPluginPath );
+    if ( !cloudProjectId.isEmpty() )
+    {
+      skipPermission = QFieldCloudUtils::projectSetting( cloudProjectId, QStringLiteral( "userRoleOrigin" ), QStringLiteral( "public" ) ).toString() != QStringLiteral( "public" );
+    }
+
+    mPluginManager->loadPlugin( projectPluginPath, tr( "Project Plugin" ), skipPermission, true );
   }
 }
 
@@ -1522,10 +1501,9 @@ QgisMobileapp::~QgisMobileapp()
 
   delete mOfflineEditing;
   mProject->clear();
-  delete mProject;
-  delete mAppMissingGridHandler;
 
   QgsApplication::taskManager()->cancelAll();
+
   mApp->exitQgis();
   QMetaObject::invokeMethod( mApp, &QgsApplication::quit, Qt::QueuedConnection );
 }

@@ -280,10 +280,22 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>No Bluetooth devices detected.</source>
+        <translation>Nessun dispositivo bluetooth trovato.</translation>
+    </message>
+    <message>
+        <source>Use Bluetooth Low Energy (BLE)</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>Deeper scanning for paired devices</source>
+        <source>Bluetooth device configuration:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Low Energy (BLE)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Classic (BT)</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -416,11 +428,11 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Description</source>
-        <translation type="unfinished"/>
+        <translation>Descrizione</translation>
     </message>
     <message>
         <source>Change color</source>
-        <translation type="unfinished"/>
+        <translation>Cambia colore</translation>
     </message>
 </context>
 <context>
@@ -506,7 +518,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Empty</source>
-        <translation type="unfinished"/>
+        <translation>Vuoto</translation>
     </message>
 </context>
 <context>
@@ -594,22 +606,26 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>The project is read-only.</source>
-        <translation type="unfinished"/>
+        <translation>Il progetto è in sola lettura.</translation>
     </message>
     <message>
         <source>Legend</source>
-        <translation type="unfinished"/>
+        <translation>Legenda</translation>
     </message>
     <message>
         <source>Return home</source>
-        <translation type="unfinished"/>
+        <translation>Torna alla home</translation>
     </message>
     <message>
         <source>Expand All</source>
-        <translation type="unfinished"/>
+        <translation>Espandi Tutto</translation>
     </message>
     <message>
         <source>Collapse All</source>
+        <translation>Compatta Tutto</translation>
+    </message>
+    <message>
+        <source>Project Information</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -854,7 +870,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Empty</source>
-        <translation type="unfinished"/>
+        <translation>Vuoto</translation>
     </message>
     <message>
         <source>NULL</source>
@@ -945,6 +961,18 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Hard constraints not satisfied</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Previous page</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Next page</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -1208,11 +1236,11 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     <name>FileDeviceChooser</name>
     <message>
         <source>File path</source>
-        <translation type="unfinished"/>
+        <translation>Percorso del file</translation>
     </message>
     <message>
         <source>Interval (in milliseconds)</source>
-        <translation type="unfinished"/>
+        <translation>Intervallo (in millisecondi)</translation>
     </message>
 </context>
 <context>
@@ -1360,16 +1388,23 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
         <translation>Posizione</translation>
     </message>
     <message>
-        <source>Precise view</source>
-        <translation>Vista precisa</translation>
-    </message>
-    <message>
         <source>Sensors</source>
         <translation>Sensori</translation>
     </message>
     <message>
         <source>Elevation profile</source>
         <translation>Profilo altimetrico</translation>
+    </message>
+    <message>
+        <source>NTRIP</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>InformationPopup</name>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -1625,11 +1660,11 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>Sample projects</source>
-        <translation>Progetto di esempio</translation>
+        <translation type="vanished">Progetto di esempio</translation>
     </message>
     <message>
         <source>Created projects</source>
-        <translation type="unfinished"/>
+        <translation>Progetti creati</translation>
     </message>
     <message>
         <source>Home</source>
@@ -1938,6 +1973,25 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
 </context>
 <context>
+    <name>NtripSourceTableFetcher</name>
+    <message>
+        <source>Unexpected response from NTRIP caster</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Disconnected before receiving source table</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No mountpoints found in NTRIP source table</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP source table fetch error: </source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>OrderedRelationModel</name>
     <message>
         <source>Cannot start editing</source>
@@ -2039,15 +2093,11 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>All files (*.*)</source>
-        <translation>Tutti i file (*.*)</translation>
+        <translation type="vanished">Tutti i file (*.*)</translation>
     </message>
     <message>
         <source>Select File</source>
         <translation>Selezione un File</translation>
-    </message>
-    <message>
-        <source>Audio files (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</source>
-        <translation>File audio (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</translation>
     </message>
     <message>
         <source>Removal Confirmation</source>
@@ -2158,6 +2208,14 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
         <source>No plugins have been installed yet, switch to the %1available plugins%3 tab to try some right away.&lt;br&gt;&lt;br&gt;For more information, %2read the documentation%3.</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>The currently opened project has loaded a project plugin</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Deny permission</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>PositionInformationView</name>
@@ -2261,7 +2319,7 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>Bluetooth (NMEA)</source>
-        <translation>Bluetooth (NMEA)</translation>
+        <translation type="vanished">Bluetooth (NMEA)</translation>
     </message>
     <message>
         <source>TCP (NMEA)</source>
@@ -2297,6 +2355,10 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>Logs file (NMEA)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Bluetooth BT + BLE (NMEA)</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2348,6 +2410,10 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>ant.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1/s</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2415,6 +2481,65 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
 </context>
 <context>
+    <name>PositioningNtripSettings</name>
+    <message>
+        <source>NTRIP Settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Protocol</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP Revision 1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP Revision 2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Nome utente</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Password</translation>
+    </message>
+    <message>
+        <source>Mount point</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Identifier:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Data format:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Distance:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Forward position to NTRIP caster</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP SSL/TLS</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>PositioningPreciseView</name>
     <message>
         <source>Dist.</source>
@@ -2423,6 +2548,30 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     <message>
         <source>Positioning accuracy too low for this precision level</source>
         <translation>Accuratezza di posizionamento insufficiente per questo livello di precisione</translation>
+    </message>
+    <message>
+        <source>Audio proximity feedback</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Rotate view</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Rotation source</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Compass</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Movement</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Precision</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2556,6 +2705,10 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
         <source>QFieldCloud allows to synchronize and merge the data collected by your team in %1. From small individual projects to large data collection campaigns. </source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>Automatically push changes on a regular interval</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>ProjectUtils</name>
@@ -2597,6 +2750,18 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>Track color</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Note attachments</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Descrizione</translation>
+    </message>
+    <message>
+        <source>Attachments</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2762,7 +2927,7 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     <message>
         <source>Server URL
 (Leave empty to use the default server)</source>
-        <translation>URL del server
+        <translation type="vanished">URL del server
 (Lasciare vuoto per utilizzare il server predefinito)</translation>
     </message>
     <message>
@@ -2815,7 +2980,7 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>QFieldCloud</source>
-        <translation>QFieldCloud</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>or</source>
@@ -2823,6 +2988,11 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>Sign in using %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1Server URL
+(Leave empty to use the default server)</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2838,11 +3008,19 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>QFieldCloud had troubles packaging your project</source>
-        <translation>QFieldCloud ha riscontrato problemi nella preparazione del tuo progetto</translation>
+        <translation type="vanished">QFieldCloud ha riscontrato problemi nella preparazione del tuo progetto</translation>
     </message>
     <message>
         <source>Some layers have not been packaged correctly on QFieldCloud. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server. Please check the logs of the latest packaging job on the qfield.cloud website.</source>
-        <translation>Alcuni layer non sono stati impacchettati correttamente su QFieldCloud. Questi layer potrebbero essere mal configurati o la loro sorgente dati potrebbe non essere accessibile dal server di QFieldCloud. Controlla il registro degli ultimi impacchettamenti sul sito qfield.cloud</translation>
+        <translation type="vanished">Alcuni layer non sono stati impacchettati correttamente su QFieldCloud. Questi layer potrebbero essere mal configurati o la loro sorgente dati potrebbe non essere accessibile dal server di QFieldCloud. Controlla il registro degli ultimi impacchettamenti sul sito qfield.cloud</translation>
+    </message>
+    <message>
+        <source>Some layers have not been packaged correctly. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Please check the detailed feedback below and the latest packaging job logs on the QFieldCloud website.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2869,11 +3047,11 @@ Le geometrie degli elementi verranno combinate in un elemento &apos;%1&apos; che
     </message>
     <message>
         <source>Connecting to the cloud.</source>
-        <translation>Connessione al cloud.</translation>
+        <translation type="vanished">Connessione al cloud.</translation>
     </message>
     <message>
         <source>Greetings &lt;strong&gt;%1&lt;/strong&gt;.</source>
-        <translation>Ciao, &lt;strong&gt;%1&lt;/strong&gt;.</translation>
+        <translation type="vanished">Ciao, &lt;strong&gt;%1&lt;/strong&gt;.</translation>
     </message>
     <message>
         <source>This QFieldCloud project was first downloaded with another cloud account. Please sign in with the original account for this project to use the QFieldCloud functionality.</source>
@@ -3091,6 +3269,22 @@ Anche se puoi ancora visualizzare e utilizzare questo progetto, è altamente rac
         <source>%n file(s) remaining</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform></translation>
     </message>
+    <message>
+        <source>Used %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProject</name>
@@ -3268,6 +3462,49 @@ Messaggio dell&apos;errore: %4</translation>
         <source>Synchronizing</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>Using %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Storage size</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QFieldCloudProjectFilter</name>
+    <message>
+        <source>Predefined Filters</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Criteria</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Include public projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1&apos;s projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>My own projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Title or description contains</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Owner is</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProjectsModel</name>
@@ -3435,11 +3672,11 @@ Messaggio dell&apos;errore: %4</translation>
     </message>
     <message>
         <source>My Projects</source>
-        <translation>I miei Progetti</translation>
+        <translation type="vanished">I miei Progetti</translation>
     </message>
     <message>
         <source>Community</source>
-        <translation>Comunità</translation>
+        <translation type="vanished">Comunità</translation>
     </message>
     <message>
         <source>(Available locally)</source>
@@ -3467,7 +3704,7 @@ Messaggio dell&apos;errore: %4</translation>
     </message>
     <message>
         <source>Available locally, missing on the cloud</source>
-        <translation>Disponibile in locale, assente in cloud</translation>
+        <translation type="vanished">Disponibile in locale, assente in cloud</translation>
     </message>
     <message>
         <source>Available on the cloud, missing locally</source>
@@ -3475,7 +3712,7 @@ Messaggio dell&apos;errore: %4</translation>
     </message>
     <message>
         <source>Available locally</source>
-        <translation>Disponibile in locale</translation>
+        <translation type="vanished">Disponibile in locale</translation>
     </message>
     <message>
         <source>Has changes. </source>
@@ -3522,10 +3759,6 @@ Messaggio dell&apos;errore: %4</translation>
         <translation>Azioni del progetto</translation>
     </message>
     <message>
-        <source>, updated data available on the cloud</source>
-        <translation>, dati aggiornati disponibili sul cloud</translation>
-    </message>
-    <message>
         <source>QFieldCloud is packaging the latest data just for you; this might take some time, please hold tight</source>
         <translation>QFieldCloud sta confezionando i dati più recenti solo per te; potrebbe volerci del tempo, tieni saldo</translation>
     </message>
@@ -3542,14 +3775,6 @@ Messaggio dell&apos;errore: %4</translation>
         <translation>Raggiungi QFieldCloud per scaricare il progetto</translation>
     </message>
     <message>
-        <source>No cloud projects found. To get started, %1read the documentation%2.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>Search for project</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>Sign out</source>
         <translation>Esci</translation>
     </message>
@@ -3559,14 +3784,6 @@ Messaggio dell&apos;errore: %4</translation>
     </message>
     <message>
         <source>Show invalid projects</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>Available on the cloud</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>, has changes locally</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -3593,6 +3810,38 @@ Messaggio dell&apos;errore: %4</translation>
         <source>Push changes</source>
         <translation>Invia le modifiche</translation>
     </message>
+    <message>
+        <source>Projects</source>
+        <translation>Progetti</translation>
+    </message>
+    <message>
+        <source>Refreshing projects list...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Searching for projects...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No cloud projects found.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>To get started, %1read the documentation%2.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2 and see what the community has to offer.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search for projects</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudService</name>
@@ -3606,6 +3855,29 @@ Messaggio dell&apos;errore: %4</translation>
     </message>
 </context>
 <context>
+    <name>QFieldCloudStatus</name>
+    <message>
+        <source>QFieldCloud server is not reachable</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The server at %1 could not be reached. Please check your internet connection.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>QFieldCloud is under maintenance</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>QFieldCloud service is degraded</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>There is an ongoing incident</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>QFieldCloudUtils</name>
     <message>
         <source>A server error has occured, please try again.</source>
@@ -3616,7 +3888,11 @@ Messaggio dell&apos;errore: %4</translation>
         <translation>Si è verificato un errore di rete, riprovare.</translation>
     </message>
     <message>
-        <source>Your account&apos;s available storage is full.</source>
+        <source>The project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The project owner&apos;s subscription plan is insufficient.</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -3747,6 +4023,10 @@ Messaggio dell&apos;errore: %4</translation>
     </message>
     <message>
         <source>Download folder from WebDAV server</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Delete folder</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -3922,7 +4202,7 @@ Messaggio dell&apos;errore: %4</translation>
     <name>QFieldPositioningService</name>
     <message>
         <source>Positioning service running</source>
-        <translation type="unfinished"/>
+        <translation>Servizio di posizionamento in esecuzione</translation>
     </message>
     <message>
         <source>Latitude %1 | Longitude %2 | Altitude %3 m | Speed %4 m/s | Direction %5°</source>
@@ -4123,7 +4403,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Minimum number of positions collected</source>
-        <translation>Numero minimo di posizioni raccolto</translation>
+        <translation type="vanished">Numero minimo di posizioni raccolto</translation>
     </message>
     <message>
         <source>Automatically end collection when minimum number is met</source>
@@ -4139,7 +4419,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Antenna height [m]</source>
-        <translation>Altezza dell&apos;antenna [m]</translation>
+        <translation type="vanished">Altezza dell&apos;antenna [m]</translation>
     </message>
     <message>
         <source>Z values which are recorded from the positioning device will be corrected by this value. If a value of 1.6 is entered, this will result in a correction of -1.6 for each recorded value.</source>
@@ -4179,7 +4459,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>Timestamp (millisecondi dall&apos;epoca)</translation>
+        <translation type="vanished">Timestamp (millisecondi dall&apos;epoca)</translation>
     </message>
     <message>
         <source>Ground speed</source>
@@ -4346,14 +4626,6 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>Bad accuracy threshold [m]</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>Excellent accuracy threshold [m]</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>Enforce accuracy requirement</source>
         <translation type="unfinished"/>
     </message>
@@ -4422,19 +4694,127 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve the experience for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve %1 for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>This value will correct the Z values recorded from the positioning device. If a value of 1.6 is entered, the system will automatically subtract 1.6 from each recorded value. Make sure to insert the effective antenna height, i.e. pole length + antenna phase center offset.</source>
         <translation type="unfinished"/>
     </message>
     <message>
         <source>%1 Settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable proxy</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>System default</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. proxy.example.com</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. 8888</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Nome utente</translation>
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Password</translation>
+    </message>
+    <message>
+        <source>URLs excluded from proxy (comma-separated)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. localhost, 192.168.*</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Configure a network proxy to route QField&apos;s traffic through a proxy server. Useful for corporate networks and VPNs.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, the native camera provided by the operating system will be used.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, anonymized metrics will be collected and sent to help improve the user experience for everyone.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Positioning Device</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable NTRIP corrections</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client disconnected</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client connecting</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client connected</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Please provide valid NTRIP settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Elevation Adjustment</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Bad accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>m</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Excellent accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum positions count</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Antenna height</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -4627,6 +5007,42 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
         <source>Circle #2: point</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>KB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>MB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>GB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>TB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>B</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Cannot delete file (not allowed): %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>File does not exist: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete directory: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete file: %1 - %2</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QfActionButton</name>
@@ -4707,6 +5123,51 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     <message>
         <source>close</source>
         <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfDialog</name>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancella</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>No</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfMeterBar</name>
+    <message>
+        <source>Storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to manage storage</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfOverlayContainer</name>
+    <message>
+        <source>Positioning</source>
+        <translation>Posizionamento</translation>
     </message>
 </context>
 <context>
@@ -4839,7 +5300,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     <name>Range</name>
     <message>
         <source>Empty</source>
-        <translation type="unfinished"/>
+        <translation>Vuoto</translation>
     </message>
     <message>
         <source>NULL</source>
@@ -4904,7 +5365,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Empty</source>
-        <translation type="unfinished"/>
+        <translation>Vuoto</translation>
     </message>
     <message>
         <source>NULL</source>
@@ -4976,6 +5437,10 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     <message numerus="yes">
         <source>%n feature(s)</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform></translation>
+    </message>
+    <message>
+        <source>Open Form</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -5158,7 +5623,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Empty</source>
-        <translation type="unfinished"/>
+        <translation>Vuoto</translation>
     </message>
     <message>
         <source>NULL</source>
@@ -5188,7 +5653,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Minimum time [sec]</source>
-        <translation>Tempo minimo [sec]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the time between the last and new vertex meets a configured mimimum value.</source>
@@ -5200,7 +5665,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Minimum distance [%1]</source>
-        <translation>Distanza minima [%1]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the distance between the last and new vertex meets a configured mimimum value.</source>
@@ -5231,10 +5696,6 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
         <translation>Distanza di salvaguardia errata</translation>
     </message>
     <message>
-        <source>Maximum tolerated distance [%1]</source>
-        <translation>Distanza massima tollerata [%1]</translation>
-    </message>
-    <message>
         <source>When enabled, vertex addition will not occur when the distance between the last and new vertex is greater than a configured maximum value.</source>
         <translation>Se abilitata, l&apos;aggiunta del vertice non avverrà quando la distanza tra l&apos;ultimo e il nuovo vertice è maggiore di un valore massimo configurato.</translation>
     </message>
@@ -5248,7 +5709,7 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>Timestamp (millisecondi dall&apos;epoca)</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>Ground speed</source>
@@ -5300,6 +5761,26 @@ Annullare per eseguire una scansione veloce del dispositivo.</translation>
     </message>
     <message>
         <source>Track on layer %1 resumed</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum time</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>sec</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum distance</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Maximum tolerated distance</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -5905,6 +6386,21 @@ project</source>
     </message>
 </context>
 <context>
+    <name>gallery_relation_editor</name>
+    <message>
+        <source>QFieldCloud on-demand attachment error: </source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The external storage&apos;s authentication configuration ID is missing, please insure it is imported into %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Learn more</source>
+        <translation>Per saperne di più</translation>
+    </message>
+</context>
+<context>
     <name>ordered_relation_editor</name>
     <message>
         <source>Ensure contraints</source>
@@ -6178,7 +6674,7 @@ project</source>
     </message>
     <message>
         <source>Precise View Settings</source>
-        <translation>Configurazioni visualizzazione precisa</translation>
+        <translation type="vanished">Configurazioni visualizzazione precisa</translation>
     </message>
     <message>
         <source>0.25m Precision</source>
@@ -6242,11 +6738,11 @@ project</source>
     </message>
     <message>
         <source>%1 Precision</source>
-        <translation>Precisione %1</translation>
+        <translation type="vanished">Precisione %1</translation>
     </message>
     <message>
         <source>Enable Audio Proximity Feedback</source>
-        <translation>Abilita il feedback audio di prossimità</translation>
+        <translation type="vanished">Abilita il feedback audio di prossimità</translation>
     </message>
     <message>
         <source>Positioning Options</source>
@@ -6638,7 +7134,7 @@ project</source>
     </message>
     <message>
         <source>Legend</source>
-        <translation type="unfinished"/>
+        <translation>Legenda</translation>
     </message>
     <message>
         <source>The legend shows map layers and allows you to toggle visibility and opacity properties by &lt;b&gt;long-pressing on a layer to open a properties popup&lt;/b&gt;. The popup offers additional functionalities such as zooming to layer extent and displaying features contained within vector layers.</source>
@@ -6771,6 +7267,54 @@ to show actions</source>
     </message>
     <message>
         <source>Do you want to import &lt;b&gt;%1&lt;/b&gt; from &lt;b&gt;%2&lt;/b&gt; into %3?</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Long press on your location marker to show actions</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Plugin Manager</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project plugin loaded</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as your subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade plan</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as the project owner&apos;s subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable NTRIP Corrections</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Long press on the destination marker to show actions</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>meters</source>
         <translation type="unfinished"/>
     </message>
 </context>

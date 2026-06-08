@@ -46,6 +46,13 @@ TestCase {
     readonly property real default_value: 999
   }
 
+  Connections {
+    target: range
+    function onValueChangeRequested(value, isNull) {
+      range.value = value;
+    }
+  }
+
   EditorWidgets.DateTime {
     id: dateTime
     property var mainWindow: mainWindowItem
@@ -264,6 +271,33 @@ TestCase {
     compare(sliderRow.visible, false);
     compare(valueLabel.text, range.min + ".0000DEFAULT_SUFFIX"); // NOTE: using `range.min` because of `rangeItem.parent.value`
     compare(slider.value, range.min); // NOTE: using `range.min` because of `rangeItem.parent.value`
+  }
+
+  function test_02_range() {
+    range.config = {
+      "Min": 50,
+      "Max": 250,
+      "Step": 1
+    };
+    range.value = 100;
+    isEditing = true;
+    waitForRendering(range);
+
+    const textField = range.children[0].children[1];
+
+    textField.text = "20";
+    textField.commitValue();
+    compare(range.value, 50);
+
+    textField.text = "999";
+    textField.commitValue();
+    compare(range.value, 250);
+
+    textField.text = "150";
+    textField.commitValue();
+    compare(range.value, 150);
+
+    isEditing = false;
   }
 
   /**
@@ -647,7 +681,7 @@ TestCase {
    * Tests ValueRelation when AllowNull is enabled.
    *
    * This test:
-   * - Verifies that a NULL option is displayed as <i>NULL</i>
+   * - Verifies that a NULL option is displayed as NULL
    * - Checks that other items are displayed and ordered correctly
    */
   function test_05_ValueRelation() {
@@ -678,7 +712,7 @@ TestCase {
     const namesInList = expectedOrderedData["name"];
     wait(500);
     compare(comboBoxItem.count, namesInList.length + 1);
-    compare(comboBoxItem.displayText, "<i>NULL</i>");
+    compare(comboBoxItem.displayText, "NULL");
 
     // check every element inside combobox model is correctly setted
     for (let i = 1; i < comboBoxItem.count - 1; ++i) {
@@ -854,7 +888,7 @@ TestCase {
     const valueRelationListComponentParent = valueRelation.children[2];
     const valueRelationRepeater = Utils.findChildren(valueRelationListComponentParent, "ValueRelationRepeater");
     const valueRelationSearchBar = Utils.findChildren(valueRelationListComponentParent, "ValueRelationSearchBar");
-    const searchTextField = valueRelationSearchBar.children[0].children[2];
+    const searchTextField = valueRelationSearchBar.children[0].children[3];
 
     // turn on editable mode
     valueRelation.isEnabled = true;
@@ -931,7 +965,7 @@ TestCase {
     wait(500);
     compare(relationComboBoxParent.searchPopup.opened, true);
     const searchFeaturePopup = relationComboBoxParent.searchPopup.contentItem;
-    const searchBarTextField = searchFeaturePopup.children[0].children[1].children[0].children[0].children[2];
+    const searchBarTextField = searchFeaturePopup.children[0].children[1].children[0].children[0].children[3];
     const searchFeatureResultsList = searchFeaturePopup.children[0].children[1].children[1];
     const featureListModel = searchFeatureResultsList.model;
     compare(searchFeatureResultsList.count, 8);

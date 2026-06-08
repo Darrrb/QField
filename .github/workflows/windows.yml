@@ -19,11 +19,23 @@ env:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-2025
+            triplet: x64-windows-static
+            arch: amd64
+            platform_arch: x64
+          - os: windows-11-arm
+            triplet: arm64-windows-static
+            arch: arm64
+            platform_arch: arm64
     name: build (windows)
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
 
     outputs:
-      artifact_name: ${{ steps.package.outputs.artifact_name }}
+      artifact_name_arm64: ${{ steps.package.outputs.artifact_name_arm64 }}
+      artifact_name_x64: ${{ steps.package.outputs.artifact_name_x64 }}
 
     steps:
       - name: 🐣 Checkout
@@ -42,18 +54,22 @@ jobs:
 
       - name: 🧽 Developer Command Prompt for Microsoft Visual C++
         uses: ilammy/msvc-dev-cmd@v1
-        # with:
+        with:
+          arch: ${{ matrix.arch }}
           # See https://github.com/actions/runner-images/issues/9398
           # toolset: 14.39
 
       - name: 🔨 Prepare build env
         shell: bash
+        if: matrix.platform_arch == 'x64'
         run: |
-          # Hide terminal for release builds
-          if [[ -n "${{ env.CI_TAG }}" ]]; then
-            EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_WIN32_EXECUTABLE=ON"
-          fi
+          EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -D SENTRY_DSN=${{ secrets.SENTRY_DSN }}"
           echo "EXTRA_CMAKE_ARGS=${EXTRA_CMAKE_ARGS}" >> $GITHUB_ENV
+
+      - name: 🔨 Uninstall system cmake
+        if: matrix.os == 'windows-2022'
+        shell: bash
+        run: |
           choco uninstall cmake.install
 
       - name: 🐩 Install CMake and Ninja
@@ -76,11 +92,11 @@ jobs:
           cmake -S "${SOURCE_DIR}" \
                 -G Ninja \
                 -B "${CMAKE_BUILD_DIR}" \
-                -D CMAKE_C_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/x64/bin/clang-cl.exe" \
-                -D CMAKE_CXX_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/x64/bin/clang-cl.exe" \
+                -D CMAKE_C_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/${{ matrix.platform_arch }}/bin/clang-cl.exe" \
+                -D CMAKE_CXX_COMPILER="C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/${{ matrix.platform_arch }}/bin/clang-cl.exe" \
                 -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-                -D VCPKG_TARGET_TRIPLET="x64-windows-static" \
-                -D VCPKG_HOST_TRIPLET="x64-windows-static" \
+                -D VCPKG_TARGET_TRIPLET="${{ matrix.triplet }}" \
+                -D VCPKG_HOST_TRIPLET="${{ matrix.triplet }}" \
                 -D WITH_VCPKG=ON \
                 -D WITH_SPIX=ON \
                 -D WITH_UNITTESTS=OFF \
@@ -92,20 +108,20 @@ jobs:
                 -D NUGET_USERNAME=opengisch \
                 -D NUGET_TOKEN=${{ secrets.GITHUB_TOKEN }} \
                 -D CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded\$<\$<CONFIG:Debug>:Debug>" \
-                -D PKG_CONFIG_EXECUTABLE=${CMAKE_BUILD_DIR}/vcpkg_installed/x64-windows-static/tools/pkgconf/pkgconf.exe \
+                -D PKG_CONFIG_EXECUTABLE=${CMAKE_BUILD_DIR}/vcpkg_installed/${{ matrix.triplet }}/tools/pkgconf/pkgconf.exe \
                 -D WITH_BLUETOOTH=ON \
                 -D VCPKG_INSTALL_OPTIONS="--x-buildtrees-root=C:/src;--x-abi-tools-use-exact-versions" \
                 -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
-                -D SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
                 -D SENTRY_ENV="${APP_ENV}" \
+                -D CMAKE_WIN32_EXECUTABLE=ON \
                 -D PACKAGE_ZIP=ON \
                 ${EXTRA_CMAKE_ARGS}
 
       - name: 📑 Upload dep build logs
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: build-logs-x64-windows-static
+          name: build-logs-${{ matrix.triplet }}
           path: |
             C:/src/**/*.log
 
@@ -119,13 +135,19 @@ jobs:
 
       - name: 🧫 Test
         shell: bash
+        if: matrix.platform_arch == 'x64'
         env:
-          PROJ_LIB: ${{ env.CMAKE_BUILD_DIR }}/vcpkg_installed/x64-windows-static/share/proj
+          PROJ_LIB: ${{ env.CMAKE_BUILD_DIR }}/vcpkg_installed/${{ matrix.triplet }}/share/proj
         run: |
           SOURCE_DIR=$( cygpath "${{ github.workspace }}" )
           pip install -r "${SOURCE_DIR}/test/spix/requirements.txt"
           cd "${{ env.CMAKE_BUILD_DIR }}"
           ctest --output-on-failure -C ${{ env.BUILD_TYPE }} -E qmltest
+
+      - name: Install NSIS
+        uses: repolevedavaj/install-nsis@v1.2.0
+        with:
+          nsis-version: '3.10'
 
       - name: Package
         id: package
@@ -140,56 +162,59 @@ jobs:
           fi
 
           ARTIFACT_PATHNAME=$(ls ${{ env.CMAKE_BUILD_DIR }}/QField-*-win64.${INSTALLER_SUFFIX} | head -n 1)
+          mv "$ARTIFACT_PATHNAME" "${{ env.CMAKE_BUILD_DIR }}/QField-${{ matrix.platform_arch }}.${INSTALLER_SUFFIX}"
+
+          ARTIFACT_PATHNAME="${{ env.CMAKE_BUILD_DIR }}/QField-${{ matrix.platform_arch }}.${INSTALLER_SUFFIX}"
           ARTIFACT_NAME=$(basename $ARTIFACT_PATHNAME)
           echo "ARTIFACT_PATHNAME=${ARTIFACT_PATHNAME}" >> $GITHUB_ENV
-          echo "ARTIFACT_NAME=qfield-${{ env.CI_PACKAGE_FILE_SUFFIX }}-windows-x64.${INSTALLER_SUFFIX}" >> $GITHUB_ENV
-          echo "ARTIFACT_PACKAGE_NAME=QField-dev-x64-windows-static-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=qfield-${{ env.CI_PACKAGE_FILE_SUFFIX }}-windows-${{ matrix.platform_arch }}.${INSTALLER_SUFFIX}" >> $GITHUB_ENV
 
-          echo "artifact_name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name_${{ matrix.platform_arch }}=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: 📑 Upload logs
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: package-logs-x64-windows-static
+          name: package-logs-${{ matrix.triplet }}
           path: |
             ${{ env.CMAKE_BUILD_DIR }}/_CPack_Packages/**/*.log
             ${{ env.CMAKE_BUILD_DIR }}/CMakeCache.txt
 
       - name: 🎭 Sign
         if: ( github.event_name == 'release'  && startsWith(github.ref, 'refs/tags/v') ) || github.event_name == 'workflow_dispatch' && env.ARTIFACT_NAME != null
-        uses: azure/trusted-signing-action@v1.1.0
+        uses: azure/trusted-signing-action@v2.0.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
           endpoint: https://weu.codesigning.azure.net/
-          code-signing-account-name: OPENGISch
+          signing-account-name: OPENGISch
           certificate-profile-name: OPENGISch
           files-folder: ${{ env.CMAKE_BUILD_DIR }}
           files-folder-filter: exe,msi
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
+          cache-dependencies: false
 
-      - name: 📦 Upload package
+      - name: 📦 Upload artifacts
         if: ${{ env.ARTIFACT_NAME != null }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         id: artifact-windows
         with:
-          name: ${{ env.ARTIFACT_PACKAGE_NAME }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATHNAME }}
 
       - name: 📊 Upload test report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: "test-report-x64-windows-static-${{ env.BUILD_TYPE }}"
+          name: "test-report-${{ matrix.triplet }}-${{ env.BUILD_TYPE }}"
           path: "${{ env.CMAKE_BUILD_DIR }}/report"
 
       - name: 🚀 Upload release asset
         if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags/v') && env.ARTIFACT_NAME != null
-        uses: shogo82148/actions-upload-release-asset@v1
+        uses: shogo82148/actions-upload-release-asset@v1.10.1
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ${{ env.ARTIFACT_PATHNAME }}
@@ -197,7 +222,7 @@ jobs:
           overwrite: true
 
       - name: 💎 Setup ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@v1.310.0
         with:
           ruby-version: '3.4' # Not needed with a .ruby-version file
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
@@ -220,14 +245,28 @@ jobs:
         run: |
           bundle exec fastlane run sentry_debug_files_upload path:${{ env.CMAKE_BUILD_DIR }}/output/bin/qfield.pdb
 
+  comment_pr:
+    name: comment (pr)
+    runs-on: ubuntu-24.04
+    needs: build
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Vars
+        id: vars
+        run: |
+          ./scripts/ci/env_gh.sh
+
       - name: Schedule download comment
         uses: ./.github/actions/post_sticky_comment
-        if: github.event_name == 'pull_request'
         with:
           marker: windows
           body: |
             ### 🪟 Windows builds
-            Download a [Windows build of this PR for testing](https://nightly.link/opengisch/QField/actions/runs/${{ github.run_id }}/${{ env.ARTIFACT_PACKAGE_NAME }}.zip).
+            Download a [Windows build of this PR for testing](https://nightly.link/opengisch/QField/actions/runs/${{ github.run_id }}/qfield-${{ env.CI_PACKAGE_FILE_SUFFIX }}-windows-x64.zip) and for [arm64](https://nightly.link/opengisch/QField/actions/runs/${{ github.run_id }}/qfield-${{ env.CI_PACKAGE_FILE_SUFFIX }}-windows-arm64.zip).
+
             *(Built from commit ${{ github.event.pull_request.head.sha }})*
           pr: ${{ github.event.number }}
 
@@ -256,7 +295,7 @@ jobs:
         with:
           command: update
           # See documentation here https://learn.microsoft.com/en-us/windows/apps/publish/store-submission-api#update-current-draft-submission-metadata-api
-          product-update: '{"packages":[{"packageUrl":"https://sos-ch-dk-2.exo.io/qfieldapks/releases/files/${{ needs.build.outputs.artifact_name }}","languages":["en"],"architectures":["X64"],"isSilentInstall":false,"installerParameters":"/S","packageType":"exe","genericDocUrl":"https://nsis.sourceforge.io/Docs/AppendixD.html#errorlevels"}]}'
+          product-update: '{"packages":[{"packageUrl":"https://sos-ch-dk-2.exo.io/qfieldapks/releases/files/${{ needs.build.outputs.artifact_name_x64 }}","languages":["en"],"architectures":["X64"],"isSilentInstall":false,"installerParameters":"/S","packageType":"exe","genericDocUrl":"https://nsis.sourceforge.io/Docs/AppendixD.html#errorlevels"}, {"packageUrl":"https://sos-ch-dk-2.exo.io/qfieldapks/releases/files/${{ needs.build.outputs.artifact_name_arm64 }}","languages":["en"],"architectures":["Arm64"],"isSilentInstall":false,"installerParameters":"/S","packageType":"exe","genericDocUrl":"https://nsis.sourceforge.io/Docs/AppendixD.html#errorlevels"}]}'
 
       - name: Publish Submission
         uses: microsoft/store-submission@v1

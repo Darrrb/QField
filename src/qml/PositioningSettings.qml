@@ -21,9 +21,19 @@ Settings {
 
   property bool showPositionInformation: false
 
+  property bool enableNtrip: false
+  property var ntripSettings: ({})
+
   property bool alwaysShowPreciseView: false
   property real preciseViewPrecision: 2.5
   property bool preciseViewProximityAlarm: true
+
+  enum RotationSource {
+    Compass,
+    Movement
+  }
+  property bool preciseViewAutoRotate: false
+  property int preciseViewRotationSource: PositioningSettings.RotationSource.Compass
 
   property bool accuracyIndicator: false
   property real accuracyBad: 5.0

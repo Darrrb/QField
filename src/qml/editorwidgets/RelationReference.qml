@@ -49,10 +49,10 @@ EditorWidgetBase {
 
     RelationCombobox {
       id: relationReference
-      featureListModel: listModel
-      Layout.fillWidth: true
 
+      Layout.fillWidth: true
       enabled: isEnabled
+      featureListModel: listModel
       useSearch: false
       allowAddFeature: config['AllowAddFeatures'] !== undefined && config['AllowAddFeatures'] === true
       relation: _rel
@@ -66,6 +66,7 @@ EditorWidgetBase {
       id: viewButton
 
       property bool isVisible: listModel.currentLayer !== undefined && listModel.currentLayer !== null && listModel.currentLayer.geometryType() !== Qgis.GeometryType.Unknown && listModel.currentLayer.geometryType() !== Qgis.GeometryType.Null
+
       visible: isVisible
       enabled: relationReference.currentKeyValue !== undefined && relationReference.currentKeyValue !== ''
       width: isVisible && enabled ? 48 : 0
@@ -91,6 +92,7 @@ EditorWidgetBase {
       id: openFormButton
 
       enabled: showOpenFormButton && relationReference.currentKeyValue !== undefined && relationReference.currentKeyValue !== ''
+
       width: enabled ? 48 : 0
       height: 48
 

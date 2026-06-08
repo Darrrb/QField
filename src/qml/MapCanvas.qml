@@ -133,6 +133,7 @@ Item {
     jumpDetails.toRotation = !isNaN(rotation) ? rotation : -1;
     jumpDetails.position = 0.0;
     jumpDetails.handleMargins = handleMargins;
+    kineticHandler.stopAll();
     freeze('jumping');
     jumpDetails.enabled = true;
     jumpDetails.position = 1.0;
@@ -220,6 +221,12 @@ Item {
     }
   }
 
+  KineticHandler {
+    id: kineticHandler
+    mapCanvas: mapArea
+    mapCanvasWrapper: mapCanvasWrapper
+  }
+
   MapCanvasMap {
     id: mapCanvasWrapper
 
@@ -279,6 +286,9 @@ Item {
     }
 
     onPressedChanged: {
+      if (pressed) {
+        kineticHandler.stopAll();
+      }
       if (longPressActive)
         mapArea.longPressReleased("stylus");
       longPressActive = false;
@@ -295,7 +305,8 @@ Item {
     dragThreshold: 5
 
     property var oldPos
-    property real oldTranslationY
+    property real oldTranslationY: 0
+    property real activeScale: 1.0
 
     property bool isZooming: false
     property bool isPanning: false
@@ -303,19 +314,29 @@ Item {
 
     onActiveChanged: {
       if (active) {
+        kineticHandler.stopAll();
         if (mainTapHandler.doublePressed) {
           oldTranslationY = 0;
+          activeScale = 1.0;
           zoomCenter = centroid.position;
           isZooming = true;
+          kineticHandler.resetZoomSamples();
+          kineticHandler.addZoomSample(1.0);
           freeze('zoom');
         } else {
           oldPos = centroid.position;
           isPanning = true;
+          kineticHandler.resetPanSamples();
+          kineticHandler.addPanSample(centroid.position.x, centroid.position.y);
           freeze('pan');
         }
       } else {
-        if (isZooming || isPanning) {
-          unfreeze(isZooming ? 'zoom' : 'pan');
+        if (isPanning) {
+          kineticHandler.startPanInertia();
+          unfreeze('pan');
+        } else if (isZooming) {
+          kineticHandler.startZoomInertia(centroid.position);
+          unfreeze('zoom');
         }
         isZooming = false;
         isPanning = false;
@@ -325,9 +346,12 @@ Item {
     onCentroidChanged: {
       if (active) {
         if (isZooming) {
+          activeScale += (1 - Math.pow(0.8, (translation.y - oldTranslationY) / 60));
+          kineticHandler.addZoomSample(activeScale);
           mapCanvasWrapper.zoomByFactor(zoomCenter, Math.pow(0.8, (translation.y - oldTranslationY) / 60));
           oldTranslationY = translation.y;
         } else if (isPanning) {
+          kineticHandler.addPanSample(centroid.position.x, centroid.position.y);
           mapCanvasWrapper.pan(centroid.position, oldPos);
           oldPos = centroid.position;
         }
@@ -365,6 +389,9 @@ Item {
 
     onPressedChanged: {
       if (pressed) {
+        if (!pinchHandler.pinchReleasing) {
+          kineticHandler.stopAll();
+        }
         if (point.pressedButtons !== Qt.RightButton) {
           if (timer.running) {
             timer.stop();
@@ -405,7 +432,8 @@ Item {
     dragThreshold: 5
 
     property var oldPos
-    property real oldTranslationY
+    property real oldTranslationY: 0.0
+    property real activeScale: 1.0
 
     property bool isZooming: false
     property bool isPanning: false
@@ -413,19 +441,31 @@ Item {
 
     onActiveChanged: {
       if (active) {
+        if (!pinchHandler.pinchReleasing) {
+          kineticHandler.stopAll();
+        }
         if (mainTapHandler.doublePressed) {
           oldTranslationY = 0;
+          activeScale = 1.0;
           zoomCenter = centroid.position;
           isZooming = true;
+          kineticHandler.resetZoomSamples();
+          kineticHandler.addZoomSample(1.0);
           freeze('zoom');
         } else {
           oldPos = centroid.position;
           isPanning = true;
+          kineticHandler.resetPanSamples();
+          kineticHandler.addPanSample(centroid.position.x, centroid.position.y);
           freeze('pan');
         }
       } else {
-        if (isZooming || isPanning) {
-          unfreeze(isZooming ? 'zoom' : 'pan');
+        if (isPanning) {
+          kineticHandler.startPanInertia();
+          unfreeze('pan');
+        } else if (isZooming) {
+          kineticHandler.startZoomInertia(centroid.position);
+          unfreeze('zoom');
         }
         isZooming = false;
         isPanning = false;
@@ -435,9 +475,12 @@ Item {
     onCentroidChanged: {
       if (active) {
         if (isZooming) {
+          activeScale += (1 - Math.pow(0.8, (translation.y - oldTranslationY) / 60));
+          kineticHandler.addZoomSample(activeScale);
           mapCanvasWrapper.zoomByFactor(zoomCenter, Math.pow(0.8, (translation.y - oldTranslationY) / 60));
           oldTranslationY = translation.y;
         } else if (isPanning) {
+          kineticHandler.addPanSample(centroid.position.x, centroid.position.y);
           mapCanvasWrapper.pan(centroid.position, oldPos);
           oldPos = centroid.position;
         }
@@ -450,7 +493,7 @@ Item {
     target: null
     enabled: interactive
     grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType | PointerHandler.ApprovesTakeOverByAnything
-    acceptedDevices: PointerDevice.Stylus | PointerDevice.Mouse
+    acceptedDevices: PointerDevice.TouchPad | PointerDevice.Stylus | PointerDevice.Mouse
     acceptedButtons: Qt.RightButton
     dragThreshold: 10
 
@@ -568,16 +611,28 @@ Item {
 
     property bool rotationActive: false
     property bool rotationTresholdReached: false
+    property bool pinchReleasing: false
 
     onActiveChanged: {
       if (active) {
+        kineticHandler.stopAll();
         freeze('pinch');
         oldScale = 1.0;
         oldRotation = 0.0;
         rotationTresholdReached = false;
         oldPos = centroid.position;
+        kineticHandler.resetPanSamples();
+        kineticHandler.resetZoomSamples();
+        kineticHandler.addPanSample(centroid.position.x, centroid.position.y);
+        kineticHandler.addZoomSample(1.0);
       } else {
+        pinchReleasing = true;
+        kineticHandler.startPanInertia();
+        kineticHandler.startZoomInertia(centroid.position);
         unfreeze('pinch');
+        Qt.callLater(function () {
+          pinchReleasing = false;
+        });
       }
     }
 
@@ -585,6 +640,7 @@ Item {
       var oldPos1 = oldPos;
       oldPos = centroid.position;
       if (active) {
+        kineticHandler.addPanSample(centroid.position.x, centroid.position.y);
         mapCanvasWrapper.pan(centroid.position, oldPos1);
       }
     }
@@ -602,9 +658,12 @@ Item {
     }
 
     onActiveScaleChanged: {
-      mapCanvasWrapper.zoomByFactor(pinchHandler.centroid.position, oldScale / pinchHandler.activeScale);
-      mapCanvasWrapper.pan(pinchHandler.centroid.position, oldPos);
-      oldScale = pinchHandler.activeScale;
+      if (active) {
+        kineticHandler.addZoomSample(pinchHandler.activeScale);
+        mapCanvasWrapper.zoomByFactor(pinchHandler.centroid.position, oldScale / pinchHandler.activeScale);
+        mapCanvasWrapper.pan(pinchHandler.centroid.position, oldPos);
+        oldScale = pinchHandler.activeScale;
+      }
     }
   }
 

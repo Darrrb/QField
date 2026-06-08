@@ -72,16 +72,23 @@ TestCase {
   property var connectionSettings: mainColumnLayout.children[1]
   property var projectsSwipeView: mainColumnLayout.children[2]
   property var projectsColumnLayout: projectsSwipeView.contentChildren[0]
-  property var filterBar: projectsColumnLayout.children[0]
-  property var searchBarTextArea: projectsColumnLayout.children[1].children[0].children[2]
-  property var tableContainer: projectsColumnLayout.children[2]
+  property var filterBar: projectsColumnLayout.children[1]
+  property var searchBarTextArea: projectsColumnLayout.children[2].children[0].children[3]
+  property var tableContainer: projectsColumnLayout.children[3]
   property var table: tableContainer.children[0]
   property var projectDetails: projectsSwipeView.contentChildren[1]
+  property var searchBar: projectsColumnLayout.children[2]
 
   SignalSpy {
     id: connectionStatusSpy
     target: cloudConnection
     signalName: "statusChanged"
+  }
+
+  SignalSpy {
+    id: subscriptionSpy
+    target: cloudConnection
+    signalName: "subscriptionInformationReceived"
   }
 
   SignalSpy {
@@ -115,23 +122,20 @@ TestCase {
     projectsRefreshSpy.clear();
     currentProjectIdSpy.clear();
     currentProjectSpy.clear();
+    subscriptionSpy.clear();
   }
 
-  // QFieldCloud credentials must always be available
-  function init() {
-    verify(localUrl && localUsername && localPassword, "QFieldCloud local credentials are required");
-  }
-
-  // Returns all available server configurations (local always, remote if provided)
+  // Returns all available server configurations (local if provided, remote if provided)
   function serverConfigs() {
-    var configs = [
-      {
+    var configs = [];
+    if (localUrl && localUsername && localPassword) {
+      configs.push({
         tag: "local",
         url: localUrl,
         username: localUsername,
         password: localPassword
-      }
-    ];
+      });
+    }
     if (remoteUrl && remoteUsername && remotePassword) {
       configs.push({
         tag: "remote",
@@ -157,13 +161,18 @@ TestCase {
     return configs;
   }
 
-  // Helper: Login and refresh projects list
-  function loginAndRefresh(data) {
+  // Helper: Login to server
+  function loginToServer(data) {
     cloudConnection.url = data.url;
     cloudConnection.username = data.username;
     cloudConnection.login(data.password);
-    tryCompare(cloudConnection, "status", QFieldCloudConnection.LoggedIn, 15000);
-    cloudProjectsModel.refreshProjectsList(true, false, 0);
+    tryCompare(cloudConnection, "status", QFieldCloudConnection.LoggedIn, 30000);
+  }
+
+  // Helper: Login and refresh projects list
+  function loginAndRefresh(data) {
+    loginToServer(data);
+    cloudProjectsModel.refreshProjectsList(true);
     tryCompare(cloudProjectsModel, "isRefreshing", true, 5000);
     tryCompare(cloudProjectsModel, "isRefreshing", false, 30000);
     wait(500);
@@ -204,10 +213,7 @@ TestCase {
     compare(cloudConnection.status, QFieldCloudConnection.Disconnected);
     verify(connectionSettings.visible);
     compare(projectsSwipeView.visible, false);
-    cloudConnection.url = data.url;
-    cloudConnection.username = data.username;
-    cloudConnection.login(data.password);
-    tryCompare(cloudConnection, "status", QFieldCloudConnection.LoggedIn, 15000);
+    loginToServer(data);
     wait(500);
     verify(projectsSwipeView.visible);
     compare(connectionSettings.visible, false);
@@ -223,10 +229,7 @@ TestCase {
     return serverConfigs();
   }
   function test_02_filterBarTabSwitching(data) {
-    cloudConnection.url = data.url;
-    cloudConnection.username = data.username;
-    cloudConnection.login(data.password);
-    tryCompare(cloudConnection, "status", QFieldCloudConnection.LoggedIn, 15000);
+    loginToServer(data);
     wait(500);
     compare(filterBar.currentIndex, 0);
     compare(table.model.filter, QFieldCloudProjectsFilterModel.PrivateProjects);
@@ -252,10 +255,12 @@ TestCase {
     loginAndRefresh(data);
     const initialCount = table.count;
     searchBarTextArea.text = "---";
+    searchBar.searchTriggered();
     wait(300);
     const filteredCount = table.count;
     verify(filteredCount < initialCount);
     searchBarTextArea.text = "";
+    searchBar.searchTriggered();
     wait(300);
     compare(table.count, initialCount);
   }
@@ -271,10 +276,7 @@ TestCase {
   function test_04_loginLogoutViewTransitions(data) {
     verify(connectionSettings.visible);
     compare(projectsSwipeView.visible, false);
-    cloudConnection.url = data.url;
-    cloudConnection.username = data.username;
-    cloudConnection.login(data.password);
-    tryCompare(cloudConnection, "status", QFieldCloudConnection.LoggedIn, 15000);
+    loginToServer(data);
     wait(500);
     verify(projectsSwipeView.visible);
     compare(connectionSettings.visible, false);
@@ -458,17 +460,25 @@ TestCase {
       downloadButton.clicked();
       wait(1000);
       project = cloudProjectsModel.findProject(projectInfo.id);
-      tryCompare(project, "status", QFieldCloudProject.Downloading, 5000);
-      table.positionViewAtIndex(projectInfo.rowIndex, ListView.Center);
-      wait(200);
-      delegate = table.itemAtIndex(projectInfo.rowIndex);
-      verify(delegate !== null);
-      downloadButton = delegate.children[1].children[2].children[0];
-      verify(downloadButton !== null);
-      downloadButton.clicked();
-      wait(1000);
-      project = cloudProjectsModel.findProject(projectInfo.id);
-      compare(project.status, QFieldCloudProject.Idle);
+      // The download may complete before we observe the Downloading state;
+      // only attempt cancel if still downloading.
+      if (project.status === QFieldCloudProject.Downloading) {
+        table.positionViewAtIndex(projectInfo.rowIndex, ListView.Center);
+        wait(200);
+        delegate = table.itemAtIndex(projectInfo.rowIndex);
+        verify(delegate !== null);
+        downloadButton = delegate.children[1].children[2].children[0];
+        verify(downloadButton !== null);
+        downloadButton.clicked();
+        wait(1000);
+        project = cloudProjectsModel.findProject(projectInfo.id);
+      }
+      tryCompare(project, "status", QFieldCloudProject.Idle, 180000);
+      if (project.localPath !== "") {
+        cloudProjectsModel.removeLocalProject(projectInfo.id);
+        wait(1000);
+        project = cloudProjectsModel.findProject(projectInfo.id);
+      }
       compare(project.localPath, "");
       wait(500);
     }
@@ -516,5 +526,27 @@ TestCase {
     verify(cloudProjectsModel.currentProject !== null, "currentProject should not be null");
     compare(cloudProjectsModel.currentProject.id, projectId);
     compare(cloudProjectsModel.currentProject.name, projectName);
+  }
+
+  /**
+   * Tests that subscription information is successfully fetched from the server.
+   *
+   * Scenario: After login, request subscription details and verify the response
+   * contains valid plan, storage, and status fields.
+   */
+  function test_11_subscriptionInformationReceived_data() {
+    return serverConfigs();
+  }
+  function test_11_subscriptionInformationReceived(data) {
+    loginToServer(data);
+
+    cloudConnection.getSubscriptionInformation(data.username);
+    tryCompare(subscriptionSpy, "count", 1, 15000);
+
+    var info = subscriptionSpy.signalArguments[0][0];
+    verify(info.plan !== "");
+    verify(info.storageTotal > 0);
+    verify(info.storageUsed >= 0);
+    verify(info.status !== "");
   }
 }

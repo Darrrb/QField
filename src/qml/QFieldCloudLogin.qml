@@ -13,6 +13,7 @@ Item {
   property bool hasCredentialsAuthentication: true
   property bool isServerUrlEditingActive: false
   property bool isVisible: false
+  property QFieldCloudStatus cloudServiceStatus: null
 
   width: parent.width
   height: connectionSettings.childrenRect.height
@@ -31,27 +32,23 @@ Item {
     Image {
       id: logo
       Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+      Layout.maximumWidth: 210
+      Layout.maximumHeight: 210
       fillMode: Image.PreserveAspectFit
       smooth: true
-      source: "qrc:/images/qfieldcloud_logo.svg"
-      sourceSize.width: 124
-      sourceSize.height: 124
+      source: cloudConnection.url != cloudConnection.defaultUrl && cloudConnection.serverInformation.whitelabel.logoMain !== '' ? cloudConnection.serverInformation.whitelabel.logoMain : "qrc:/images/qfieldcloud_logo.svg"
+
+      onStatusChanged: {
+        // In case the whitelabel logo fails to load, revert to the default QFieldCloud logo
+        if (status == Image.Error) {
+          source = "qrc:/images/qfieldcloud_logo.svg";
+        }
+      }
 
       MouseArea {
         anchors.fill: parent
         onDoubleClicked: toggleServerUrlEditing()
       }
-    }
-
-    Text {
-      Layout.fillWidth: true
-      Layout.bottomMargin: 10
-      horizontalAlignment: Text.AlignHCenter
-      font.pointSize: Theme.titleFont.pointSize
-      font.bold: true
-      color: Theme.cloudColor
-      wrapMode: Text.WordWrap
-      text: qsTr("QFieldCloud")
     }
 
     Text {
@@ -90,7 +87,7 @@ Item {
       id: serverUrlLabel
       Layout.fillWidth: true
       visible: cloudConnection.status === QFieldCloudConnection.Disconnected && (cloudConnection.url !== cloudConnection.defaultUrl || isServerUrlEditingActive)
-      text: qsTr("Server URL\n(Leave empty to use the default server)")
+      text: qsTr("%1Server URL\n(Leave empty to use the default server)").arg(cloudConnection.serverInformation.whitelabel.siteTitle !== '' ? cloudConnection.serverInformation.whitelabel.siteTitle + ' ' : '')
       horizontalAlignment: Text.AlignHCenter
       font: Theme.defaultFont
       color: Theme.secondaryTextColor
@@ -131,14 +128,15 @@ Item {
         enabled: visible
         font: Theme.defaultFont
         horizontalAlignment: Text.AlignLeft
-
         text: parent.displayText
+        selectionColor: Theme.mainColor
+        selectedTextColor: Theme.light
         onTextChanged: {
           const cleanedText = text.replace(/\s+/g, '');
           if (cleanedText !== cloudConnection.url) {
-            getAuthenticationProvidersTimer.restart();
+            applyUrlTimer.restart();
           } else {
-            getAuthenticationProvidersTimer.stop();
+            applyUrlTimer.stop();
           }
           return cleanedText;
         }
@@ -151,14 +149,15 @@ Item {
       }
 
       Timer {
-        id: getAuthenticationProvidersTimer
+        id: applyUrlTimer
         interval: 500
         repeat: false
         running: false
 
         onTriggered: {
           cloudConnection.url = serverUrlField.text !== '' && prefixUrlWithProtocol(serverUrlField.text) !== cloudConnection.defaultUrl ? prefixUrlWithProtocol(serverUrlField.text) : cloudConnection.defaultUrl;
-          cloudConnection.getAuthenticationProviders();
+          cloudConnection.getServerInformation();
+          qfieldCloudStatus.refresh();
         }
       }
     }
@@ -217,6 +216,10 @@ Item {
       }
     }
 
+    QFieldCloudStatusBanner {
+      cloudServiceStatus: qfieldCloudLogin.cloudServiceStatus
+    }
+
     QfButton {
       Layout.fillWidth: true
       text: cloudConnection.status == QFieldCloudConnection.LoggedIn ? qsTr("Sign out") : cloudConnection.status == QFieldCloudConnection.Connecting ? qsTr("Signing in, please wait") : qsTr("Sign in")
@@ -261,13 +264,13 @@ Item {
       id: cloudRegisterLabel
       Layout.fillWidth: true
       Layout.topMargin: 16
-      text: qsTr('New user?') + ' <a href="https://app.qfield.cloud/accounts/signup/">' + qsTr('Register an account') + '</a>.'
+      text: cloudConnection.serverInformation.signupUrl !== '' ? qsTr('New user?') + ' <a href="' + cloudConnection.serverInformation.signupUrl + '">' + qsTr('Register an account') + '</a>.' : ''
       horizontalAlignment: Text.AlignHCenter
       font: Theme.defaultFont
       color: Theme.mainTextColor
       textFormat: Text.RichText
       wrapMode: Text.WordWrap
-      visible: cloudConnection.status === QFieldCloudConnection.Disconnected
+      visible: cloudConnection.status === QFieldCloudConnection.Disconnected && cloudConnection.serverInformation.signupUrl !== ''
 
       onLinkActivated: link => {
         if (Qt.platform.os === "ios" || Qt.platform.os === "android") {

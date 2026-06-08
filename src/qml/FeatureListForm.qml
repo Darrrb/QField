@@ -96,7 +96,7 @@ Pane {
         return parent.height;
       } else {
         const defaultMin = Math.min(Math.max(200, parent.height / 2), parent.height);
-        var minContentHeight = featureForm.visible ? defaultMin : featureListToolBar.height + (globalFeaturesList.contentHeight + globalFeaturesList.anchors.bottomMargin) + 25;
+        var minContentHeight = featureFormList.state !== "FeatureList" ? defaultMin : featureListToolBar.height + (globalFeaturesList.contentHeight + globalFeaturesList.anchors.bottomMargin) + 25;
         const newHeight = Math.min(minContentHeight, defaultMin);
         lastHeight = newHeight;
         return newHeight;
@@ -312,7 +312,7 @@ Pane {
         right: parent ? parent.right : undefined
       }
       height: Math.max(48, featureText.height)
-      color: "transparent"
+      color: conditionalBackgroundColor !== undefined ? conditionalBackgroundColor : "transparent"
 
       Ripple {
         clip: true
@@ -345,7 +345,10 @@ Pane {
         }
         font.bold: true
         font.pointSize: Theme.resultFont.pointSize
-        color: Theme.mainTextColor
+        font.italic: conditionalFontItalic
+        font.underline: conditionalFontUnderline
+        font.strikeout: conditionalFontStrikeOut
+        color: conditionalTextColor !== undefined ? conditionalTextColor : Theme.mainTextColor
         text: display
         wrapMode: Text.WordWrap
       }
@@ -433,7 +436,7 @@ Pane {
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.bottom: parent.bottom
-    leftMargin: featureFormList.x == 0 ? mainWindow.sceneLeftMargin : 0
+    leftMargin: featureFormList.x === 0 ? mainWindow.sceneLeftMargin : 0
     rightMargin: mainWindow.sceneRightMargin
     bottomMargin: mainWindow.sceneBottomMargin
     height: parent.height - globalFeaturesList.height
@@ -455,6 +458,11 @@ Pane {
 
     onRequestJumpToPoint: function (center, scale, handleMargins) {
       featureFormList.requestJumpToPoint(center, scale, handleMargins);
+    }
+
+    onConfirmed: {
+      featureFormList.state = featureFormList.selection.model.selectedCount > 0 ? "FeatureList" : "FeatureForm";
+      displayToast(qsTr("Changes saved"));
     }
 
     onCancelled: {
@@ -614,8 +622,6 @@ Pane {
 
     onSave: {
       featureForm.confirm();
-      featureFormList.state = featureFormList.selection.model.selectedCount > 0 ? "FeatureList" : "FeatureForm";
-      displayToast(qsTr("Changes saved"));
     }
 
     onCancel: {
@@ -737,13 +743,13 @@ Pane {
       target: moveFeaturesToolbar
 
       function onMoveConfirmed() {
-        moveFeaturesTransformer.sourcePosition = moveFeaturesToolbar.endPoint;
-        var translateX = moveFeaturesTransformer.projectedPosition.x;
-        var translateY = moveFeaturesTransformer.projectedPosition.y;
         moveFeaturesTransformer.sourcePosition = moveFeaturesToolbar.startPoint;
-        translateX -= moveFeaturesTransformer.projectedPosition.x;
-        translateY -= moveFeaturesTransformer.projectedPosition.y;
-        featureFormList.model.moveSelection(translateX, translateY);
+        let translateX = moveFeaturesTransformer.projectedPosition.x;
+        let translateY = moveFeaturesTransformer.projectedPosition.y;
+        moveFeaturesTransformer.sourcePosition = moveFeaturesToolbar.endPoint;
+        translateX = moveFeaturesTransformer.projectedPosition.x - translateX;
+        translateY = moveFeaturesTransformer.projectedPosition.y - translateY;
+        featureFormList.model.moveSelection(translateX, translateY, moveFeaturesTransformer.projectedPosition);
         moveFeaturesToolbar.startPoint = undefined;
         moveFeaturesToolbar.endPoint = undefined;
       }

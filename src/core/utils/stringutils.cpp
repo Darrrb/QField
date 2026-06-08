@@ -47,46 +47,53 @@ QString StringUtils::createUuid()
   return QUuid::createUuid().toString();
 }
 
-bool StringUtils::fuzzyMatch( const QString &source, const QString &term )
-{
-  if ( source.contains( term, Qt::CaseInsensitive ) )
-    return true;
-
-  const QRegularExpression whitespaceRegex( QStringLiteral( "\\W+" ) );
-  const QStringList parts = source.split( whitespaceRegex );
-  const QStringList termParts = term.split( whitespaceRegex );
-  const qsizetype termPartsCount = termParts.size();
-  qsizetype lastMatchedTermPartIdx = -1;
-  qsizetype matchedTermItems = 0;
-
-  for ( const QString &part : parts )
-  {
-    for ( qsizetype i = lastMatchedTermPartIdx + 1; i < termPartsCount; i++ )
-    {
-      if ( part.startsWith( termParts[i], Qt::CaseInsensitive ) )
-      {
-        lastMatchedTermPartIdx = i;
-        matchedTermItems++;
-        break;
-      }
-    }
-  }
-
-  return lastMatchedTermPartIdx >= 0 && matchedTermItems == termPartsCount
-           ? true
-           : false;
-}
-
 double StringUtils::calcFuzzyScore( const QString &string, const QString &searchTerm )
 {
   double fuzzyScore = 0.0;
-  fuzzyScore = StringUtils::fuzzyMatch( string, searchTerm ) ? 0.5 : 0;
+  if ( string.startsWith( searchTerm, Qt::CaseInsensitive ) )
+  {
+    fuzzyScore += 0.5;
+  }
+  else
+  {
+    static QRegularExpression whitespaceRegex( QStringLiteral( "\\W+" ) );
+    const QStringList parts = string.split( whitespaceRegex );
+    const QStringList termParts = searchTerm.split( whitespaceRegex );
+    const qsizetype termPartsCount = termParts.size();
+
+    qsizetype lastMatchedTermPartIdx = -1;
+    qsizetype matchedTermItems = 0;
+    for ( const QString &part : parts )
+    {
+      for ( qsizetype i = lastMatchedTermPartIdx + 1; i < termPartsCount; i++ )
+      {
+        if ( part.startsWith( termParts[i], Qt::CaseInsensitive ) )
+        {
+          lastMatchedTermPartIdx = i;
+          matchedTermItems++;
+          break;
+        }
+      }
+    }
+
+    if ( lastMatchedTermPartIdx >= 0 && matchedTermItems == termPartsCount )
+    {
+      fuzzyScore += 0.5;
+    }
+  }
+
   fuzzyScore += QgsStringUtils::fuzzyScore( string, searchTerm ) * 0.5;
   return fuzzyScore;
 };
 
 QString StringUtils::pointInformation( const QgsPoint &point, const QgsCoordinateReferenceSystem &crs )
 {
+  if ( crs.authid() == QStringLiteral( "EPSG:4326" ) )
+  {
+    // For WGS84 coordinates, use the most universally accepted form (i.e. lat, lon)
+    return QStringLiteral( "%1, %2" ).arg( QString::number( point.y(), 'f', 5 ), QString::number( point.x(), 'f', 5 ) );
+  }
+
   QString firstSuffix;
   QString secondSuffix;
   const bool currentCrsIsXY = QgsCoordinateReferenceSystemUtils::defaultCoordinateOrderForCrs( crs ) == Qgis::CoordinateOrder::XY;
@@ -194,8 +201,79 @@ QString StringUtils::highlightText( const QString &string, const QString &highli
   if ( !highlightText.isEmpty() )
   {
     const QString formattedHighlightText = highlightText.toHtmlEscaped();
-    formattedString.replace( QRegularExpression( QStringLiteral( "(?!=&[a-z]*)(%1)(?![a-z]*;)" ).arg( formattedHighlightText ), QRegularExpression::CaseInsensitiveOption ), QStringLiteral( "<span style=\"text-decoration:underline;%1\">\\1</span>" ).arg( highlightColor.isValid() ? QStringLiteral( "color:%1" ).arg( highlightColor.name() ) : QString() ) );
+    const QRegularExpression formattedHighlightExpression( QStringLiteral( "(?!=&[a-z]*)(%1)(?![a-z]*;)" ).arg( formattedHighlightText ), QRegularExpression::CaseInsensitiveOption );
+    if ( formattedString.contains( formattedHighlightExpression ) )
+    {
+      formattedString.replace( formattedHighlightExpression, QStringLiteral( "<span style=\"text-decoration:underline;%1\">\\1</span>" ).arg( highlightColor.isValid() ? QStringLiteral( "color:%1" ).arg( highlightColor.name() ) : QString() ) );
+    }
+    else
+    {
+      QStringList highlightParts = highlightText.toLower().split( ' ', Qt::SkipEmptyParts );
+      highlightParts.removeDuplicates();
+      std::sort( highlightParts.begin(), highlightParts.end(), []( const QString &s1, const QString &s2 ) { return s1.size() < s2.size(); } );
+      for ( QString &highlightPart : highlightParts )
+      {
+        highlightPart = highlightPart.toHtmlEscaped();
+      }
+      const QRegularExpression formattedHighlightPartsExpression( QStringLiteral( "(?!=&[a-z]*)(%1)(?![a-z]*;)" ).arg( highlightParts.join( '|' ) ), QRegularExpression::CaseInsensitiveOption );
+      if ( formattedString.contains( formattedHighlightPartsExpression ) )
+      {
+        formattedString.replace( formattedHighlightPartsExpression, QStringLiteral( "<span style=\"text-decoration:underline;%1\">\\1</span>" ).arg( highlightColor.isValid() ? QStringLiteral( "color:%1" ).arg( highlightColor.name() ) : QString() ) );
+      }
+    }
   }
 
   return formattedString;
+}
+
+QString StringUtils::snippet( const QString &string, int desiredCharactersLength )
+{
+  if ( string.isEmpty() )
+  {
+    return QString();
+  }
+
+  QString snippet = string.trimmed().replace( QRegularExpression( QString( "[\r\n]+" ) ), " " );
+  if ( snippet.size() <= desiredCharactersLength )
+  {
+    return snippet;
+  }
+  snippet.clear();
+
+  const QString paragraph = string.split( QRegularExpression( QString( "[\r\n]+" ) ), Qt::SkipEmptyParts ).at( 0 );
+  const QStringList sentences = paragraph.split( QRegularExpression( QString( "\\." ) ), Qt::SkipEmptyParts );
+  for ( const QString &sentence : sentences )
+  {
+    if ( snippet.size() + sentence.size() < desiredCharactersLength )
+    {
+      snippet += QStringLiteral( "%1." ).arg( sentence );
+    }
+    else
+    {
+      if ( snippet.isEmpty() )
+      {
+        const QStringList parts = string.split( QRegularExpression( QString( "\\s" ) ), Qt::SkipEmptyParts );
+        if ( !parts.isEmpty() )
+        {
+          for ( const QString &part : parts )
+          {
+            if ( snippet.size() + part.size() < desiredCharactersLength )
+            {
+              snippet += QStringLiteral( "%1 " ).arg( part );
+            }
+          }
+        }
+
+        if ( snippet.isEmpty() )
+        {
+          snippet = QStringLiteral( "%1" ).arg( sentence.mid( 0, desiredCharactersLength ) );
+        }
+
+        snippet += QStringLiteral( "…" );
+      }
+      break;
+    }
+  }
+
+  return snippet;
 }

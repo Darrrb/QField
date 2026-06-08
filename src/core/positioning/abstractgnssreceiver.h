@@ -31,15 +31,18 @@ class AbstractGnssReceiver : public QObject
   public:
     enum Capability
     {
-      NoCapabilities = 0,      //!< No capabilities
-      OrthometricAltitude = 1, //!< Orthometric altitude support
-      Logging = 1 << 1,        //!< Logging support
+      NoCapabilities = 0,       //!< No capabilities
+      OrthometricAltitude = 1,  //!< Orthometric altitude support
+      Logging = 1 << 1,         //!< Logging support
+      NtripCorrection = 1 << 2, //!< NTRIP correction support
     };
     Q_DECLARE_FLAGS( Capabilities, Capability )
     Q_FLAGS( Capabilities )
 
     explicit AbstractGnssReceiver( QObject *parent = nullptr );
     virtual ~AbstractGnssReceiver() = default;
+
+    virtual AbstractGnssReceiver::Capabilities capabilities() const;
 
     bool valid() const { return mValid; }
     void setValid( bool valid ) { mValid = valid; }
@@ -53,6 +56,8 @@ class AbstractGnssReceiver : public QObject
     GnssPositionInformation lastGnssPositionInformation() const { return mLastGnssPositionInformation; }
 
     QString lastError() const { return mLastError; }
+
+    double batteryLevel() const { return mBatteryLevel; }
 
     /**
      * Returns extra details (such as hdop, vdop, pdop) provided by the positioning device.
@@ -70,11 +75,16 @@ class AbstractGnssReceiver : public QObject
     void socketStateChanged( const QAbstractSocket::SocketState socketState );
     void socketStateStringChanged( const QString &socketStateString );
     void lastErrorChanged( const QString &lastError );
+    void batteryLevelChanged( const double batteryLevel );
+
+  public slots:
+    virtual void onCorrectionDataReceived( const QByteArray &data ) {}
 
   private:
     friend class InternalGnssReceiver;
     friend class EgenioussReceiver;
     friend class NmeaGnssReceiver;
+    friend class BluetoothLowEnergyReceiver;
     friend class BluetoothReceiver;
     friend class TcpReceiver;
     friend class UdpReceiver;
@@ -90,6 +100,9 @@ class AbstractGnssReceiver : public QObject
     GnssPositionInformation mLastGnssPositionInformation;
     QAbstractSocket::SocketState mSocketState = QAbstractSocket::UnconnectedState;
     QString mLastError;
+    double mBatteryLevel = std::numeric_limits<double>::quiet_NaN();
 };
+
+Q_DECLARE_METATYPE( AbstractGnssReceiver )
 
 #endif // ABSTRACTGNSSRECEIVER_H

@@ -102,21 +102,6 @@ void Quick3DTerrainProvider::setForceSquareSize( bool forceSquareSize )
   updateFromMapSettings();
 }
 
-QSize Quick3DTerrainProvider::gridSize() const
-{
-  return mGridSize;
-}
-
-QgsRectangle Quick3DTerrainProvider::extent() const
-{
-  return mExtent;
-}
-
-QSizeF Quick3DTerrainProvider::size() const
-{
-  return mSize;
-}
-
 void Quick3DTerrainProvider::updateFromMapSettings()
 {
   if ( !mMapSettings || !mProject )
@@ -124,27 +109,27 @@ void Quick3DTerrainProvider::updateFromMapSettings()
     return;
   }
 
-  QgsRectangle visibleExtent = mMapSettings->visibleExtent();
+  QgsRectangle adjustedExtent = mMapSettings->mapSettings().visibleExtent();
   if ( mForceSquareSize )
   {
-    if ( visibleExtent.width() >= visibleExtent.height() )
+    if ( adjustedExtent.width() >= adjustedExtent.height() )
     {
-      const double adjustement = ( visibleExtent.width() - visibleExtent.height() ) / 2;
-      visibleExtent.setYMinimum( visibleExtent.yMinimum() - adjustement );
-      visibleExtent.setYMaximum( visibleExtent.yMaximum() + adjustement );
+      const double adjustment = ( adjustedExtent.width() - adjustedExtent.height() ) / 2;
+      adjustedExtent.setYMinimum( adjustedExtent.yMinimum() - adjustment );
+      adjustedExtent.setYMaximum( adjustedExtent.yMaximum() + adjustment );
     }
     else
     {
-      const double adjustement = ( visibleExtent.height() - visibleExtent.width() ) / 2;
-      visibleExtent.setXMinimum( visibleExtent.xMinimum() - adjustement );
-      visibleExtent.setXMaximum( visibleExtent.xMaximum() + adjustement );
+      const double adjustment = ( adjustedExtent.height() - adjustedExtent.width() ) / 2;
+      adjustedExtent.setXMinimum( adjustedExtent.xMinimum() - adjustment );
+      adjustedExtent.setXMaximum( adjustedExtent.xMaximum() + adjustment );
     }
   }
 
-  bool changed = mExtent != visibleExtent;
-  if ( changed )
+  if ( mExtent != adjustedExtent )
   {
-    mExtent = visibleExtent;
+    mExtent = adjustedExtent;
+
     if ( mExtent.width() >= mExtent.height() )
     {
       mSize = QSizeF( mBaseSize, mExtent.height() * mBaseSize / mExtent.width() );
@@ -153,15 +138,17 @@ void Quick3DTerrainProvider::updateFromMapSettings()
     {
       mSize = QSizeF( mExtent.width() * mBaseSize / mExtent.height(), mBaseSize );
     }
+
     emit extentChanged();
   }
 
-  calculateResolution();
+  generateData();
+}
 
-  if ( changed && mTerrainProvider )
-  {
-    calcNormalizedData();
-  }
+void Quick3DTerrainProvider::generateData()
+{
+  calculateResolution();
+  calcNormalizedData();
 }
 
 void Quick3DTerrainProvider::calculateResolution()
@@ -223,9 +210,9 @@ double Quick3DTerrainProvider::heightAt( double x, double y ) const
 double Quick3DTerrainProvider::normalizedHeightAt( double x, double y ) const
 {
   const double realHeight = heightAt( x, y );
-  const double extentSize = std::max( mExtent.width(), mExtent.height() );
-  const double scale = ( mBaseSize / extentSize ) * calculateVisualExaggeration();
-  return ( realHeight - mMinRealHeight ) * scale;
+  const double extentSize = std::max( mNormalizedDataExtent.width(), mNormalizedDataExtent.height() );
+  const double scale = ( mBaseSize / extentSize );
+  return ( realHeight - mMinRealHeight ) * scale / mOffsetScale;
 }
 
 QVector3D Quick3DTerrainProvider::geoTo3D( double geoX, double geoY, float heightOffset ) const
@@ -255,18 +242,18 @@ QVector3D Quick3DTerrainProvider::geoTo3D( double geoX, double geoY, float heigh
   return QVector3D( x3d, y3d, z3d );
 }
 
-double Quick3DTerrainProvider::calculateVisualExaggeration() const
+QgsPoint Quick3DTerrainProvider::scene3DToGeo( double sceneX, double sceneZ ) const
 {
-  const double extentSize = std::max( mExtent.width(), mExtent.height() );
-  if ( extentSize > 100000 )
+  if ( mExtent.isEmpty() || mSize.width() <= 0 || mSize.height() <= 0 )
   {
-    return 3.0;
+    return QgsPoint();
   }
-  if ( extentSize > 50000 )
-  {
-    return 2.0;
-  }
-  return 1.0;
+
+  const double nx = sceneX / mSize.width() + 0.5;
+  const double nz = 0.5 - sceneZ / mSize.height();
+
+  return QgsPoint( mExtent.xMinimum() + nx * mExtent.width(),
+                   mExtent.yMinimum() + nz * mExtent.height() );
 }
 
 void Quick3DTerrainProvider::calcNormalizedData()
@@ -274,46 +261,42 @@ void Quick3DTerrainProvider::calcNormalizedData()
   if ( mExtent.isEmpty() || !mTerrainProvider )
   {
     mNormalizedData.fill( 0.0, static_cast<qsizetype>( mGridSize.width() ) * mGridSize.height() );
+    mNormalizedDataExtent = mExtent;
+
     emit normalizedDataChanged();
     emit terrainDataReady();
+
     return;
   }
 
   if ( mFutureWatcher->isRunning() )
   {
     mFutureWatcher->cancel();
-    mFutureWatcher->waitForFinished();
   }
 
   mIsLoading = true;
   emit isLoadingChanged();
 
-  QgsAbstractTerrainProvider *terrainProvider;
   QgsCoordinateReferenceSystem terrainCrs;
+  QgsAbstractTerrainProvider *terrainProvider = nullptr;
   QgsRasterDataProvider *rasterProvider = nullptr;
-  double scale = 1.0;
-  double offset = 0.0;
+  const double scale = mTerrainProvider->scale();
+  const double offset = mTerrainProvider->offset();
 
-  if ( mTerrainProvider )
+  if ( QgsRasterDemTerrainProvider *rasterDemProvider = dynamic_cast<QgsRasterDemTerrainProvider *>( mTerrainProvider.get() ) )
   {
-    scale = mTerrainProvider->scale();
-    offset = mTerrainProvider->offset();
-
-    if ( QgsRasterDemTerrainProvider *rasterDemProvider = dynamic_cast<QgsRasterDemTerrainProvider *>( mTerrainProvider.get() ) )
+    QgsRasterLayer *layer = rasterDemProvider->layer();
+    if ( layer && layer->dataProvider() )
     {
-      QgsRasterLayer *layer = rasterDemProvider->layer();
-      if ( layer && layer->dataProvider() )
-      {
-        terrainCrs = layer->crs();
-        rasterProvider = layer->dataProvider()->clone();
-      }
+      terrainCrs = layer->crs();
+      rasterProvider = layer->dataProvider()->clone();
     }
-    else
-    {
-      terrainCrs = mTerrainProvider->crs();
-      terrainProvider = mTerrainProvider->clone();
-      terrainProvider->prepare();
-    }
+  }
+  else
+  {
+    terrainCrs = mTerrainProvider->crs();
+    terrainProvider = mTerrainProvider->clone();
+    terrainProvider->prepare();
   }
 
   QgsRectangle extent = mExtent;
@@ -334,6 +317,8 @@ void Quick3DTerrainProvider::calcNormalizedData()
   if ( ( !rasterProvider && !terrainProvider ) || extent.isEmpty() )
   {
     mNormalizedData.fill( 0.0, static_cast<qsizetype>( mGridSize.width() ) * mGridSize.height() );
+    mNormalizedDataExtent = mExtent;
+
     emit normalizedDataChanged();
     emit terrainDataReady();
 
@@ -345,7 +330,9 @@ void Quick3DTerrainProvider::calcNormalizedData()
 
   QSize gridSize = mGridSize;
   QFuture<QVector<double>> future = QtConcurrent::run( [terrainProvider, rasterProvider, extent, gridSize, scale, offset]() {
-    QVector<double> heights( static_cast<qsizetype>( gridSize.width() ) * gridSize.height(), 0.0 );
+    QVector<double> heights( static_cast<qsizetype>( gridSize.width() ) * gridSize.height(), std::numeric_limits<double>::quiet_NaN() );
+    double lowestHeight = std::numeric_limits<double>::max();
+    QVector<int> missingValueIndexes;
     if ( rasterProvider )
     {
       std::unique_ptr<QgsRasterBlock> block( rasterProvider->block( 1, extent, gridSize.width(), gridSize.height() ) );
@@ -360,6 +347,14 @@ void Quick3DTerrainProvider::calcNormalizedData()
             if ( !isNoData && !std::isnan( value ) )
             {
               heights[row * gridSize.width() + col] = value * scale + offset;
+              if ( lowestHeight > heights[row * gridSize.width() + col] )
+              {
+                lowestHeight = heights[row * gridSize.width() + col];
+              }
+            }
+            else
+            {
+              missingValueIndexes << row * gridSize.width() + col;
             }
           }
         }
@@ -373,20 +368,42 @@ void Quick3DTerrainProvider::calcNormalizedData()
         for ( int col = 0; col < gridSize.width(); ++col )
         {
           const double x = extent.xMinimum() + extent.width() / gridSize.width() * col;
-          const double y = extent.xMinimum() - extent.height() / gridSize.height() * row;
+          const double y = extent.yMaximum() - extent.height() / gridSize.height() * row;
           double value = terrainProvider->heightAt( x, y );
           if ( !std::isnan( value ) )
           {
             heights[row * gridSize.width() + col] = value * scale + offset;
+            if ( lowestHeight > heights[row * gridSize.width() + col] )
+            {
+              lowestHeight = heights[row * gridSize.width() + col];
+            }
+          }
+          else
+          {
+            missingValueIndexes << row * gridSize.width() + col;
           }
         }
       }
       delete terrainProvider;
     }
 
+    if ( !missingValueIndexes.isEmpty() )
+    {
+      if ( lowestHeight == std::numeric_limits<double>::max() )
+      {
+        lowestHeight = 0;
+      }
+
+      for ( int missingValueIndex : missingValueIndexes )
+      {
+        heights[missingValueIndex] = lowestHeight;
+      }
+    }
+
     return heights;
   } );
 
+  mFutureExtent = mExtent;
   mFutureWatcher->setFuture( future );
 }
 
@@ -444,7 +461,7 @@ bool Quick3DTerrainProvider::isLoading() const
 
 void Quick3DTerrainProvider::onTerrainDataCalculated()
 {
-  if ( !mFutureWatcher->isFinished() )
+  if ( !mFutureWatcher->isFinished() || mFutureWatcher->isCanceled() )
   {
     return;
   }
@@ -456,7 +473,7 @@ void Quick3DTerrainProvider::onTerrainDataCalculated()
   mMaxRealHeight = *minmax.second;
 
   const double extentSize = std::max( mExtent.width(), mExtent.height() );
-  const double scale = ( mBaseSize / extentSize ) * calculateVisualExaggeration();
+  const double scale = ( mBaseSize / extentSize );
 
   mNormalizedData.clear();
   mNormalizedData.reserve( heights.size() );
@@ -464,10 +481,93 @@ void Quick3DTerrainProvider::onTerrainDataCalculated()
   {
     mNormalizedData.append( ( h - mMinRealHeight ) * scale );
   }
+  mNormalizedDataExtent = mFutureExtent;
 
   mIsLoading = false;
   emit isLoadingChanged();
 
   emit normalizedDataChanged();
   emit terrainDataReady();
+}
+
+void Quick3DTerrainProvider::updateExtentFromOffsets()
+{
+  QgsRectangle modifiedExtent = mNormalizedDataExtent;
+  if ( !qgsDoubleNear( mOffsetScale, 0.0 ) )
+  {
+    modifiedExtent.scale( mOffsetScale );
+  }
+  if ( mOffsetVector.x() != 0 || mOffsetVector.y() != 0 )
+  {
+    const double mupp = mExtent.width() / mSize.width();
+    QgsVector panVector( -mOffsetVector.x() * mupp, mOffsetVector.z() * mupp );
+    modifiedExtent += panVector;
+  }
+
+  if ( modifiedExtent != mExtent )
+  {
+    mExtent = modifiedExtent;
+    emit extentChanged();
+  }
+}
+
+void Quick3DTerrainProvider::beginTransition()
+{
+  if ( !mIsTransitioning )
+  {
+    mIsTransitioning = true;
+    emit isTransitioningChanged();
+  }
+
+  generateData();
+}
+
+void Quick3DTerrainProvider::endTransition()
+{
+  mOffsetVector = QVector3D( 0, 0, 0 );
+  mOffsetScale = 1.0;
+  emit offsetVectorChanged();
+  emit offsetScaleChanged();
+
+  mIsTransitioning = false;
+  emit isTransitioningChanged();
+}
+
+void Quick3DTerrainProvider::pan( double x, double z )
+{
+  if ( qgsDoubleNear( x, 0.0 ) && qgsDoubleNear( z, 0.0 ) )
+  {
+    return;
+  }
+
+  mOffsetVector.setX( mOffsetVector.x() + x );
+  mOffsetVector.setZ( mOffsetVector.z() + z );
+
+  emit offsetVectorChanged();
+  updateExtentFromOffsets();
+}
+
+void Quick3DTerrainProvider::zoom( double factor )
+{
+  if ( qgsDoubleNear( factor, 0.0 ) )
+  {
+    return;
+  }
+
+  double scale = mOffsetScale + ( 1 - factor );
+  if ( scale < 0.05 )
+  {
+    scale = 0.05;
+  }
+  else if ( scale > 1.95 )
+  {
+    scale = 1.95;
+  }
+
+  if ( mOffsetScale != scale )
+  {
+    mOffsetScale = scale;
+    emit offsetScaleChanged();
+    updateExtentFromOffsets();
+  }
 }

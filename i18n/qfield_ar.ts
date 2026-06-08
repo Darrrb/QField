@@ -947,6 +947,18 @@ Cancel to make a minimal device scan instead.</source>
         <source>Hard constraints not satisfied</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>Previous page</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Next page</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>FeatureHistory</name>
@@ -1619,7 +1631,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Sample projects</source>
-        <translation>عينات المشاريع</translation>
+        <translation type="vanished">عينات المشاريع</translation>
     </message>
     <message>
         <source>Created projects</source>
@@ -2040,10 +2052,6 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>Audio files (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>Removal Confirmation</source>
         <translation>تأكيد الإزالة</translation>
     </message>
@@ -2150,6 +2158,14 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>No plugins have been installed yet, switch to the %1available plugins%3 tab to try some right away.&lt;br&gt;&lt;br&gt;For more information, %2read the documentation%3.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The currently opened project has loaded a project plugin</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Deny permission</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2342,6 +2358,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>ant.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1/s</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2593,6 +2613,18 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <source>Track color</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>Note attachments</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Attachments</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldAppAuthRequestHandler</name>
@@ -2756,7 +2788,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Server URL
 (Leave empty to use the default server)</source>
-        <translation>عنوان المُخدم
+        <translation type="vanished">عنوان المُخدم
 (اتركه فارغاً من أجل استخدام المُخدم الافتراضي)</translation>
     </message>
     <message>
@@ -2809,7 +2841,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud</source>
-        <translation>QFieldCloud</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>or</source>
@@ -2817,6 +2849,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Sign in using %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1Server URL
+(Leave empty to use the default server)</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2832,11 +2869,19 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud had troubles packaging your project</source>
-        <translation>واجه QFieldCloud مشاكل أثناء تحزيم مشورعك</translation>
+        <translation type="vanished">واجه QFieldCloud مشاكل أثناء تحزيم مشورعك</translation>
     </message>
     <message>
         <source>Some layers have not been packaged correctly on QFieldCloud. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server. Please check the logs of the latest packaging job on the qfield.cloud website.</source>
-        <translation>لم يتم تحزيم بعض الطبقات بنجاح على QFieldCloud. ربما تحوي إعدادات خاطئة أو لا يمكن الوصول إلى مصدر البيانات من خلال QFieldCloud.  يرجى تدقيق ملخص المهام الأخيرة على موقع QFieldCloud.</translation>
+        <translation type="vanished">لم يتم تحزيم بعض الطبقات بنجاح على QFieldCloud. ربما تحوي إعدادات خاطئة أو لا يمكن الوصول إلى مصدر البيانات من خلال QFieldCloud.  يرجى تدقيق ملخص المهام الأخيرة على موقع QFieldCloud.</translation>
+    </message>
+    <message>
+        <source>Some layers have not been packaged correctly. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Please check the detailed feedback below and the latest packaging job logs on the QFieldCloud website.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2863,11 +2908,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Connecting to the cloud.</source>
-        <translation>الاتصال إلى السحابة.</translation>
+        <translation type="vanished">الاتصال إلى السحابة.</translation>
     </message>
     <message>
         <source>Greetings &lt;strong&gt;%1&lt;/strong&gt;.</source>
-        <translation>تحياتنا &lt;strong&gt;%1&lt;/strong&gt;.</translation>
+        <translation type="vanished">تحياتنا &lt;strong&gt;%1&lt;/strong&gt;.</translation>
     </message>
     <message>
         <source>This QFieldCloud project was first downloaded with another cloud account. Please sign in with the original account for this project to use the QFieldCloud functionality.</source>
@@ -3085,6 +3130,22 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>%n file(s) remaining</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform></translation>
     </message>
+    <message>
+        <source>Used %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProject</name>
@@ -3261,6 +3322,49 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>Synchronizing</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>Using %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Storage size</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QFieldCloudProjectFilter</name>
+    <message>
+        <source>Predefined Filters</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Criteria</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search term</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Owner</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Include public projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>%1&apos;s projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>My own projects</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProjectsModel</name>
@@ -3425,11 +3529,11 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>My Projects</source>
-        <translation>مشاريعي</translation>
+        <translation type="vanished">مشاريعي</translation>
     </message>
     <message>
         <source>Community</source>
-        <translation>المجتمع</translation>
+        <translation type="vanished">المجتمع</translation>
     </message>
     <message>
         <source>(Available locally)</source>
@@ -3457,7 +3561,7 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Available locally, missing on the cloud</source>
-        <translation>متوفر محلياً، وغير متاح على السحابة.</translation>
+        <translation type="vanished">متوفر محلياً، وغير متاح على السحابة.</translation>
     </message>
     <message>
         <source>Available on the cloud, missing locally</source>
@@ -3465,7 +3569,7 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Available locally</source>
-        <translation>متاح محلياً</translation>
+        <translation type="vanished">متاح محلياً</translation>
     </message>
     <message>
         <source>Has changes. </source>
@@ -3512,10 +3616,6 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>, updated data available on the cloud</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>QFieldCloud is packaging the latest data just for you; this might take some time, please hold tight</source>
         <translation type="unfinished"/>
     </message>
@@ -3532,10 +3632,6 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>No cloud projects found. To get started, %1read the documentation%2.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>Search for project</source>
         <translation type="unfinished"/>
     </message>
@@ -3549,14 +3645,6 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Show invalid projects</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>Available on the cloud</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>, has changes locally</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -3583,6 +3671,34 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>Push changes</source>
         <translation>رفع التغيرات</translation>
     </message>
+    <message>
+        <source>Projects</source>
+        <translation>المشاريع</translation>
+    </message>
+    <message>
+        <source>Refreshing projects list...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Searching for projects...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No cloud projects found.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>To get started, %1read the documentation%2.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2 and see what the community has to offer.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2.</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudService</name>
@@ -3596,6 +3712,29 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
 </context>
 <context>
+    <name>QFieldCloudStatus</name>
+    <message>
+        <source>QFieldCloud server is not reachable</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The server at %1 could not be reached. Please check your internet connection.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>QFieldCloud is under maintenance</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>QFieldCloud service is degraded</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>There is an ongoing incident</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>QFieldCloudUtils</name>
     <message>
         <source>A server error has occured, please try again.</source>
@@ -3606,7 +3745,11 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation>حصل خطأ في الشبكة، يرجى المحاولة مرة آخرى.</translation>
     </message>
     <message>
-        <source>Your account&apos;s available storage is full.</source>
+        <source>The project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The project owner&apos;s subscription plan is insufficient.</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -3737,6 +3880,10 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Download folder from WebDAV server</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Delete folder</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -4412,19 +4559,75 @@ Cancel to make a minimal device scan instead.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve the experience for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve %1 for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>This value will correct the Z values recorded from the positioning device. If a value of 1.6 is entered, the system will automatically subtract 1.6 from each recorded value. Make sure to insert the effective antenna height, i.e. pole length + antenna phase center offset.</source>
         <translation type="unfinished"/>
     </message>
     <message>
         <source>%1 Settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable proxy</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>System default</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. proxy.example.com</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. 8888</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>اسم المسخدم</translation>
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>كلمة المرور</translation>
+    </message>
+    <message>
+        <source>URLs excluded from proxy (comma-separated)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. localhost, 192.168.*</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Configure a network proxy to route QField&apos;s traffic through a proxy server. Useful for corporate networks and VPNs.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, the native camera provided by the operating system will be used.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, anonymized metrics will be collected and sent to help improve the user experience for everyone.</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -4617,6 +4820,42 @@ Cancel to make a minimal device scan instead.</source>
         <source>Circle #2: point</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>KB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>MB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>GB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>TB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>B</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Cannot delete file (not allowed): %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>File does not exist: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete directory: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete file: %1 - %2</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QfActionButton</name>
@@ -4696,6 +4935,44 @@ Cancel to make a minimal device scan instead.</source>
     <name>QfCloseButton</name>
     <message>
         <source>close</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfDialog</name>
+    <message>
+        <source>OK</source>
+        <translation>حسناً</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>إلغاء الأمر</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfMeterBar</name>
+    <message>
+        <source>Storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to manage storage</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -4966,6 +5243,10 @@ Cancel to make a minimal device scan instead.</source>
     <message numerus="yes">
         <source>%n feature(s)</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform></translation>
+    </message>
+    <message>
+        <source>Open Form</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -5895,6 +6176,21 @@ project</source>
     </message>
 </context>
 <context>
+    <name>gallery_relation_editor</name>
+    <message>
+        <source>QFieldCloud on-demand attachment error: </source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The external storage&apos;s authentication configuration ID is missing, please insure it is imported into %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Learn more</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>ordered_relation_editor</name>
     <message>
         <source>Ensure contraints</source>
@@ -6761,6 +7057,42 @@ to show actions</source>
     </message>
     <message>
         <source>Do you want to import &lt;b&gt;%1&lt;/b&gt; from &lt;b&gt;%2&lt;/b&gt; into %3?</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Long press on your location marker to show actions</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Plugin Manager</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project plugin loaded</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as your subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade plan</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as the project owner&apos;s subscription plan is insufficient.</source>
         <translation type="unfinished"/>
     </message>
 </context>

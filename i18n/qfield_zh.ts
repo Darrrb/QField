@@ -283,8 +283,20 @@ Cancel to make a minimal device scan instead.</source>
         <translation>未检测到蓝牙设备。</translation>
     </message>
     <message>
-        <source>Deeper scanning for paired devices</source>
-        <translation>对配对设备进行深度扫描</translation>
+        <source>Use Bluetooth Low Energy (BLE)</source>
+        <translation>使用低功耗蓝牙 (BLE)</translation>
+    </message>
+    <message>
+        <source>Bluetooth device configuration:</source>
+        <translation>蓝牙设备配置:</translation>
+    </message>
+    <message>
+        <source>Low Energy (BLE)</source>
+        <translation>低功耗 (BLE)</translation>
+    </message>
+    <message>
+        <source>Classic (BT)</source>
+        <translation>经典 (BT)</translation>
     </message>
 </context>
 <context>
@@ -611,6 +623,10 @@ Cancel to make a minimal device scan instead.</source>
     <message>
         <source>Collapse All</source>
         <translation>全部折叠</translation>
+    </message>
+    <message>
+        <source>Project Information</source>
+        <translation>工程信息</translation>
     </message>
 </context>
 <context>
@@ -946,6 +962,18 @@ Cancel to make a minimal device scan instead.</source>
     <message>
         <source>Hard constraints not satisfied</source>
         <translation>硬约束未满足</translation>
+    </message>
+    <message>
+        <source>Previous page</source>
+        <translation>上一页</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>保存</translation>
+    </message>
+    <message>
+        <source>Next page</source>
+        <translation>下一页</translation>
     </message>
 </context>
 <context>
@@ -1356,16 +1384,23 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <translation>定位</translation>
     </message>
     <message>
-        <source>Precise view</source>
-        <translation>精确视图</translation>
-    </message>
-    <message>
         <source>Sensors</source>
         <translation>传感器</translation>
     </message>
     <message>
         <source>Elevation profile</source>
         <translation>纵剖面</translation>
+    </message>
+    <message>
+        <source>NTRIP</source>
+        <translation>NTRIP</translation>
+    </message>
+</context>
+<context>
+    <name>InformationPopup</name>
+    <message>
+        <source>Author</source>
+        <translation>作者</translation>
     </message>
 </context>
 <context>
@@ -1621,7 +1656,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Sample projects</source>
-        <translation>示例工程</translation>
+        <translation type="vanished">示例工程</translation>
     </message>
     <message>
         <source>Created projects</source>
@@ -1934,6 +1969,25 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
 </context>
 <context>
+    <name>NtripSourceTableFetcher</name>
+    <message>
+        <source>Unexpected response from NTRIP caster</source>
+        <translation>NTRIP中转站的异常响应</translation>
+    </message>
+    <message>
+        <source>Disconnected before receiving source table</source>
+        <translation>接收源表之前断开连接</translation>
+    </message>
+    <message>
+        <source>No mountpoints found in NTRIP source table</source>
+        <translation>在NTRIP源表中未找到挂载点</translation>
+    </message>
+    <message>
+        <source>NTRIP source table fetch error: </source>
+        <translation>NTRIP源表获取错误: </translation>
+    </message>
+</context>
+<context>
     <name>OrderedRelationModel</name>
     <message>
         <source>Cannot start editing</source>
@@ -2035,15 +2089,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>All files (*.*)</source>
-        <translation>所有文件 (*.*)</translation>
+        <translation type="vanished">所有文件 (*.*)</translation>
     </message>
     <message>
         <source>Select File</source>
         <translation>选择文件</translation>
-    </message>
-    <message>
-        <source>Audio files (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</source>
-        <translation>音频文件 (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</translation>
     </message>
     <message>
         <source>Removal Confirmation</source>
@@ -2154,6 +2204,14 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <source>No plugins have been installed yet, switch to the %1available plugins%3 tab to try some right away.&lt;br&gt;&lt;br&gt;For more information, %2read the documentation%3.</source>
         <translation>尚未安装插件，请切换到  %1可用插件%3 选项卡立即尝试。&lt;br&gt;&lt;br&gt;详细信息，%2请阅读文档%3。</translation>
     </message>
+    <message>
+        <source>The currently opened project has loaded a project plugin</source>
+        <translation>当前打开工程已加载了一个工程插件</translation>
+    </message>
+    <message>
+        <source>Deny permission</source>
+        <translation>拒绝权限</translation>
+    </message>
 </context>
 <context>
     <name>PositionInformationView</name>
@@ -2257,7 +2315,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Bluetooth (NMEA)</source>
-        <translation>蓝牙 (NMEA)</translation>
+        <translation type="vanished">蓝牙 (NMEA)</translation>
     </message>
     <message>
         <source>TCP (NMEA)</source>
@@ -2294,6 +2352,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Logs file (NMEA)</source>
         <translation>日志文件 (NMEA)</translation>
+    </message>
+    <message>
+        <source>Bluetooth BT + BLE (NMEA)</source>
+        <translation>蓝牙 BT + BLE (NMEA)</translation>
     </message>
 </context>
 <context>
@@ -2345,6 +2407,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>ant.</source>
         <translation>ant.</translation>
+    </message>
+    <message>
+        <source>%1/s</source>
+        <translation>%1/s</translation>
     </message>
 </context>
 <context>
@@ -2411,6 +2477,65 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
 </context>
 <context>
+    <name>PositioningNtripSettings</name>
+    <message>
+        <source>NTRIP Settings</source>
+        <translation>NTRIP设置</translation>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation>主机</translation>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>端口</translation>
+    </message>
+    <message>
+        <source>Protocol</source>
+        <translation>协议</translation>
+    </message>
+    <message>
+        <source>NTRIP Revision 1</source>
+        <translation>NTRIP 修订版 1</translation>
+    </message>
+    <message>
+        <source>NTRIP Revision 2</source>
+        <translation>NTRIP 修订版 2</translation>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>用户名</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>密码</translation>
+    </message>
+    <message>
+        <source>Mount point</source>
+        <translation>挂载点</translation>
+    </message>
+    <message>
+        <source>Identifier:</source>
+        <translation>标识符:</translation>
+    </message>
+    <message>
+        <source>Data format:</source>
+        <translation>数据格式:</translation>
+    </message>
+    <message>
+        <source>Distance:</source>
+        <translation>距离:</translation>
+    </message>
+    <message>
+        <source>Forward position to NTRIP caster</source>
+        <translation>将位置转发至NTRIP中转站</translation>
+    </message>
+    <message>
+        <source>NTRIP SSL/TLS</source>
+        <translation>NTRIP SSL/TLS</translation>
+    </message>
+</context>
+<context>
     <name>PositioningPreciseView</name>
     <message>
         <source>Dist.</source>
@@ -2419,6 +2544,30 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Positioning accuracy too low for this precision level</source>
         <translation>定位精度对于该精度级别而言太低</translation>
+    </message>
+    <message>
+        <source>Audio proximity feedback</source>
+        <translation>音频接近感应反馈</translation>
+    </message>
+    <message>
+        <source>Rotate view</source>
+        <translation>旋转视图</translation>
+    </message>
+    <message>
+        <source>Rotation source</source>
+        <translation>旋转源</translation>
+    </message>
+    <message>
+        <source>Compass</source>
+        <translation>指南针</translation>
+    </message>
+    <message>
+        <source>Movement</source>
+        <translation>运动</translation>
+    </message>
+    <message>
+        <source>Precision</source>
+        <translation>精度</translation>
     </message>
 </context>
 <context>
@@ -2552,6 +2701,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <source>QFieldCloud allows to synchronize and merge the data collected by your team in %1. From small individual projects to large data collection campaigns. </source>
         <translation>QFieldCloud允许同步与合并您的团队在%1中收集的数据。从小型个人工程到大型数据收集活动。</translation>
     </message>
+    <message>
+        <source>Automatically push changes on a regular interval</source>
+        <translation>定期自动推送更新</translation>
+    </message>
 </context>
 <context>
     <name>ProjectUtils</name>
@@ -2594,6 +2747,18 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Track color</source>
         <translation>跟踪颜色</translation>
+    </message>
+    <message>
+        <source>Note attachments</source>
+        <translation>注解附件</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>描述</translation>
+    </message>
+    <message>
+        <source>Attachments</source>
+        <translation>附件</translation>
     </message>
 </context>
 <context>
@@ -2758,7 +2923,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Server URL
 (Leave empty to use the default server)</source>
-        <translation>服务器URL地址
+        <translation type="vanished">服务器URL地址
 （留空使用默认服务器的URL地址）</translation>
     </message>
     <message>
@@ -2811,7 +2976,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud</source>
-        <translation>QFieldCloud</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>or</source>
@@ -2820,6 +2985,12 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Sign in using %1</source>
         <translation>使用%1登录</translation>
+    </message>
+    <message>
+        <source>%1Server URL
+(Leave empty to use the default server)</source>
+        <translation>%1服务器URL
+(留空使用默认服务器)</translation>
     </message>
 </context>
 <context>
@@ -2834,11 +3005,19 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud had troubles packaging your project</source>
-        <translation>QFieldCloud在打包工程时遇到问题</translation>
+        <translation type="vanished">QFieldCloud在打包工程时遇到问题</translation>
     </message>
     <message>
         <source>Some layers have not been packaged correctly on QFieldCloud. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server. Please check the logs of the latest packaging job on the qfield.cloud website.</source>
-        <translation>QFieldCloud的某些图层未正确打包。这些图层可能配置错误，或者无法从QFieldCloud服务器访问其的数据源。请在 qfield.cloud 网站查看最新打包作业日志。</translation>
+        <translation type="vanished">QFieldCloud的某些图层未正确打包。这些图层可能配置错误，或者无法从QFieldCloud服务器访问其的数据源。请在 qfield.cloud 网站查看最新打包作业日志。</translation>
+    </message>
+    <message>
+        <source>Some layers have not been packaged correctly. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server.</source>
+        <translation>某些图层未正确打包。这些图层可能配置错误，或者无法从QFieldCloud服务器访问其数据源。</translation>
+    </message>
+    <message>
+        <source>Please check the detailed feedback below and the latest packaging job logs on the QFieldCloud website.</source>
+        <translation>请查看以下详细反馈信息及QFieldCloud网站的最新打包作业日志。</translation>
     </message>
 </context>
 <context>
@@ -2865,11 +3044,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Connecting to the cloud.</source>
-        <translation>连接到云。</translation>
+        <translation type="vanished">连接到云。</translation>
     </message>
     <message>
         <source>Greetings &lt;strong&gt;%1&lt;/strong&gt;.</source>
-        <translation>您好 &lt;strong&gt;%1&lt;/strong&gt;</translation>
+        <translation type="vanished">您好 &lt;strong&gt;%1&lt;/strong&gt;</translation>
     </message>
     <message>
         <source>This QFieldCloud project was first downloaded with another cloud account. Please sign in with the original account for this project to use the QFieldCloud functionality.</source>
@@ -3087,6 +3266,22 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>%n file(s) remaining</source>
         <translation><numerusform>剩余%n个文件</numerusform></translation>
     </message>
+    <message>
+        <source>Used %1 of %2</source>
+        <translation>已使用%2的%1</translation>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation>升级存储</translation>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation>由于您的可用存储空间已满，无法打包工程%1。</translation>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation>由于工程所有者的可用存储空间已满，无法打包工程%1。</translation>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProject</name>
@@ -3263,6 +3458,49 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>Synchronizing</source>
         <translation>同步中</translation>
     </message>
+    <message>
+        <source>Using %1 of %2</source>
+        <translation>正在使用%2的%1</translation>
+    </message>
+    <message>
+        <source>Storage size</source>
+        <translation>存储容量</translation>
+    </message>
+</context>
+<context>
+    <name>QFieldCloudProjectFilter</name>
+    <message>
+        <source>Predefined Filters</source>
+        <translation>预定义过滤</translation>
+    </message>
+    <message>
+        <source>Criteria</source>
+        <translation>准则</translation>
+    </message>
+    <message>
+        <source>Include public projects</source>
+        <translation>包含公开工程</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
+        <source>%1&apos;s projects</source>
+        <translation>%1&apos;s 工程</translation>
+    </message>
+    <message>
+        <source>My own projects</source>
+        <translation>我的专属工程</translation>
+    </message>
+    <message>
+        <source>Title or description contains</source>
+        <translation>标题或描述包含</translation>
+    </message>
+    <message>
+        <source>Owner is</source>
+        <translation>所有者是</translation>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProjectsModel</name>
@@ -3427,11 +3665,11 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>My Projects</source>
-        <translation>我的工程</translation>
+        <translation type="vanished">我的工程</translation>
     </message>
     <message>
         <source>Community</source>
-        <translation>社区</translation>
+        <translation type="vanished">社区</translation>
     </message>
     <message>
         <source>(Available locally)</source>
@@ -3459,7 +3697,7 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Available locally, missing on the cloud</source>
-        <translation>本地可用，云端缺失</translation>
+        <translation type="vanished">本地可用，云端缺失</translation>
     </message>
     <message>
         <source>Available on the cloud, missing locally</source>
@@ -3467,7 +3705,7 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Available locally</source>
-        <translation>本地可用</translation>
+        <translation type="vanished">本地可用</translation>
     </message>
     <message>
         <source>Has changes. </source>
@@ -3514,10 +3752,6 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation>工程动作</translation>
     </message>
     <message>
-        <source>, updated data available on the cloud</source>
-        <translation>, 云端可用的更新数据</translation>
-    </message>
-    <message>
         <source>QFieldCloud is packaging the latest data just for you; this might take some time, please hold tight</source>
         <translation>QFieldCloud正在为您打包最新数据；这可能需要一些时间，请稍等</translation>
     </message>
@@ -3534,14 +3768,6 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation>联系QFieldCloud下载工程</translation>
     </message>
     <message>
-        <source>No cloud projects found. To get started, %1read the documentation%2.</source>
-        <translation>未找到云工程。要开始，请%1阅读文档%2。</translation>
-    </message>
-    <message>
-        <source>Search for project</source>
-        <translation>搜索工程</translation>
-    </message>
-    <message>
         <source>Sign out</source>
         <translation>注销</translation>
     </message>
@@ -3552,14 +3778,6 @@ While you can still view and use the project, it is strongly recommended to rese
     <message>
         <source>Show invalid projects</source>
         <translation>显示无效工程</translation>
-    </message>
-    <message>
-        <source>Available on the cloud</source>
-        <translation>可在云端使用</translation>
-    </message>
-    <message>
-        <source>, has changes locally</source>
-        <translation>, 在本地有更改</translation>
     </message>
     <message>
         <source>View Project Details</source>
@@ -3585,6 +3803,38 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>Push changes</source>
         <translation>推送修改</translation>
     </message>
+    <message>
+        <source>Projects</source>
+        <translation>工程</translation>
+    </message>
+    <message>
+        <source>Refreshing projects list...</source>
+        <translation>刷新工程列表...</translation>
+    </message>
+    <message>
+        <source>Searching for projects...</source>
+        <translation>搜索工程...</translation>
+    </message>
+    <message>
+        <source>No cloud projects found.</source>
+        <translation>未找到云工程。</translation>
+    </message>
+    <message>
+        <source>To get started, %1read the documentation%2.</source>
+        <translation>首先, %1请阅读文档%2。</translation>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2 and see what the community has to offer.</source>
+        <translation>尝试%1包含公开工程%2，查看社区能为您提供什么。</translation>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2.</source>
+        <translation>尝试%1包含公开工程%2。</translation>
+    </message>
+    <message>
+        <source>Search for projects</source>
+        <translation>搜索工程</translation>
+    </message>
 </context>
 <context>
     <name>QFieldCloudService</name>
@@ -3598,6 +3848,29 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
 </context>
 <context>
+    <name>QFieldCloudStatus</name>
+    <message>
+        <source>QFieldCloud server is not reachable</source>
+        <translation>QFieldCloud服务器无法访问</translation>
+    </message>
+    <message>
+        <source>The server at %1 could not be reached. Please check your internet connection.</source>
+        <translation>无法访问位于%1的服务器。请检查您的互联网连接。</translation>
+    </message>
+    <message>
+        <source>QFieldCloud is under maintenance</source>
+        <translation>QFieldCloud正在维护中</translation>
+    </message>
+    <message>
+        <source>QFieldCloud service is degraded</source>
+        <translation>QFieldCloud服务已降级</translation>
+    </message>
+    <message>
+        <source>There is an ongoing incident</source>
+        <translation>服务异常</translation>
+    </message>
+</context>
+<context>
     <name>QFieldCloudUtils</name>
     <message>
         <source>A server error has occured, please try again.</source>
@@ -3608,8 +3881,12 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation>网络出现错误，请重试。</translation>
     </message>
     <message>
-        <source>Your account&apos;s available storage is full.</source>
-        <translation>您帐户已无可用存储空间。</translation>
+        <source>The project owner&apos;s available storage is full.</source>
+        <translation>工程所有者的可用存储空间已满。</translation>
+    </message>
+    <message>
+        <source>The project owner&apos;s subscription plan is insufficient.</source>
+        <translation>工程所有者的订阅计划不足。</translation>
     </message>
 </context>
 <context>
@@ -3740,6 +4017,10 @@ While you can still view and use the project, it is strongly recommended to rese
     <message>
         <source>Download folder from WebDAV server</source>
         <translation>从WebDAV服务器下载文件夹</translation>
+    </message>
+    <message>
+        <source>Delete folder</source>
+        <translation>删除文件夹</translation>
     </message>
     <message>
         <source>Delete file</source>
@@ -4115,7 +4396,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Minimum number of positions collected</source>
-        <translation>收集的最少位置数量</translation>
+        <translation type="vanished">收集的最少位置数量</translation>
     </message>
     <message>
         <source>Automatically end collection when minimum number is met</source>
@@ -4131,7 +4412,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Antenna height [m]</source>
-        <translation>天线高度 [米]</translation>
+        <translation type="vanished">天线高度 [米]</translation>
     </message>
     <message>
         <source>Z values which are recorded from the positioning device will be corrected by this value. If a value of 1.6 is entered, this will result in a correction of -1.6 for each recorded value.</source>
@@ -4171,7 +4452,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>时间戳 (Unix时间戳之后的毫秒数)</translation>
+        <translation type="vanished">时间戳 (Unix时间戳之后的毫秒数)</translation>
     </message>
     <message>
         <source>Ground speed</source>
@@ -4338,14 +4619,6 @@ Cancel to make a minimal device scan instead.</source>
         <translation>打开后，用户可以旋转地图。</translation>
     </message>
     <message>
-        <source>Bad accuracy threshold [m]</source>
-        <translation>差精度阈值 [米]</translation>
-    </message>
-    <message>
-        <source>Excellent accuracy threshold [m]</source>
-        <translation>优精度阈值 [米]</translation>
-    </message>
-    <message>
         <source>Enforce accuracy requirement</source>
         <translation>执行精度要求</translation>
     </message>
@@ -4414,20 +4687,128 @@ Cancel to make a minimal device scan instead.</source>
         <translation>当地图画布遵循或锁定到位置时，它也可以旋转以匹配指南针朝向或移动方向。</translation>
     </message>
     <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve the experience for everyone.</source>
-        <translation>如果启用，将收集并发送匿名测评数据，帮助改善所有用户的使用体验。</translation>
-    </message>
-    <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve %1 for everyone.</source>
-        <translation>如果启用，将收集并发送匿名测评数据，帮助改善%1的所有用户使用体验。</translation>
-    </message>
-    <message>
         <source>This value will correct the Z values recorded from the positioning device. If a value of 1.6 is entered, the system will automatically subtract 1.6 from each recorded value. Make sure to insert the effective antenna height, i.e. pole length + antenna phase center offset.</source>
         <translation>该值将校正定位设备记录的Z值。如果输入值为1.6，系统将自动从每条记录的值中减去1.6。请确保插入有效天线高度，即杆长+天线相位中心偏移。</translation>
     </message>
     <message>
         <source>%1 Settings</source>
         <translation>%1设置</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation>网络</translation>
+    </message>
+    <message>
+        <source>Enable proxy</source>
+        <translation>启用代理</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>类型</translation>
+    </message>
+    <message>
+        <source>System default</source>
+        <translation>系统默认</translation>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation>主机</translation>
+    </message>
+    <message>
+        <source>e.g. proxy.example.com</source>
+        <translation>例如: proxy.example.com</translation>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>端口</translation>
+    </message>
+    <message>
+        <source>e.g. 8888</source>
+        <translation>例如: 8888</translation>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>用户名</translation>
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation>可选</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>密码</translation>
+    </message>
+    <message>
+        <source>URLs excluded from proxy (comma-separated)</source>
+        <translation>代理排除的URL (逗号分隔)</translation>
+    </message>
+    <message>
+        <source>e.g. localhost, 192.168.*</source>
+        <translation>例如: localhost, 192.168.*</translation>
+    </message>
+    <message>
+        <source>Configure a network proxy to route QField&apos;s traffic through a proxy server. Useful for corporate networks and VPNs.</source>
+        <translation>配置网络代理，通过代理服务器路径QField的流量。适用于企业网络和VPN。</translation>
+    </message>
+    <message>
+        <source>If enabled, the native camera provided by the operating system will be used.</source>
+        <translation>如果启用，将使用操作系统提供的原生相机。</translation>
+    </message>
+    <message>
+        <source>If enabled, anonymized metrics will be collected and sent to help improve the user experience for everyone.</source>
+        <translation>如果启用，将收集并发送匿名测评数据，帮助改善用户的使用体验。</translation>
+    </message>
+    <message>
+        <source>Positioning Device</source>
+        <translation>定位仪器</translation>
+    </message>
+    <message>
+        <source>Enable NTRIP corrections</source>
+        <translation>启用NTRIP校正</translation>
+    </message>
+    <message>
+        <source>NTRIP client disconnected</source>
+        <translation>NTRIP客户端断开连接</translation>
+    </message>
+    <message>
+        <source>NTRIP client connecting</source>
+        <translation>NTRIP客户端连接</translation>
+    </message>
+    <message>
+        <source>NTRIP client connected</source>
+        <translation>NTRIP客户端已连接</translation>
+    </message>
+    <message>
+        <source>Please provide valid NTRIP settings</source>
+        <translation>请提供有效的NTRIP设置</translation>
+    </message>
+    <message>
+        <source>Elevation Adjustment</source>
+        <translation>高程调整</translation>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation>时间戳 (纪元秒数)</translation>
+    </message>
+    <message>
+        <source>Bad accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>m</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Excellent accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum positions count</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Antenna height</source>
+        <translation>天线高度</translation>
     </message>
 </context>
 <context>
@@ -4619,6 +5000,42 @@ Cancel to make a minimal device scan instead.</source>
         <source>Circle #2: point</source>
         <translation>圆 #2: 点</translation>
     </message>
+    <message>
+        <source>KB</source>
+        <translation>KB</translation>
+    </message>
+    <message>
+        <source>MB</source>
+        <translation>MB</translation>
+    </message>
+    <message>
+        <source>GB</source>
+        <translation>GB</translation>
+    </message>
+    <message>
+        <source>TB</source>
+        <translation>TB</translation>
+    </message>
+    <message>
+        <source>B</source>
+        <translation>B</translation>
+    </message>
+    <message>
+        <source>Cannot delete file (not allowed): %1</source>
+        <translation>无法删除文件 (不允许): %1</translation>
+    </message>
+    <message>
+        <source>File does not exist: %1</source>
+        <translation>文件不存在: %1</translation>
+    </message>
+    <message>
+        <source>Failed to delete directory: %1</source>
+        <translation>删除目录失败: %1</translation>
+    </message>
+    <message>
+        <source>Failed to delete file: %1 - %2</source>
+        <translation>无法删除文件: %1 - %2</translation>
+    </message>
 </context>
 <context>
     <name>QfActionButton</name>
@@ -4699,6 +5116,51 @@ Cancel to make a minimal device scan instead.</source>
     <message>
         <source>close</source>
         <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfDialog</name>
+    <message>
+        <source>OK</source>
+        <translation>确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>是</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>否</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>关闭</translation>
+    </message>
+</context>
+<context>
+    <name>QfMeterBar</name>
+    <message>
+        <source>Storage</source>
+        <translation>存储</translation>
+    </message>
+    <message>
+        <source>Tap to upgrade storage</source>
+        <translation>点击升级存储</translation>
+    </message>
+    <message>
+        <source>Tap to manage storage</source>
+        <translation>点击管理存储</translation>
+    </message>
+</context>
+<context>
+    <name>QfOverlayContainer</name>
+    <message>
+        <source>Positioning</source>
+        <translation>定位</translation>
     </message>
 </context>
 <context>
@@ -4969,6 +5431,10 @@ Cancel to make a minimal device scan instead.</source>
         <source>%n feature(s)</source>
         <translation><numerusform>%n个要素</numerusform></translation>
     </message>
+    <message>
+        <source>Open Form</source>
+        <translation>打开表单</translation>
+    </message>
 </context>
 <context>
     <name>Reshape</name>
@@ -5180,7 +5646,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Minimum time [sec]</source>
-        <translation>最短时间 [秒]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the time between the last and new vertex meets a configured mimimum value.</source>
@@ -5192,7 +5658,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Minimum distance [%1]</source>
-        <translation>最短距离 [%1]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the distance between the last and new vertex meets a configured mimimum value.</source>
@@ -5223,10 +5689,6 @@ Cancel to make a minimal device scan instead.</source>
         <translation>错误距离保护</translation>
     </message>
     <message>
-        <source>Maximum tolerated distance [%1]</source>
-        <translation>最大容许距离 [%1]</translation>
-    </message>
-    <message>
         <source>When enabled, vertex addition will not occur when the distance between the last and new vertex is greater than a configured maximum value.</source>
         <translation>启用后，当最后一个顶点和新顶点之间的距离大于配置的最大值时，将不会添加顶点。</translation>
     </message>
@@ -5240,7 +5702,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>时间戳 (Unix时间戳之后的毫秒数)</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>Ground speed</source>
@@ -5293,6 +5755,26 @@ Cancel to make a minimal device scan instead.</source>
     <message>
         <source>Track on layer %1 resumed</source>
         <translation>图层%1的跟踪已恢复</translation>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation>时间戳 (纪元秒数)</translation>
+    </message>
+    <message>
+        <source>Minimum time</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>sec</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum distance</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Maximum tolerated distance</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -5768,7 +6250,7 @@ project</source>
     </message>
     <message>
         <source>Welcome back to %1.</source>
-        <translation>欢迎使用%1。</translation>
+        <translation>欢迎使用%1</translation>
     </message>
     <message>
         <source>Welcome to %1.</source>
@@ -5897,6 +6379,21 @@ project</source>
     <message>
         <source>inches</source>
         <translation>英寸</translation>
+    </message>
+</context>
+<context>
+    <name>gallery_relation_editor</name>
+    <message>
+        <source>QFieldCloud on-demand attachment error: </source>
+        <translation>QFieldCloud按需附件错误: </translation>
+    </message>
+    <message>
+        <source>The external storage&apos;s authentication configuration ID is missing, please insure it is imported into %1</source>
+        <translation>外部存储的认证配置ID缺失，请确保已将其导入%1</translation>
+    </message>
+    <message>
+        <source>Learn more</source>
+        <translation>点击了解更多信息</translation>
     </message>
 </context>
 <context>
@@ -6173,7 +6670,7 @@ project</source>
     </message>
     <message>
         <source>Precise View Settings</source>
-        <translation>精确视图设置</translation>
+        <translation type="vanished">精确视图设置</translation>
     </message>
     <message>
         <source>0.25m Precision</source>
@@ -6237,11 +6734,11 @@ project</source>
     </message>
     <message>
         <source>%1 Precision</source>
-        <translation>%1 精度</translation>
+        <translation type="vanished">%1 精度</translation>
     </message>
     <message>
         <source>Enable Audio Proximity Feedback</source>
-        <translation>启用声音引发回馈</translation>
+        <translation type="vanished">启用音频接近感应反馈</translation>
     </message>
     <message>
         <source>Positioning Options</source>
@@ -6768,6 +7265,54 @@ to show actions</source>
     <message>
         <source>Do you want to import &lt;b&gt;%1&lt;/b&gt; from &lt;b&gt;%2&lt;/b&gt; into %3?</source>
         <translation>您希望将 &lt;b&gt;%1&lt;/b&gt; 从 &lt;b&gt;%2&lt;/b&gt; 导入%3吗？</translation>
+    </message>
+    <message>
+        <source>Long press on your location marker to show actions</source>
+        <translation>长按您的位置标记显示动作选项</translation>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation>升级存储</translation>
+    </message>
+    <message>
+        <source>Plugin Manager</source>
+        <translation>插件管理器</translation>
+    </message>
+    <message>
+        <source>Project plugin loaded</source>
+        <translation>工程插件已加载</translation>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation>由于您的可用存储空间已满，无法打包工程%1。</translation>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation>由于工程所有者的可用存储空间已满，无法打包工程%1。</translation>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as your subscription plan is insufficient.</source>
+        <translation>由于您的订阅计划不足，无法下载工程%1。</translation>
+    </message>
+    <message>
+        <source>Upgrade plan</source>
+        <translation>升级计划</translation>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as the project owner&apos;s subscription plan is insufficient.</source>
+        <translation>由于工程所有者的订阅计划不足，无法下载工程%1。</translation>
+    </message>
+    <message>
+        <source>Enable NTRIP Corrections</source>
+        <translation>启用NTRIP校正</translation>
+    </message>
+    <message>
+        <source>Long press on the destination marker to show actions</source>
+        <translation>长按目标标记显示动作</translation>
+    </message>
+    <message>
+        <source>meters</source>
+        <translation>米</translation>
     </message>
 </context>
 <context>

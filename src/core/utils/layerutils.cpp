@@ -42,6 +42,7 @@
 #include <qgssymbol.h>
 #include <qgssymbollayer.h>
 #include <qgstextbuffersettings.h>
+#include <qgsvectorfilewriter.h>
 #include <qgsvectorlayer.h>
 #include <qgsvectorlayerlabeling.h>
 #include <qgsvectorlayerutils.h>
@@ -112,7 +113,7 @@ QgsSymbol *LayerUtils::defaultSymbol( QgsVectorLayer *layer, const QString &atta
         QgsRasterMarkerSymbolLayer *rasterMarkerSymbolLayer = new QgsRasterMarkerSymbolLayer( QString(), 2.6, 0.0 );
         rasterMarkerSymbolLayer->setSize( 6.0 );
         rasterMarkerSymbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::Size, QgsProperty::fromExpression( QStringLiteral( "scale_linear( @map_scale, 1000, 5000, @value * 5.5, @value )" ), true ) );
-        rasterMarkerSymbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::Name, QgsProperty::fromExpression( QStringLiteral( "if(@map_scale < 5000, @project_folder || '/' || \"%1\", '')" ).arg( attachmentField ), true ) );
+        rasterMarkerSymbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::Name, QgsProperty::fromExpression( QStringLiteral( "with_variable('attachment', %1, if(@map_scale < 5000, @project_folder || '/' || @attachment, ''))" ).arg( attachmentField ), true ) );
         subSymbolLayers << rasterMarkerSymbolLayer;
 
         QgsCentroidFillSymbolLayer *centroidFillSymbolLayer = new QgsCentroidFillSymbolLayer();
@@ -127,7 +128,7 @@ QgsSymbol *LayerUtils::defaultSymbol( QgsVectorLayer *layer, const QString &atta
         {
           fillSymbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::StrokeColor, QgsProperty::fromExpression( QStringLiteral( "if(\"%1\" is not null and \"%1\" != '', \"%1\", @value)" ).arg( colorField ), true ) );
         }
-        fillSymbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::Size, QgsProperty::fromExpression( QStringLiteral( "if(@map_scale < 5000 and \"%1\" is not null and \"%1\" != '', scale_linear( @map_scale, 1000, 5000, @value * 5.5, @value ), @value)" ).arg( attachmentField ), true ) );
+        fillSymbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::Size, QgsProperty::fromExpression( QStringLiteral( "with_variable('attachment', %1, if(@map_scale < 5000 and @attachment is not null and @attachment != '', scale_linear( @map_scale, 1000, 5000, @value * 5.5, @value ), @value))" ).arg( attachmentField ), true ) );
         fillSymbolLayer->setSubSymbol( new QgsFillSymbol( subSymbolLayers ) );
         symbolLayers << fillSymbolLayer;
 
@@ -136,14 +137,14 @@ QgsSymbol *LayerUtils::defaultSymbol( QgsVectorLayer *layer, const QString &atta
         symbolLayer->setStrokeWidth( 0.6 );
         if ( !colorField.isEmpty() )
         {
-          symbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::FillColor, QgsProperty::fromExpression( QStringLiteral( "if(@map_scale < 5000 and \"%1\" is not null and \"%1\" != '', '255,0,0,0', if(\"%2\" is not null and \"%2\" != '', set_color_part(\"%2\", 'alpha', 100), @value))" ).arg( attachmentField, colorField ), true ) );
+          symbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::FillColor, QgsProperty::fromExpression( QStringLiteral( "with_variable('attachment', %1, if(@map_scale < 5000 and @attachment is not null and @attachment != '', '255,0,0,0', if(\"%2\" is not null and \"%2\" != '', set_color_part(\"%2\", 'alpha', 100), @value)))" ).arg( attachmentField, colorField ), true ) );
           symbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::StrokeColor, QgsProperty::fromExpression( QStringLiteral( "if(\"%1\" is not null and \"%1\" != '', \"%1\", @value)" ).arg( colorField ), true ) );
         }
         else
         {
-          symbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::FillColor, QgsProperty::fromExpression( QStringLiteral( "if(@map_scale < 5000 and \"%1\" is not null and \"%1\" != '', '255,0,0,0', @value))" ).arg( attachmentField ), true ) );
+          symbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::FillColor, QgsProperty::fromExpression( QStringLiteral( "with_variable('attachment', %1, if(@map_scale < 5000 and @attachment is not null and @attachment != '', '255,0,0,0', @value)))" ).arg( attachmentField ), true ) );
         }
-        symbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::Size, QgsProperty::fromExpression( QStringLiteral( "if(@map_scale < 5000 and \"%1\" is not null and \"%1\" != '', scale_linear( @map_scale, 1000, 5000, @value * 5.5, @value ), @value)" ).arg( attachmentField ), true ) );
+        symbolLayer->setDataDefinedProperty( QgsSymbolLayer::Property::Size, QgsProperty::fromExpression( QStringLiteral( "with_variable('attachment', %1, if(@map_scale < 5000 and @attachment is not null and @attachment != '', scale_linear( @map_scale, 1000, 5000, @value * 5.5, @value ), @value))" ).arg( attachmentField ), true ) );
         symbolLayers << symbolLayer;
       }
       else
@@ -545,6 +546,16 @@ bool LayerUtils::hasMValue( QgsVectorLayer *layer )
   return QgsWkbTypes::hasM( layer->wkbType() );
 }
 
+QSet<QVariant> LayerUtils::uniqueValuesForVectorLayerFieldIndex( QgsVectorLayer *layer, int fieldIndex )
+{
+  if ( !layer )
+  {
+    return QSet<QVariant>();
+  }
+
+  return layer->uniqueValues( fieldIndex );
+}
+
 QgsVectorLayer *LayerUtils::loadVectorLayer( const QString &uri, const QString &name, const QString &provider )
 {
   QgsVectorLayer *layer = new QgsVectorLayer( uri, name, provider );
@@ -584,9 +595,18 @@ QgsVectorLayer *LayerUtils::createMemoryLayer( const QString &name, const QgsFie
   return layer;
 }
 
+FeatureIterator LayerUtils::createFeatureIterator( QgsVectorLayer *layer )
+{
+  return FeatureIterator( layer );
+}
+
 FeatureIterator LayerUtils::createFeatureIteratorFromExpression( QgsVectorLayer *layer, const QString &expression )
 {
-  const QgsFeatureRequest request = QgsFeatureRequest( QgsExpression( expression ) );
+  QgsFeatureRequest request = QgsFeatureRequest( QgsExpression( expression ) );
+  if ( layer )
+  {
+    request.setExpressionContext( layer->createExpressionContext() );
+  }
   return FeatureIterator( layer, request );
 }
 
@@ -594,4 +614,65 @@ FeatureIterator LayerUtils::createFeatureIteratorFromRectangle( QgsVectorLayer *
 {
   const QgsFeatureRequest request = QgsFeatureRequest( rectangle );
   return FeatureIterator( layer, request );
+}
+
+QString LayerUtils::saveVectorLayerAs( QgsVectorLayer *layer, const QString &filePath, const QString &driverName, const QString &filterExpression )
+{
+  if ( !layer || filePath.isEmpty() )
+  {
+    return QString();
+  }
+
+  QFileInfo fileInfo( filePath );
+  const QString finalDriverName = driverName.isEmpty() ? QgsVectorFileWriter::driverForExtension( fileInfo.suffix() ) : driverName;
+  if ( finalDriverName.isEmpty() )
+  {
+    return QString();
+  }
+  QDir dir;
+  if ( !dir.mkpath( fileInfo.absolutePath() ) )
+  {
+    return QString();
+  }
+
+  QStringList datasetOptions = QgsVectorFileWriter::defaultDatasetOptions( finalDriverName );
+  if ( finalDriverName == QStringLiteral( "GPX" ) )
+  {
+    datasetOptions.removeAll( QStringLiteral( "GPX_USE_EXTENSIONS=NO" ) );
+    datasetOptions << QStringLiteral( "GPX_USE_EXTENSIONS=YES" );
+  }
+
+  QString finalFileName;
+  QString finalLayerName;
+  QgsVectorFileWriter::SaveVectorOptions saveOptions;
+  saveOptions.fileEncoding = QStringLiteral( "UTF8" );
+  saveOptions.layerName = fileInfo.completeBaseName();
+  saveOptions.driverName = finalDriverName;
+  saveOptions.datasourceOptions = datasetOptions;
+  saveOptions.layerOptions = QgsVectorFileWriter::defaultLayerOptions( finalDriverName );
+  saveOptions.symbologyExport = Qgis::FeatureSymbologyExport::NoSymbology;
+  saveOptions.actionOnExistingFile = QgsVectorFileWriter::CreateOrOverwriteFile;
+
+  std::unique_ptr<QgsVectorFileWriter> writer( QgsVectorFileWriter::create( filePath, layer->fields(), layer->wkbType(), layer->crs(), QgsProject::instance()->transformContext(), saveOptions, QgsFeatureSink::RegeneratePrimaryKey, &finalFileName, &finalLayerName ) );
+  if ( writer->hasError() )
+  {
+    qInfo() << QStringLiteral( "Vector layer file writer error: %1" ).arg( writer->errorMessage() );
+    return QString();
+  }
+
+  QgsFeatureRequest request;
+  if ( !filterExpression.isEmpty() )
+  {
+    request.setFilterExpression( filterExpression );
+    request.setExpressionContext( layer->createExpressionContext() );
+  }
+
+  QgsFeatureIterator it = layer->getFeatures( request );
+  QgsFeature feature;
+  while ( it.nextFeature( feature ) )
+  {
+    writer->addFeature( feature, QgsFeatureSink::FastInsert );
+  }
+
+  return finalFileName;
 }

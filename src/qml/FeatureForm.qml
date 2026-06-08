@@ -34,6 +34,7 @@ Page {
   property CodeReader codeReader
 
   property AttributeFormModel model
+
   property alias currentTab: swipeView.currentIndex
   property alias toolbarVisible: toolbar.visible
   //! if embedded form called by RelationEditor or RelationReferenceWidget
@@ -60,6 +61,7 @@ Page {
 
   function resetTabs() {
     tabRow.currentIndex = 0;
+    contentRepeater.itemAt(0).contentY = 0;
   }
 
   clip: true
@@ -105,14 +107,16 @@ Page {
         id: tabButton
 
         property bool isCurrentIndex: index == tabRow.currentIndex
+        property bool constraintHardValid: !!ConstraintHardValid
+        property bool constraintSoftValid: !!ConstraintSoftValid
 
         objectName: "tabRowdDelegate_" + index
         text: Name
         topPadding: 0
         bottomPadding: 0
-        leftPadding: !ConstraintHardValid || !ConstraintSoftValid ? 22 : 8
+        leftPadding: !form.model.isWizard && (!ConstraintHardValid || !ConstraintSoftValid) ? 22 : 8
         rightPadding: 8
-        width: contentItem.width + leftPadding + rightPadding
+        width: form.model.isWizard ? tabRow.width : contentItem.width + leftPadding + rightPadding
         height: 48
 
         onClicked: {
@@ -132,21 +136,23 @@ Page {
             height: 10
             radius: 5
             color: !ConstraintHardValid ? Theme.errorColor : Theme.warningColor
-            visible: !ConstraintHardValid || !ConstraintSoftValid
+            visible: !form.model.isWizard && (!ConstraintHardValid || !ConstraintSoftValid)
           }
         }
 
         contentItem: Text {
+          id: tabText
           // Make sure the width is derived from the text so we can get wider
           // than the parent item and the Flickable is useful
-          width: paintedWidth
+          width: form.model.isWizard ? parent.width : paintedWidth
           height: parent.height
+          leftPadding: form.model.isWizard ? 4 : 0
           text: tabButton.text
           color: !tabButton.enabled ? Theme.mainTextDisabledColor : tabButton.down ? Qt.darker(Theme.mainColor, 1.5) : isCurrentIndex ? Theme.mainColor : Theme.mainTextColor
           font.pointSize: Theme.tipFont.pointSize
           font.weight: isCurrentIndex ? Font.DemiBold : Font.Normal
 
-          horizontalAlignment: Text.AlignHCenter
+          horizontalAlignment: form.model.isWizard ? Text.AlignLeft : Text.AlignHCenter
           verticalAlignment: Text.AlignVCenter
         }
       }
@@ -164,6 +170,7 @@ Page {
       clip: true
 
       Repeater {
+        id: contentRepeater
         // One page per tab in tabbed forms, 1 page in auto forms
         model: form.model.hasTabs ? form.model : 1
 
@@ -175,7 +182,7 @@ Page {
           width: form.width - form.leftMargin - form.rightMargin
           contentWidth: content.width
           contentHeight: content.height
-          bottomMargin: form.bottomMargin
+          bottomMargin: form.bottomMargin + (form.model.isWizard ? wizardNavigationContainer.height : 0)
           clip: true
           ScrollBar.vertical: QfScrollBar {}
           boundsBehavior: Flickable.StopAtBounds
@@ -203,6 +210,103 @@ Page {
               objectName: "fieldRepeater"
               delegate: fieldItem
             }
+          }
+        }
+      }
+    }
+  }
+
+  Rectangle {
+    id: wizardNavigationContainer
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+
+    height: wizardNavigationLayout.childrenRect.height + form.bottomMargin + 20
+    color: Theme.darkTheme ? Theme.mainBackgroundColorSemiOpaque : Theme.lightestGraySemiOpaque
+    visible: form.model.isWizard && (tabRow.count > 1 || form.state !== 'ReadOnly')
+
+    RowLayout {
+      id: wizardNavigationLayout
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      anchors.leftMargin: 10
+      anchors.rightMargin: 10
+      anchors.bottomMargin: form.bottomMargin + 10
+      spacing: 10
+
+      QfButton {
+        id: previousPageButton
+
+        property bool isFirstPage: tabRow.currentIndex === 0
+
+        Layout.preferredWidth: (parent.width - progressRing.size - 20) / 2
+        visible: tabRow.count > 1
+        borderColor: Theme.secondaryTextColor
+        bgcolor: "transparent"
+        color: Theme.mainTextColor
+        text: qsTr("Previous page")
+        opacity: isFirstPage ? 0.5 : 1.0
+
+        onClicked: {
+          if (!isFirstPage) {
+            tabRow.currentIndex--;
+          }
+        }
+      }
+
+      QfProgressRing {
+        id: progressRing
+        Layout.preferredWidth: size
+        Layout.preferredHeight: size
+        Layout.alignment: Qt.AlignVCenter
+        visible: tabRow.count > 1
+        value: tabRow.currentIndex > 0 ? tabRow.currentIndex / (tabRow.count - 1) : 0.0
+        size: 24
+        color: {
+          if (form.state !== 'ReadOnly') {
+            if (nextPageButton.isLastPage) {
+              return nextPageButton.bgcolor;
+            }
+            if (tabRow.currentItem) {
+              if (!tabRow.currentItem.constraintHardValid) {
+                return Theme.errorColor;
+              } else if (!tabRow.currentItem.constraintSoftValid) {
+                return Theme.warningColor;
+              }
+            }
+          }
+          return Theme.mainTextColor;
+        }
+        backgroundColor: Qt.hsla(color.hslHue, color.hslSaturation, color.hslLightness, 0.2)
+      }
+
+      QfButton {
+        id: nextPageButton
+
+        property bool isLastPage: tabRow.currentIndex >= (tabRow.count - 1)
+        property bool isCurrentPageConstraintHardValid: !tabRow.currentItem || tabRow.currentItem.constraintHardValid
+
+        Layout.fillWidth: tabRow.count <= 1
+        Layout.preferredWidth: (parent.width - progressRing.size - 20) / 2
+        borderColor: isLastPage && form.state !== 'ReadOnly' ? bgcolor : Theme.secondaryTextColor
+        bgcolor: isLastPage && form.state !== 'ReadOnly' ? !form.model.constraintsHardValid ? Theme.errorColor : !form.model.constraintsSoftValid ? Theme.warningColor : Theme.mainColor : "transparent"
+        color: isLastPage && form.state !== 'ReadOnly' ? Theme.mainOverlayColor : Theme.mainTextColor
+        text: isLastPage && form.state !== 'ReadOnly' ? qsTr("Save") : qsTr("Next page")
+        opacity: (isLastPage && form.state === 'ReadOnly') ? 0.5 : 1.0
+
+        onClicked: {
+          if (!isCurrentPageConstraintHardValid && form.state !== 'ReadOnly') {
+            displayToast(qsTr('Hard constraints not satisfied'), 'error');
+          } else if (isLastPage && form.state !== 'ReadOnly') {
+            if (!form.model.constraintsHardValid) {
+              displayToast(qsTr('Hard constraints not satisfied'), 'error');
+            } else {
+              form.confirm();
+            }
+          } else if (!isLastPage) {
+            tabRow.currentIndex++;
           }
         }
       }
@@ -287,6 +391,15 @@ Page {
     id: qmlContainer
 
     Item {
+      property ExpressionEvaluator expression: ExpressionEvaluator {
+        attributeFormModel: form.model
+
+        feature: form.model.featureModel.feature
+        onFeatureChanged: {
+          expressionChanged();
+        }
+      }
+
       height: childrenRect.height
       anchors {
         left: parent.left
@@ -647,24 +760,6 @@ Page {
             }
 
             Connections {
-              target: form
-
-              function onAboutToSave() {
-                // it may not be implemented
-                if (attributeEditorLoader.item && attributeEditorLoader.item.pushChanges) {
-                  attributeEditorLoader.item.pushChanges(form.model.featureModel.feature);
-                }
-              }
-
-              function onValueChanged(field, oldValue, newValue) {
-                // it may not be implemented
-                if (attributeEditorLoader.item && attributeEditorLoader.item.siblingValueChanged) {
-                  attributeEditorLoader.item.siblingValueChanged(field, form.model.featureModel.feature);
-                }
-              }
-            }
-
-            Connections {
               target: attributeEditorLoader.item
 
               function onValueChangeRequested(value, isNull) {
@@ -726,14 +821,14 @@ Page {
             width: visible ? 48 : 0
 
             iconSource: Theme.getThemeVectorIcon("ic_pin_black_24dp")
-            iconColor: RememberValue ? Theme.mainColor : Theme.mainTextDisabledColor
+            iconColor: RememberValue ? Theme.mainColor : Theme.mainTextColor
             bgcolor: "transparent"
 
             anchors {
               right: parent.right
               top: constraintDescriptionLabel.bottom
               verticalCenter: fieldMenuButton.verticalCenter
-              rightMargin: visible ? 0 : 10
+              rightMargin: visible ? 15 : 10
             }
 
             onClicked: {
@@ -832,6 +927,9 @@ Page {
       // indirect action, no need to check for success and display a toast, the log is enough
       model.deleteFeature();
     }
+
+    form.state = 'ReadOnly';
+
     cancelled();
     featureCreated = false;
   }
@@ -882,7 +980,7 @@ Page {
       QfToolButton {
         id: saveButton
 
-        property bool isVisible: form.state === 'Add' || form.state === 'Edit'
+        property bool isVisible: !form.model.isWizard && (form.state === 'Add' || form.state === 'Edit')
 
         Layout.alignment: Qt.AlignTop | Qt.AlignLeft
         visible: isVisible
@@ -914,7 +1012,7 @@ Page {
 
         Layout.fillWidth: true
         Layout.preferredHeight: parent.height
-        Layout.leftMargin: form.state === "ReadOnly" || (!setupOnly && form.model.hasRemembrance) ? 48 : 0
+        Layout.leftMargin: (!saveButton.isVisible ? 48 : 0) + (!setupOnly && form.model.hasRemembrance ? 48 : 0)
         Layout.rightMargin: !setupOnly ? 0 : 48
         objectName: "titleLabel"
 
@@ -999,7 +1097,7 @@ Page {
       QfToolButton {
         id: featureFormMenuButton
 
-        property bool isVisible: !setupOnly && form.model.hasRemembrance
+        property bool isVisible: !setupOnly && form.model.hasRemembrance && form.state === 'Add'
 
         Layout.alignment: Qt.AlignTop | Qt.AlignRight
 

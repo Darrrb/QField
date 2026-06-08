@@ -15,6 +15,8 @@ Page {
   property bool firstShown: false
 
   property alias model: table.model
+
+  signal showAbout
   signal showLocalDataPicker
   signal showQFieldCloudScreen
   signal showSettings
@@ -79,7 +81,8 @@ Page {
 
       ImageDial {
         id: imageDialLogo
-        value: 1
+
+        property real pressedValue: -1
 
         Layout.margins: 6
         Layout.topMargin: 14 + mainWindow.sceneTopMargin
@@ -90,6 +93,24 @@ Page {
 
         source: "qrc:/images/app_logo.svg"
         rotationOffset: 220
+        value: 1
+
+        onPressedChanged: {
+          if (pressed) {
+            pressedValue = -1;
+          } else {
+            if (pressedValue == -1 || Math.abs(value - pressedValue) < 0.05) {
+              welcomeScreen.showAbout();
+            }
+            pressedValue = -1;
+          }
+        }
+
+        onValueChanged: {
+          if (pressed && pressedValue == -1) {
+            pressedValue = value;
+          }
+        }
       }
 
       SwipeView {
@@ -517,6 +538,7 @@ Page {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 color: Theme.mainTextColor
+                font: Theme.tipFont
               }
             }
           }
@@ -569,7 +591,7 @@ Page {
                 readonly property bool showPush: changesCount > 0
 
                 objectName: "loadProjectItem_1" // todo, suffix with e.g. ProjectTitle
-                previewImageSource: welcomeScreen.visible ? 'image://projects/' + ProjectPath : ''
+                previewImageSource: welcomeScreen.visible ? ProjectThumbnail !== "" ? UrlUtils.fromString(ProjectThumbnail) : 'image://projects/' + ProjectPath : ''
                 showType: true
 
                 primaryBadge.badgeText.text: changesCount > 0 ? changesCount : ''
@@ -618,10 +640,19 @@ Page {
                 onClicked: mouse => {
                   var item = table.itemAt(mouse.x, mouse.y);
                   if (item) {
-                    if (item.type === 1 && cloudConnection.hasToken && cloudConnection.status !== QFieldCloudConnection.LoggedIn) {
-                      cloudConnection.login();
+                    switch (item.type) {
+                    case RecentProjectListModel.CloudProject:
+                    case RecentProjectListModel.LocalProject:
+                    case RecentProjectListModel.LocalDataset:
+                      if (item.type === RecentProjectListModel.CloudProject && cloudConnection.hasToken && cloudConnection.status !== QFieldCloudConnection.LoggedIn) {
+                        cloudConnection.login();
+                      }
+                      iface.loadFile(item.path, item.projectTitle.text);
+                      break;
+                    case RecentProjectListModel.LinkProject:
+                      iface.importUrl(item.path, item.projectTitle.text, true);
+                      break;
                     }
-                    iface.loadFile(item.path, item.projectTitle.text);
                   }
                 }
                 onPressed: mouse => {
@@ -714,7 +745,7 @@ Page {
 
                   text: qsTr("Remove from Recent Projects")
                   onTriggered: {
-                    iface.removeRecentProject(recentProjectActions.recentProjectPath);
+                    model.removeRecentProject(recentProjectActions.recentProjectPath);
                     model.reloadModel();
                   }
                 }

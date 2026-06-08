@@ -22,6 +22,7 @@ QfPopup {
   focus: visible
 
   onAboutToShow: {
+    projectPluginEnabledContainer.visible = pluginManager.isProjectPluginEnabled(qgisProject.fileName);
     pluginManager.pluginModel.refresh(false);
   }
 
@@ -68,7 +69,7 @@ QfPopup {
         id: searchBar
         visible: filterBar.currentIndex === 1
         Layout.fillWidth: true
-        Layout.preferredHeight: 41
+        Layout.preferredHeight: searchHeight
         placeHolderText: qsTr("Search for plugin")
       }
 
@@ -185,14 +186,13 @@ QfPopup {
           text: qsTr("Install plugin from URL")
 
           onClicked: {
-            if (!popup.availablePluginsFetched) {
-              pluginManager.pluginModel.refresh(true);
-            }
+            installFromUrlInput.text = '';
             installFromUrlDialog.open();
           }
 
           onDropdownClicked: {
-            pluginsManagementMenu.popup(installFromUrlButton.width - pluginsManagementMenu.width + 10, installFromUrlButton.y + 10);
+            const point = mapToItem(page, installFromUrlButton.width - pluginsManagementMenu.width + 10, installFromUrlButton.y + 10);
+            pluginsManagementMenu.popup(point);
           }
         }
 
@@ -202,6 +202,47 @@ QfPopup {
           Layout.preferredHeight: 48
           visible: running
           running: pluginManager.pluginModel.isRefreshing
+        }
+      }
+
+      Rectangle {
+        id: projectPluginEnabledContainer
+        Layout.topMargin: 10
+        Layout.fillWidth: true
+        Layout.preferredHeight: childrenRect.height + 20
+        visible: false
+
+        radius: 8
+        color: Theme.groupBoxBackgroundColor
+        clip: true
+
+        RowLayout {
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.margins: 10
+          spacing: 5
+
+          Label {
+            Layout.fillWidth: true
+
+            text: qsTr("The currently opened project has loaded a project plugin")
+            font: Theme.tipFont
+            wrapMode: Text.WordWrap
+          }
+
+          QfButton {
+            text: qsTr("Deny permission")
+            radius: 4
+            bgcolor: "#00000000"
+            color: Theme.mainColor
+            font: Theme.tipFont
+
+            onClicked: {
+              pluginManager.denyProjectPluginPermission(qgisProject.fileName);
+              projectPluginEnabledContainer.visible = false;
+            }
+          }
         }
       }
     }
@@ -278,8 +319,10 @@ QfPopup {
     parent: mainWindow.contentItem
 
     onAboutToShow: {
-      installFromUrlDialog.standardButton(Dialog.Ok).enabled = popup.availablePluginsFetched;
-      installFromUrlInput.text = '';
+      if (!popup.availablePluginsFetched) {
+        pluginManager.pluginModel.refresh(true);
+      }
+      installFromUrlDialog.standardButton(Dialog.Ok).enabled = Qt.binding(() => popup.availablePluginsFetched);
     }
 
     Column {
@@ -302,9 +345,26 @@ QfPopup {
         color: Theme.mainTextColor
       }
 
-      TextField {
+      TextArea {
         id: installFromUrlInput
         width: installFromUrlLabel.width
+        rightPadding: scanCodeBtn.width
+        wrapMode: TextEdit.WrapAnywhere
+
+        QfToolButton {
+          id: scanCodeBtn
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+
+          bgcolor: "transparent"
+          iconSource: Theme.getThemeVectorIcon("ic_qr_code_black_24dp")
+          iconColor: Theme.mainTextColor
+
+          onClicked: {
+            codeReaderConnection.enabled = true;
+            codeReader.open();
+          }
+        }
       }
     }
 
@@ -344,6 +404,24 @@ QfPopup {
 
     onAccepted: {
       pluginManager.uninstall(pluginUuid);
+    }
+  }
+
+  Connections {
+    id: codeReaderConnection
+    target: codeReader
+    enabled: false
+
+    function onDecoded(string) {
+      if (string.toLowerCase().startsWith("http://") || string.toLowerCase().startsWith("https://")) {
+        codeReader.close();
+        installFromUrlInput.text = string;
+        installFromUrlDialog.accept();
+      }
+    }
+
+    function onAboutToHide() {
+      codeReaderConnection.enabled = false;
     }
   }
 

@@ -17,22 +17,25 @@
 #include "qgsquick/qgsquickmapsettings.h"
 #include "quick3dmaptexturedata.h"
 
+#include <QPainter>
 #include <qgis.h>
 #include <qgsmaplayer.h>
 #include <qgsmaprendererparalleljob.h>
 #include <qgsmapsettings.h>
 
-#include <algorithm>
 
 Quick3DMapTextureData::Quick3DMapTextureData( QQuick3DObject *parent )
   : QQuick3DTextureData( parent )
 {
   connect( &mMapUpdateTimer, &QTimer::timeout, this, &Quick3DMapTextureData::onRenderJobUpdated );
   mMapUpdateTimer.setSingleShot( false );
-  mMapUpdateTimer.setInterval( 250 );
+  mMapUpdateTimer.setInterval( 500 );
 
   connect( &mRefreshTimer, &QTimer::timeout, this, &Quick3DMapTextureData::render );
   mRefreshTimer.setSingleShot( true );
+
+  setFormat( QQuick3DTextureData::RGBA8 );
+  setHasTransparency( true );
 }
 
 Quick3DMapTextureData::~Quick3DMapTextureData()
@@ -101,7 +104,7 @@ void Quick3DMapTextureData::setExtent( const QgsRectangle &extent )
 
 bool Quick3DMapTextureData::isReady() const
 {
-  return mReady;
+  return mIsReady;
 }
 
 bool Quick3DMapTextureData::incrementalRendering() const
@@ -179,20 +182,25 @@ void Quick3DMapTextureData::render()
     return;
   }
 
+  QSize outputSize = renderSettings.outputSize();
+  if ( outputSize.height() > outputSize.width() )
+  {
+    outputSize.setWidth( outputSize.height() * mExtent.width() / mExtent.height() );
+  }
+  else
+  {
+    outputSize.setHeight( outputSize.width() * mExtent.height() / mExtent.width() );
+  }
+
   if ( !mExtent.isEmpty() )
   {
     renderSettings.setRotation( 0 );
     renderSettings.setExtent( mExtent );
-
-    const double mupp = mMapSettings->mapSettings().mapUnitsPerPixel();
-    const int outputWidth = mExtent.width() / mupp;
-    const int outputHeight = mExtent.height() / mupp;
-    renderSettings.setOutputSize( QSize( outputWidth, outputHeight ) );
+    renderSettings.setOutputSize( outputSize );
   }
 
   if ( renderSettings.layers().isEmpty() )
   {
-    const QSize outputSize = renderSettings.outputSize();
     QImage fallbackImage( outputSize, QImage::Format_RGBA8888 );
     fallbackImage.fill( QColor( 100, 140, 100 ) );
     updateTextureData( fallbackImage );
@@ -201,17 +209,19 @@ void Quick3DMapTextureData::render()
 
   renderSettings.setFlag( Qgis::MapSettingsFlag::UseRenderingOptimization );
   renderSettings.setFlag( Qgis::MapSettingsFlag::RenderPartialOutput, mIncrementalRendering );
+  renderSettings.setOutputImageFormat( QImage::Format_RGBA8888 );
 
   mRenderJob.reset( new QgsMapRendererParallelJob( renderSettings ) );
 
   if ( mIncrementalRendering )
   {
-    connect( mRenderJob.get(), &QgsMapRendererJob::renderingLayersFinished, this, &Quick3DMapTextureData::onRenderJobUpdated );
     mMapUpdateTimer.start();
   }
 
   connect( mRenderJob.get(), &QgsMapRendererJob::finished, this, &Quick3DMapTextureData::onRenderFinished );
   mRenderJob->start();
+
+  emit isRenderingChanged();
 }
 
 void Quick3DMapTextureData::onRenderJobUpdated()
@@ -237,6 +247,7 @@ void Quick3DMapTextureData::onRenderFinished()
 
   QImage renderedImage = mRenderJob->renderedImage();
   mRenderJob.reset();
+  emit isRenderingChanged();
 
   if ( !renderedImage.isNull() )
   {
@@ -250,25 +261,24 @@ void Quick3DMapTextureData::onRenderFinished()
   }
 }
 
+bool Quick3DMapTextureData::isRendering() const
+{
+  return mRenderJob && mRenderJob->isActive();
+}
+
 void Quick3DMapTextureData::updateTextureData( const QImage &image )
 {
-  QImage rgbaImage = image.convertToFormat( QImage::Format_RGBA8888 );
+  const qsizetype dataSize = image.sizeInBytes();
+  QByteArray textureData( reinterpret_cast<const char *>( image.constBits() ), dataSize );
 
-  setSize( rgbaImage.size() );
-  setFormat( QQuick3DTextureData::RGBA8 );
-  setHasTransparency( true );
-
-  const qsizetype dataSize = rgbaImage.sizeInBytes();
-  QByteArray textureData( reinterpret_cast<const char *>( rgbaImage.constBits() ), dataSize );
+  setSize( image.size() );
   setTextureData( textureData );
 
-  // Force Qt Quick 3D to reload the texture by toggling ready state
-  if ( mReady )
+  if ( !mIsReady )
   {
-    mReady = false;
-    emit readyChanged();
+    mIsReady = true;
+    emit isReadyChanged();
   }
 
-  mReady = true;
-  emit readyChanged();
+  emit textureUpdated();
 }

@@ -20,11 +20,13 @@
 #include "multifeaturelistmodel.h"
 #include "multifeaturelistmodelbase.h"
 
+#include <qgsconditionalstyle.h>
 #include <qgscoordinatereferencesystem.h>
 #include <qgsgeometry.h>
 #include <qgsgeometrycollection.h>
 #include <qgsmemoryproviderutils.h>
 #include <qgsmessagelog.h>
+#include <qgsmultipoint.h>
 #include <qgsproject.h>
 #include <qgsrasterlayer.h>
 #include <qgsrelationmanager.h>
@@ -63,6 +65,7 @@ void MultiFeatureListModelBase::setFeatures( const QMap<QgsVectorLayer *, QgsFea
       request.addOrderBy( vl->displayExpression() );
     }
 
+    QgsExpressionContext expressionContext = vl->createExpressionContext();
     QgsFeature feat;
     QgsFeatureIterator fit = vl->getFeatures( request );
     while ( fit.nextFeature( feat ) )
@@ -72,6 +75,7 @@ void MultiFeatureListModelBase::setFeatures( const QMap<QgsVectorLayer *, QgsFea
       connect( vl, &QgsVectorLayer::featureDeleted, this, &MultiFeatureListModelBase::featureDeleted, Qt::UniqueConnection );
       connect( vl, &QgsVectorLayer::attributeValueChanged, this, &MultiFeatureListModelBase::attributeValueChanged, Qt::UniqueConnection );
       connect( vl, &QgsVectorLayer::geometryChanged, this, &MultiFeatureListModelBase::geometryChanged, Qt::UniqueConnection );
+      updateConditionalStylingDetails( vl, feat, expressionContext );
     }
   }
 
@@ -82,6 +86,7 @@ void MultiFeatureListModelBase::appendFeatures( const QList<IdentifyTool::Identi
 {
   beginInsertRows( QModelIndex(), static_cast<int>( mFeatures.count() ), static_cast<int>( mFeatures.count() + results.count() ) - 1 );
 
+  QMap<QString, QgsExpressionContext> expressionContext;
   for ( const IdentifyTool::IdentifyResult &result : results )
   {
     if ( QgsVectorLayer *layer = qobject_cast<QgsVectorLayer *>( result.layer ) )
@@ -90,10 +95,16 @@ void MultiFeatureListModelBase::appendFeatures( const QList<IdentifyTool::Identi
       if ( !mFeatures.contains( item ) )
       {
         mFeatures.append( item );
-        connect( layer, &QObject::destroyed, this, &MultiFeatureListModelBase::layerDeleted, Qt::UniqueConnection );
+        connect( layer, &QgsVectorLayer::destroyed, this, &MultiFeatureListModelBase::layerDeleted, Qt::UniqueConnection );
         connect( layer, &QgsVectorLayer::featureDeleted, this, &MultiFeatureListModelBase::featureDeleted, Qt::UniqueConnection );
         connect( layer, &QgsVectorLayer::attributeValueChanged, this, &MultiFeatureListModelBase::attributeValueChanged, Qt::UniqueConnection );
         connect( layer, &QgsVectorLayer::geometryChanged, this, &MultiFeatureListModelBase::geometryChanged, Qt::UniqueConnection );
+
+        if ( !expressionContext.contains( layer->id() ) )
+        {
+          expressionContext[layer->id()] = layer->createExpressionContext();
+        }
+        updateConditionalStylingDetails( layer, result.feature, expressionContext[layer->id()] );
 
         if ( !mSelectedFeatures.isEmpty() )
         {
@@ -192,6 +203,7 @@ void MultiFeatureListModelBase::clear( const bool keepSelected )
   }
   else
   {
+    mFeaturesConditionalStyle.clear();
     mSelectedFeatures.clear();
 
     for ( QgsVectorLayer *representationalLayer : mRepresentationalLayers.values() )
@@ -261,6 +273,11 @@ QHash<int, QByteArray> MultiFeatureListModelBase::roleNames() const
   roleNames[MultiFeatureListModel::CrsRole] = "crs";
   roleNames[MultiFeatureListModel::DeleteFeatureRole] = "deleteFeatureCapability";
   roleNames[MultiFeatureListModel::EditGeometryRole] = "editGeometryCapability";
+  roleNames[MultiFeatureListModel::ConditionalTextColorRole] = "conditionalTextColor";
+  roleNames[MultiFeatureListModel::ConditionalBackgroundColorRole] = "conditionalBackgroundColor";
+  roleNames[MultiFeatureListModel::ConditionalFontUnderlineRole] = "conditionalFontUnderline";
+  roleNames[MultiFeatureListModel::ConditionalFontStrikeOutRole] = "conditionalFontStrikeOut";
+  roleNames[MultiFeatureListModel::ConditionalFontItalicRole] = "conditionalFontItalic";
 
   return roleNames;
 }
@@ -361,6 +378,71 @@ QVariant MultiFeatureListModelBase::data( const QModelIndex &index, int role ) c
                && !vlayer->customProperty( QStringLiteral( "QFieldSync/is_geometry_editing_locked" ), false ).toBool();
       }
       return false;
+
+    case MultiFeatureListModel::ConditionalBackgroundColorRole:
+      if ( vlayer )
+      {
+        const QString featureUniqueKey = QStringLiteral( "%1:%2" ).arg( vlayer->id(), QString::number( feature->second.id() ) );
+        if ( mFeaturesConditionalStyle.contains( featureUniqueKey ) && mFeaturesConditionalStyle[featureUniqueKey].validBackgroundColor() )
+        {
+          return mFeaturesConditionalStyle[featureUniqueKey].backgroundColor();
+        }
+      }
+
+      return QVariant();
+      break;
+
+    case MultiFeatureListModel::ConditionalTextColorRole:
+      if ( vlayer )
+      {
+        const QString featureUniqueKey = QStringLiteral( "%1:%2" ).arg( vlayer->id(), QString::number( feature->second.id() ) );
+        if ( mFeaturesConditionalStyle.contains( featureUniqueKey ) && mFeaturesConditionalStyle[featureUniqueKey].validTextColor() )
+        {
+          return mFeaturesConditionalStyle[featureUniqueKey].textColor();
+        }
+      }
+
+      return QVariant();
+      break;
+
+    case MultiFeatureListModel::ConditionalFontItalicRole:
+      if ( vlayer )
+      {
+        const QString featureUniqueKey = QStringLiteral( "%1:%2" ).arg( vlayer->id(), QString::number( feature->second.id() ) );
+        if ( mFeaturesConditionalStyle.contains( featureUniqueKey ) )
+        {
+          return mFeaturesConditionalStyle[featureUniqueKey].font().italic();
+        }
+      }
+
+      return false;
+      break;
+
+    case MultiFeatureListModel::ConditionalFontUnderlineRole:
+      if ( vlayer )
+      {
+        const QString featureUniqueKey = QStringLiteral( "%1:%2" ).arg( vlayer->id(), QString::number( feature->second.id() ) );
+        if ( mFeaturesConditionalStyle.contains( featureUniqueKey ) )
+        {
+          return mFeaturesConditionalStyle[featureUniqueKey].font().underline();
+        }
+      }
+
+      return false;
+      break;
+
+    case MultiFeatureListModel::ConditionalFontStrikeOutRole:
+      if ( vlayer )
+      {
+        const QString featureUniqueKey = QStringLiteral( "%1:%2" ).arg( vlayer->id(), QString::number( feature->second.id() ) );
+        if ( mFeaturesConditionalStyle.contains( featureUniqueKey ) )
+        {
+          return mFeaturesConditionalStyle[featureUniqueKey].font().strikeOut();
+        }
+      }
+
+      return false;
+      break;
   }
 
   return QVariant();
@@ -612,7 +694,20 @@ bool MultiFeatureListModelBase::mergeSelection()
     }
   }
 
-  if ( !QgsWkbTypes::isMultiType( vlayer->wkbType() ) )
+  if ( QgsWkbTypes::isMultiType( vlayer->wkbType() ) )
+  {
+    // Attempt to fix merged geometries resulting in a GeometryCollection of mixed geometries
+    if ( QgsWkbTypes::flatType( combinedGeometry.wkbType() ) == Qgis::WkbType::GeometryCollection )
+    {
+      const QgsGeometryCollection *geometryCollection = qgsgeometry_cast<const QgsGeometryCollection *>( combinedGeometry.constGet() );
+      QgsGeometry fixedGeometry = QgsGeometry( geometryCollection->extractPartsByType( QgsWkbTypes::singleType( vlayer->wkbType() ) ) );
+      if ( combinedGeometry.isEmpty() )
+      {
+        isSuccess = false;
+      }
+    }
+  }
+  else
   {
     const QgsGeometryCollection *geometryCollection = qgsgeometry_cast<const QgsGeometryCollection *>( combinedGeometry.constGet() );
     if ( ( geometryCollection && geometryCollection->partCount() > 1 ) || !combinedGeometry.convertToSingleType() )
@@ -761,7 +856,7 @@ bool MultiFeatureListModelBase::duplicateSelection()
   return isSuccess;
 }
 
-bool MultiFeatureListModelBase::moveSelection( const double x, const double y )
+bool MultiFeatureListModelBase::moveSelection( const double x, const double y, const QgsPoint &destinationPoint )
 {
   if ( !canMoveSelection() )
     return false;
@@ -775,17 +870,53 @@ bool MultiFeatureListModelBase::moveSelection( const double x, const double y )
   }
 
   bool isSuccess = false;
+  bool isSingleSelection = mSelectedFeatures.size() == 1;
+  bool isSingleSelectionProcessed = false;
   for ( auto &pair : mSelectedFeatures )
   {
     QgsGeometry geom = pair.second.geometry();
-    geom.translate( x, y );
-    pair.second.setGeometry( geom );
+    if ( isSingleSelection && vlayer->geometryType() == Qgis::GeometryType::Point && !destinationPoint.isEmpty() )
+    {
+      if ( geom.constGet() && geom.constGet()->partCount() == 1 )
+      {
+        QgsPoint *point = nullptr;
+        if ( QgsPoint *singlePoint = dynamic_cast<QgsPoint *>( geom.get() ) )
+        {
+          point = singlePoint;
+        }
+        else if ( QgsMultiPoint *multiPoint = dynamic_cast<QgsMultiPoint *>( geom.get() ) )
+        {
+          point = multiPoint->pointN( 0 );
+        }
+
+        if ( point )
+        {
+          point->setX( destinationPoint.x() );
+          point->setY( destinationPoint.y() );
+          if ( QgsWkbTypes::hasZ( vlayer->wkbType() ) && !std::isnan( destinationPoint.z() ) )
+          {
+            point->setZ( destinationPoint.z() );
+          }
+          if ( QgsWkbTypes::hasZ( vlayer->wkbType() ) && !std::isnan( destinationPoint.m() ) )
+          {
+            point->setM( destinationPoint.m() );
+          }
+          isSingleSelectionProcessed = true;
+        }
+      }
+    }
+
+    if ( !isSingleSelectionProcessed )
+    {
+      geom.translate( x, y );
+    }
     isSuccess = vlayer->changeGeometry( pair.second.id(), geom );
     if ( !isSuccess )
     {
       QgsMessageLog::logMessage( tr( "Cannot change geometry of feature %1 in %2" ).arg( pair.second.id() ).arg( vlayer->name() ), "QField", Qgis::Critical );
       break;
     }
+    pair.second.setGeometry( geom );
   }
 
   if ( isSuccess )
@@ -901,6 +1032,8 @@ void MultiFeatureListModelBase::featureDeleted( QgsFeatureId fid )
     }
     ++i;
   }
+
+  mFeaturesConditionalStyle.remove( QStringLiteral( "%1:%2" ).arg( l->id(), QString::number( fid ) ) );
 }
 
 void MultiFeatureListModelBase::attributeValueChanged( QgsFeatureId fid, int idx, const QVariant &value )
@@ -908,30 +1041,48 @@ void MultiFeatureListModelBase::attributeValueChanged( QgsFeatureId fid, int idx
   QgsVectorLayer *l = qobject_cast<QgsVectorLayer *>( sender() );
   Q_ASSERT( l );
 
+  QgsExpressionContext expressionContext = l->createExpressionContext();
   int i = 0;
   for ( auto &pair : mFeatures )
   {
     if ( pair.first == l && pair.second.id() == fid )
     {
       pair.second.setAttribute( idx, value );
+
+      QList<int> rolesChanged = QVector<int>() << Qt::DisplayRole
+                                               << MultiFeatureListModel::FeatureRole
+                                               << MultiFeatureListModel::FeatureNameRole
+                                               << MultiFeatureListModel::DeleteFeatureRole
+                                               << MultiFeatureListModel::EditGeometryRole;
+
+      if ( updateConditionalStylingDetails( l, pair.second, expressionContext ) )
+      {
+        rolesChanged << MultiFeatureListModel::ConditionalBackgroundColorRole
+                     << MultiFeatureListModel::ConditionalTextColorRole
+                     << MultiFeatureListModel::ConditionalFontItalicRole
+                     << MultiFeatureListModel::ConditionalFontUnderlineRole
+                     << MultiFeatureListModel::ConditionalFontStrikeOutRole;
+      }
+
+      QModelIndex indexChanged = createIndex( i, 0 );
+      emit dataChanged( indexChanged, indexChanged, rolesChanged );
+
       break;
     }
     i++;
   }
-
-  QModelIndex indexChanged = createIndex( i, 1 );
-  emit dataChanged( indexChanged, indexChanged );
 
   for ( auto &pair : mSelectedFeatures )
   {
     if ( pair.first == l && pair.second.id() == fid )
     {
       pair.second.setAttribute( idx, value );
+
+      emit selectedCountChanged();
+
       break;
     }
   }
-
-  emit selectedCountChanged();
 }
 
 void MultiFeatureListModelBase::geometryChanged( QgsFeatureId fid, const QgsGeometry &geometry )
@@ -939,28 +1090,70 @@ void MultiFeatureListModelBase::geometryChanged( QgsFeatureId fid, const QgsGeom
   QgsVectorLayer *l = qobject_cast<QgsVectorLayer *>( sender() );
   Q_ASSERT( l );
 
+  QgsExpressionContext expressionContext = l->createExpressionContext();
   int i = 0;
   for ( auto &pair : mFeatures )
   {
     if ( pair.first == l && pair.second.id() == fid )
     {
       pair.second.setGeometry( geometry );
+      QList<int> rolesChanged = QVector<int>() << Qt::DisplayRole
+                                               << MultiFeatureListModel::FeatureRole
+                                               << MultiFeatureListModel::FeatureNameRole
+                                               << MultiFeatureListModel::GeometryRole
+                                               << MultiFeatureListModel::DeleteFeatureRole
+                                               << MultiFeatureListModel::EditGeometryRole;
+
+      if ( updateConditionalStylingDetails( l, pair.second, expressionContext ) )
+      {
+        rolesChanged << MultiFeatureListModel::ConditionalBackgroundColorRole
+                     << MultiFeatureListModel::ConditionalTextColorRole
+                     << MultiFeatureListModel::ConditionalFontItalicRole
+                     << MultiFeatureListModel::ConditionalFontUnderlineRole
+                     << MultiFeatureListModel::ConditionalFontStrikeOutRole;
+      }
+
+      QModelIndex indexChanged = createIndex( i, 0 );
+      emit dataChanged( indexChanged, indexChanged, rolesChanged );
+
       break;
     }
     i++;
   }
-
-  QModelIndex indexChanged = createIndex( i, 1 );
-  emit dataChanged( indexChanged, indexChanged, QVector<int>() << MultiFeatureListModel::GeometryRole << MultiFeatureListModel::FeatureSelectedRole );
 
   for ( auto &pair : mSelectedFeatures )
   {
     if ( pair.first == l && pair.second.id() == fid )
     {
       pair.second.setGeometry( geometry );
+
+      emit selectedCountChanged();
+
       break;
     }
   }
+}
 
-  emit selectedCountChanged();
+bool MultiFeatureListModelBase::updateConditionalStylingDetails( QgsVectorLayer *vectorLayer, const QgsFeature &feature, QgsExpressionContext &expressionContext )
+{
+  if ( !vectorLayer->conditionalStyles()->rowStyles().isEmpty() )
+  {
+    const QString featureUniqueKey = QStringLiteral( "%1:%2" ).arg( vectorLayer->id(), QString::number( feature.id() ) );
+
+    expressionContext.setFeature( feature );
+    const QList<QgsConditionalStyle> styles = QgsConditionalStyle::matchingConditionalStyles( vectorLayer->conditionalStyles()->rowStyles(), QVariant(), expressionContext );
+    if ( !styles.isEmpty() )
+    {
+      QgsConditionalStyle rowStyle = QgsConditionalStyle::compressStyles( styles );
+      mFeaturesConditionalStyle[featureUniqueKey] = rowStyle;
+    }
+    else
+    {
+      mFeaturesConditionalStyle.remove( featureUniqueKey );
+    }
+
+    return true;
+  }
+
+  return false;
 }

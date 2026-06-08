@@ -212,7 +212,7 @@ Page {
               height: 48
             }
 
-            ParametizedImage {
+            ParameterizedImage {
               id: type
               Layout.alignment: Qt.AlignVCenter
               Layout.topMargin: 5
@@ -660,7 +660,7 @@ Page {
         height: enabled ? 48 : 0
         leftPadding: Theme.menuItemLeftPadding
 
-        text: qsTr("Delete file")
+        text: itemMenu.itemMetaType === LocalFilesModel.Folder ? qsTr("Delete folder") : qsTr("Delete file")
         onTriggered: {
           confirmRemoveDialog.itemsToRemove = [itemMenu.itemPath];
           confirmRemoveDialog.open();
@@ -1052,14 +1052,55 @@ Page {
         color: Theme.mainTextColor
       }
 
-      TextField {
+      TextArea {
         id: importUrlInput
         width: importUrlLabel.width
+        rightPadding: scanCodeBtn.width
+        wrapMode: TextEdit.WrapAnywhere
+
+        QfToolButton {
+          id: scanCodeBtn
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+
+          bgcolor: "transparent"
+          iconSource: Theme.getThemeVectorIcon("ic_qr_code_black_24dp")
+          iconColor: Theme.mainTextColor
+
+          onClicked: {
+            codeReaderConnection.enabled = true;
+            codeReader.open();
+          }
+        }
       }
     }
 
     onAccepted: {
       iface.importUrl(importUrlInput.text);
+    }
+  }
+
+  Connections {
+    id: codeReaderConnection
+    target: codeReader
+    enabled: false
+
+    function onDecoded(string) {
+      if (string.toLowerCase().startsWith("http://") || string.toLowerCase().startsWith("https://")) {
+        codeReader.close();
+        importUrlInput.text = string;
+        importUrlDialog.accept();
+      } else {
+        const details = UrlUtils.getActionDetails(string);
+        if (details.type === "local" && details.import !== undefined && details.import !== "") {
+          importUrlInput.text = details.import;
+          importUrlDialog.accept();
+        }
+      }
+    }
+
+    function onAboutToHide() {
+      codeReaderConnection.enabled = false;
     }
   }
 
@@ -1460,8 +1501,8 @@ Page {
           id: importWebdavFetchFoldersIndicator
           Layout.preferredWidth: 48
           Layout.preferredHeight: 48
-          visible: webdavConnectionLoader.item && webdavConnectionLoader.item.isFetchingAvailablePaths
-          running: visible
+          running: webdavConnectionLoader.item && webdavConnectionLoader.item.isFetchingAvailablePaths
+          visible: running
         }
       }
 
@@ -1503,8 +1544,8 @@ Page {
             anchors.verticalCenter: importWebdavRefetchFoldersButton.verticalCenter
             width: importWebdavRefetchFoldersButton.width
             height: importWebdavRefetchFoldersButton.width
-            visible: webdavConnectionLoader.item && webdavConnectionLoader.item.isFetchingAvailablePaths
-            running: visible
+            running: webdavConnectionLoader.item && webdavConnectionLoader.item.isFetchingAvailablePaths
+            visible: running
           }
         }
 

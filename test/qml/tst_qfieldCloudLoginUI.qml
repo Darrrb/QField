@@ -47,11 +47,11 @@ TestCase {
   }
 
   property var connectionSettings: qfieldCloudLogin.children[0]
-  property var loginFeedbackLabel: connectionSettings.children[2]
-  property var serverUrlLabel: connectionSettings.children[3]
-  property var serverUrlComboBox: connectionSettings.children[4]
-  property var usernameField: connectionSettings.children[5]
-  property var passwordField: connectionSettings.children[6]
+  property var loginFeedbackLabel: connectionSettings.children[1]
+  property var serverUrlLabel: connectionSettings.children[2]
+  property var serverUrlComboBox: connectionSettings.children[3]
+  property var usernameField: connectionSettings.children[4]
+  property var passwordField: connectionSettings.children[5]
   property var showPasswordButton: passwordField.children[1]
   property var availableProvidersRepeater: connectionSettings.children[9]
   property var cloudRegisterLabel: connectionSettings.children[10]
@@ -68,16 +68,17 @@ TestCase {
     signalName: "availableProvidersChanged"
   }
 
-  // Returns all available server configurations (local always, remote if provided)
+  // Returns all available server configurations (local if provided, remote if provided)
   function serverConfigs() {
-    var configs = [
-      {
+    var configs = [];
+    if (localUrl && localUsername && localPassword) {
+      configs.push({
         tag: "local",
         url: localUrl,
         username: localUsername,
         password: localPassword
-      }
-    ];
+      });
+    }
     if (remoteUrl && remoteUsername && remotePassword) {
       configs.push({
         tag: "remote",
@@ -87,11 +88,6 @@ TestCase {
       });
     }
     return configs;
-  }
-
-  // QFieldCloud credentials must always be available
-  function init() {
-    verify(localUrl && localUsername && localPassword, "QFieldCloud local credentials are required");
   }
 
   // This function is called after each test function that is executed in the TestCase type.
@@ -122,8 +118,11 @@ TestCase {
     compare(cloudConnection.status, QFieldCloudConnection.Disconnected);
     verify(usernameField.visible);
     verify(passwordField.visible);
-    verify(cloudRegisterLabel.visible);
+    // Register label requires a signup URL from server info, verify after fetch
     cloudConnection.url = data.url;
+    cloudConnection.getServerInformation();
+    tryCompare(cloudConnection, "isFetchingAvailableProviders", false, 10000);
+    verify(cloudRegisterLabel.visible);
     cloudConnection.username = data.username;
     cloudConnection.login(data.password);
     wait(5000);
@@ -217,9 +216,9 @@ TestCase {
     var initialCount = availableProvidersRepeater.model.length;
     availableProvidersChangedSpy.clear();
     cloudConnection.url = data.url;
-    cloudConnection.getAuthenticationProviders();
+    cloudConnection.getServerInformation();
     tryCompare(availableProvidersChangedSpy, "count", 1, 10000);
-    wait(200);
+    wait(500);
     verify(availableProvidersRepeater.model.length > 0);
     compare(availableProvidersRepeater.model.length, cloudConnection.availableProviders.length);
     var hasCredentialsProvider = false;

@@ -23,13 +23,18 @@ AttributeFormModel::AttributeFormModel( QObject *parent )
 {
   setSourceModel( mSourceModel );
 
+  connect( mSourceModel, &AttributeFormModelBase::isWizardChanged, this, &AttributeFormModel::isWizardChanged );
   connect( mSourceModel, &AttributeFormModelBase::hasTabsChanged, this, &AttributeFormModel::hasTabsChanged );
   connect( mSourceModel, &AttributeFormModelBase::hasRemembranceChanged, this, &AttributeFormModel::hasRemembranceChanged );
   connect( mSourceModel, &AttributeFormModelBase::hasConstraintsChanged, this, &AttributeFormModel::hasConstraintsChanged );
   connect( mSourceModel, &AttributeFormModelBase::featureModelChanged, this, &AttributeFormModel::featureModelChanged );
-  connect( mSourceModel, &AttributeFormModelBase::featureChanged, this, &AttributeFormModel::featureChanged );
   connect( mSourceModel, &AttributeFormModelBase::constraintsHardValidChanged, this, &AttributeFormModel::constraintsHardValidChanged );
   connect( mSourceModel, &AttributeFormModelBase::constraintsSoftValidChanged, this, &AttributeFormModel::constraintsSoftValidChanged );
+}
+
+bool AttributeFormModel::isWizard() const
+{
+  return mSourceModel->isWizard();
 }
 
 bool AttributeFormModel::hasTabs() const
@@ -120,6 +125,11 @@ void AttributeFormModel::activateAllRememberValues()
 void AttributeFormModel::deactivateAllRememberValues()
 {
   return mSourceModel->deactivateAllRememberValues();
+}
+
+QgsExpressionContext AttributeFormModel::createExpressionContext() const
+{
+  return mSourceModel->createExpressionContext();
 }
 
 bool AttributeFormModel::filterAcceptsRow( int sourceRow, const QModelIndex &sourceParent ) const

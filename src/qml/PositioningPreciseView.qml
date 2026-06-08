@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material.impl
 import QtQuick.Layouts
 import QtQuick.Shapes
 import org.qfield
@@ -11,6 +12,8 @@ import Theme
 Item {
   id: positioningPreciseView
 
+  property real maximumHeight: Math.min(Math.min(mainWindow.height / 3, 250))
+
   property double precision: 1
   property double projectDistance: navigation.distance * UnitTypes.fromUnitToUnitFactor(navigation.distanceUnits, projectInfo.distanceUnits)
   property double projectVerticalDistance: navigation.verticalDistance * UnitTypes.fromUnitToUnitFactor(navigation.distanceUnits, projectInfo.distanceUnits)
@@ -19,9 +22,25 @@ Item {
   property bool hasAcceptableAccuracy: positionSource.positionInformation.haccValid && positionSource.positionInformation.hacc < precision / 2.5
   property bool hasReachedTarget: hasAcceptableAccuracy && projectDistance - positionSource.positionInformation.hacc - (precision / 10) <= 0
   property bool hasAlarmSnoozed: false
+  property PositioningSettings positioningSettings
 
-  property double positionX: Math.min(precision, projectDistance) * Math.cos((navigation.bearing - (!isNaN(positionSource.orientation) ? positionSource.orientation : 0) - 90) * Math.PI / 180) * (preciseTarget.width / 2) / precision
-  property double positionY: Math.min(precision, projectDistance) * Math.sin((navigation.bearing - (!isNaN(positionSource.orientation) ? positionSource.orientation : 0) - 90) * Math.PI / 180) * (preciseTarget.width / 2) / precision
+  property alias menu: settingsMenu
+
+  readonly property alias preciseTargetDiameter: preciseTarget.width
+
+  property real lastValidDirection: NaN
+  readonly property real rotationAngle: {
+    if (!positioningSettings.preciseViewAutoRotate) {
+      return NaN;
+    }
+    if (positioningSettings.preciseViewRotationSource === PositioningSettings.RotationSource.Movement) {
+      return lastValidDirection;
+    }
+    return positionSource.orientation;
+  }
+
+  property double positionX: Math.min(precision, projectDistance) * Math.cos((navigation.bearing - (!isNaN(rotationAngle) ? rotationAngle : 0) - 90) * Math.PI / 180) * (preciseTarget.width / 2) / precision
+  property double positionY: Math.min(precision, projectDistance) * Math.sin((navigation.bearing - (!isNaN(rotationAngle) ? rotationAngle : 0) - 90) * Math.PI / 180) * (preciseTarget.width / 2) / precision
   property double positionZ: hasZ ? Math.min(precision, Math.max(-precision, -projectVerticalDistance)) * ((preciseElevation.height - 15) / 2) / precision : 0.0
   property point positionCenter: Qt.point(preciseTarget.width / 2 + preciseTarget.x + preciseTarget.parent.x, preciseTarget.height / 2 + preciseTarget.y + preciseTarget.parent.y)
 
@@ -53,9 +72,9 @@ Item {
 
     Shape {
       id: preciseTarget
-      width: Math.min(positioningPreciseView.height - 10, positioningPreciseView.width - preciseElevation.width - labelTarget.contentWidth - labelElevation.width - 20)
+      width: Math.min(180, positioningPreciseView.maximumHeight - 40, positioningPreciseView.width - preciseElevation.width - labelTarget.contentWidth - labelElevation.width - 40)
       height: width
-      rotation: !isNaN(positionSource.orientation) ? -positionSource.orientation + positionSource.bearingTrueNorth : 0
+      rotation: !isNaN(rotationAngle) ? -rotationAngle + positionSource.bearingTrueNorth : 0
 
       ShapePath {
         strokeWidth: 1
@@ -332,7 +351,7 @@ Item {
     y: positionCenter.y + positionY - width / 2
     width: 28
     height: width
-    rotation: navigation.bearing - (!isNaN(positionSource.orientation) ? positionSource.orientation : 0)
+    rotation: navigation.bearing - (!isNaN(rotationAngle) ? rotationAngle : 0)
 
     ShapePath {
       strokeWidth: 1
@@ -413,7 +432,6 @@ Item {
   Text {
     id: preciseHorizontalPositionInfo
 
-    property bool leftOfPoint: !isNaN(positionSource.orientation) && positionX >= 0
     x: positionCenter.x + positionX + (positionX >= 0 ? -contentWidth - 10 : preciseHorizontalPosition.width / 2)
     y: positionCenter.y + positionY + (positionY >= 0 ? -preciseHorizontalPosition.height : preciseHorizontalPosition.height / 2)
 
@@ -469,6 +487,220 @@ Item {
 
     onClicked: {
       positioningPreciseView.hasAlarmSnoozed = !positioningPreciseView.hasAlarmSnoozed;
+    }
+  }
+
+  Menu {
+    id: settingsMenu
+    width: 330
+
+    MenuItem {
+      text: qsTr("Audio proximity feedback")
+      font: Theme.defaultFont
+      height: 48
+      leftPadding: Theme.menuItemCheckLeftPadding
+      rightPadding: Theme.menuItemCheckLeftPadding
+      checkable: true
+      checked: positioningSettings.preciseViewProximityAlarm
+      indicator.height: 20
+      indicator.width: 20
+      indicator.implicitHeight: 24
+      indicator.implicitWidth: 24
+      onCheckedChanged: positioningSettings.preciseViewProximityAlarm = checked
+    }
+
+    MenuItem {
+      text: qsTr("Rotate view")
+      font: Theme.defaultFont
+      height: 48
+      leftPadding: Theme.menuItemCheckLeftPadding
+      rightPadding: Theme.menuItemCheckLeftPadding
+      checkable: true
+      checked: positioningSettings.preciseViewAutoRotate
+      indicator.height: 20
+      indicator.width: 20
+      indicator.implicitHeight: 24
+      indicator.implicitWidth: 24
+      onCheckedChanged: positioningSettings.preciseViewAutoRotate = checked
+    }
+
+    MenuSeparator {
+      width: parent.width
+    }
+
+    Item {
+      width: 1
+      height: 8
+    }
+
+    Text {
+      text: qsTr("Rotation source")
+      color: Theme.mainTextColor
+      font: Theme.defaultFont
+      leftPadding: Theme.menuItemIconlessLeftPadding
+    }
+
+    Item {
+      width: 1
+      height: 8
+    }
+
+    ListView {
+      id: rotationSources
+      height: 35
+      anchors {
+        left: parent.left
+        right: parent.right
+        leftMargin: Theme.menuItemIconlessLeftPadding
+        rightMargin: Theme.menuItemCheckLeftPadding
+      }
+      spacing: 3
+      orientation: ListView.Horizontal
+      model: [qsTr("Compass"), qsTr("Movement")]
+
+      delegate: Item {
+        id: sourceDelegate
+        width: (rotationSources.width - rotationSources.spacing) / 2
+        height: 35
+        enabled: !selected
+
+        property bool selected: index === (positioningSettings.preciseViewRotationSource === PositioningSettings.RotationSource.Compass ? 0 : 1)
+
+        Rectangle {
+          anchors.fill: parent
+          radius: 4
+          color: sourceDelegate.selected ? Theme.mainColor : "transparent"
+        }
+
+        Text {
+          text: modelData
+          font: sourceDelegate.selected ? Theme.strongTipFont : Theme.tipFont
+          anchors.centerIn: parent
+          color: sourceDelegate.selected ? Theme.buttonColor : Theme.mainTextColor
+          elide: Text.ElideRight
+          width: parent.width - 8
+          horizontalAlignment: Text.AlignHCenter
+        }
+
+        Ripple {
+          clip: true
+          anchors.fill: parent
+          clipRadius: 4
+          pressed: sourceMouseArea.pressed
+          anchor: parent
+          active: sourceMouseArea.pressed
+          color: "#22aaaaaa"
+        }
+
+        MouseArea {
+          id: sourceMouseArea
+          anchors.fill: parent
+          onClicked: {
+            if (sourceDelegate.selected) {
+              return;
+            }
+            positioningSettings.preciseViewRotationSource = index === 0 ? PositioningSettings.RotationSource.Compass : PositioningSettings.RotationSource.Movement;
+          }
+        }
+      }
+    }
+
+    Item {
+      width: 1
+      height: 8
+    }
+
+    Text {
+      text: qsTr("Precision")
+      color: Theme.mainTextColor
+      font: Theme.defaultFont
+      leftPadding: Theme.menuItemIconlessLeftPadding
+    }
+
+    Item {
+      width: 1
+      height: 8
+    }
+
+    Grid {
+      id: precisions
+      anchors {
+        left: parent.left
+        right: parent.right
+        leftMargin: Theme.menuItemIconlessLeftPadding
+        rightMargin: Theme.menuItemCheckLeftPadding
+      }
+      columns: 4
+      rowSpacing: 4
+      columnSpacing: 3
+
+      property var model: [0.10, 0.25, 0.50, 1, 2.5, 5, 10, 25]
+
+      Repeater {
+        model: precisions.model
+
+        delegate: Item {
+          id: precisionDelegate
+          width: (precisions.width - precisions.columnSpacing * (precisions.columns - 1)) / precisions.columns
+          height: 35
+          enabled: !selected
+
+          property bool selected: modelData === positioningSettings.preciseViewPrecision
+
+          Rectangle {
+            anchors.fill: parent
+            radius: 4
+            color: precisionDelegate.selected ? Theme.mainColor : "transparent"
+          }
+
+          Text {
+            id: precisionText
+            text: UnitTypes.formatDistance(modelData, modelData < 1 ? 2 : 1, projectInfo.distanceUnits)
+            font: precisionDelegate.selected ? Theme.strongTipFont : Theme.tipFont
+            anchors.centerIn: parent
+            color: precisionDelegate.selected ? Theme.buttonColor : Theme.mainTextColor
+          }
+
+          Ripple {
+            clip: true
+            anchors.fill: parent
+            clipRadius: 4
+            pressed: precisionMouseArea.pressed
+            anchor: parent
+            active: precisionMouseArea.pressed
+            color: "#22aaaaaa"
+          }
+
+          MouseArea {
+            id: precisionMouseArea
+            anchors.fill: parent
+            onClicked: {
+              if (precisionDelegate.selected) {
+                return;
+              }
+              positioningSettings.preciseViewPrecision = modelData;
+            }
+          }
+        }
+      }
+    }
+
+    Item {
+      width: 1
+      height: 8
+    }
+  }
+
+  Connections {
+    target: positionSource
+    enabled: positioningSettings.preciseViewRotationSource === PositioningSettings.RotationSource.Movement
+
+    function onPositionInformationChanged() {
+      const info = positionSource.positionInformation;
+      const movementSpeedThreshold = 0.8;
+      if (info && info.directionValid && (!info.speedValid || info.speed >= movementSpeedThreshold)) {
+        positioningPreciseView.lastValidDirection = info.direction;
+      }
     }
   }
 

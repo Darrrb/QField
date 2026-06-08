@@ -19,6 +19,7 @@
 #define EXPRESSIONEVALUATOR_H
 
 #include "appexpressioncontextscopesgenerator.h"
+#include "attributeformmodel.h"
 #include "qgsquickmapsettings.h"
 
 #include <QObject>
@@ -46,6 +47,7 @@ class ExpressionEvaluator : public QObject
     Q_PROPERTY( QgsProject *project READ project WRITE setProject NOTIFY projectChanged )
     Q_PROPERTY( QgsQuickMapSettings *mapSettings READ mapSettings WRITE setMapSettings NOTIFY mapSettingsChanged )
     Q_PROPERTY( AppExpressionContextScopesGenerator *appExpressionContextScopesGenerator READ appExpressionContextScopesGenerator WRITE setAppExpressionContextScopesGenerator NOTIFY appExpressionContextScopesGeneratorChanged )
+    Q_PROPERTY( AttributeFormModel *attributeFormModel READ attributeFormModel WRITE setAttributeFormModel NOTIFY attributeFormModelChanged )
     Q_PROPERTY( QVariantMap variables READ variables WRITE setVariables NOTIFY variablesChanged )
 
   public:
@@ -101,14 +103,23 @@ class ExpressionEvaluator : public QObject
     //! Sets the application expression context scopes \a generator object
     void setAppExpressionContextScopesGenerator( AppExpressionContextScopesGenerator *generator );
 
+    //! Returns the attribute form model providing an expression context
+    AttributeFormModel *attributeFormModel() const;
+
+    //! Sets the attribute form model providing an expression context
+    void setAttributeFormModel( AttributeFormModel *attributeFormModel );
+
     //! Returns the map of variables injected into the expression context when evaluating
     QVariantMap variables() const { return mVariables; }
 
     //! Sets the map of variables injected into the expression context when evaluating
     void setVariables( const QVariantMap &variables );
 
-    //! Returns the evaluated expression text value
+    //! Evalutes and returns the current expression text property value
     Q_INVOKABLE QVariant evaluate();
+
+    //! Evalutes and returns the expression text passed as a parameter
+    Q_INVOKABLE QVariant evaluate( const QString &expressionText );
 
   signals:
     void modeChanged();
@@ -118,6 +129,7 @@ class ExpressionEvaluator : public QObject
     void projectChanged();
     void mapSettingsChanged();
     void appExpressionContextScopesGeneratorChanged();
+    void attributeFormModelChanged();
     void variablesChanged();
 
   private:
@@ -130,6 +142,7 @@ class ExpressionEvaluator : public QObject
     QgsProject *mProject = nullptr;
     QgsQuickMapSettings *mMapSettings = nullptr;
     QPointer<AppExpressionContextScopesGenerator> mAppExpressionContextScopesGenerator;
+    QPointer<AttributeFormModel> mAttributeFormModel;
     QVariantMap mVariables;
 };
 #endif // EXPRESSIONEVALUATOR_H

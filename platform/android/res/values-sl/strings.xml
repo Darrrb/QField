@@ -48,7 +48,7 @@
     <string name="export_to_folder_error">Izbrana mapa projekta ni bila pravilno izvožena.</string>
     <string name="delete_confirm_title">Potrditev izbrisa</string>
     <string name="delete_confirm_dataset">Zbirka podatkov bo trajno izbrisana. Želiš nadaljevati z odstranitvijo?</string>
-    <string name="delete_confirm_folder">Projektna mapa bo trajno izbrisana. Želiš nadaljevati z odstranitvijo?</string>
+    <string name="delete_confirm_folder">Mapa projekta bo trajno izbrisana. Želiš nadaljevati z odstranitvijo?</string>
     <string name="delete_confirm">Odstrani</string>
     <string name="delete_cancel">Prekliči</string>
     <string name="storage_information_title">Informacije o shranjevanju</string>
@@ -64,4 +64,6 @@
     <string name="export_operation_unsupported">Tvoja naprava ne podpira te operacije izvoza.</string>
     <string name="processing_message">Obdelujem...</string>
     <string name="positioning_title">Določanje položaja</string>
-    </resources>
+    <string name="positioning_running">Določanje položaja je aktivno</string>
+    <string name="copy_to_clipboard">Kopiraj v odložišče</string>
+</resources>

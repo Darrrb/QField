@@ -26,6 +26,7 @@ BluetoothReceiver::BluetoothReceiver( const QString &address, QObject *parent )
   , mLocalDevice( std::make_unique<QBluetoothLocalDevice>() )
   , mSocket( new QBluetoothSocket( QBluetoothServiceInfo::RfcommProtocol ) )
 {
+  qInfo() << "BluetothReceiver: Creating the receiver";
   connect( mSocket, qOverload<QBluetoothSocket::SocketError>( &QBluetoothSocket::errorOccurred ), this, &BluetoothReceiver::handleErrorOccurred );
   connect( mSocket, &QBluetoothSocket::stateChanged, this, &BluetoothReceiver::handleStateChanged );
 
@@ -56,21 +57,21 @@ BluetoothReceiver::BluetoothReceiver( const QString &address, QObject *parent )
 
 BluetoothReceiver::~BluetoothReceiver()
 {
+  qInfo() << "BluetothReceiver: Deleting the receiver";
   disconnectDevice();
   mSocket->deleteLater();
   mSocket = nullptr;
 }
 
+AbstractGnssReceiver::Capabilities BluetoothReceiver::capabilities() const
+{
+  return AbstractGnssReceiver::Capabilities() | AbstractGnssReceiver::OrthometricAltitude | AbstractGnssReceiver::Logging | AbstractGnssReceiver::NtripCorrection;
+}
+
 void BluetoothReceiver::handleDisconnectDevice()
 {
-  if ( mSocket->state() != QBluetoothSocket::SocketState::UnconnectedState )
-  {
-    qInfo() << "BluetoothReceiver: Disconnecting from device: " << mAddress;
-    mConnectOnDisconnect = false;
-    mDisconnecting = true;
-    mLastGnssPositionValid = false;
-    mSocket->disconnectFromService();
-  }
+  mConnectOnDisconnect = false;
+  doDisconnectDevice();
 }
 
 void BluetoothReceiver::handleConnectDevice()
@@ -85,7 +86,7 @@ void BluetoothReceiver::handleConnectDevice()
   mConnectOnDisconnect = true;
   if ( mSocket->state() == QBluetoothSocket::SocketState::ConnectedState )
   {
-    disconnectDevice();
+    doDisconnectDevice();
   }
   else
   {
@@ -98,6 +99,9 @@ void BluetoothReceiver::handleStateChanged( QBluetoothSocket::SocketState state 
   QAbstractSocket::SocketState currentState;
   switch ( state )
   {
+    case QBluetoothSocket::SocketState::ServiceLookupState:
+      currentState = QAbstractSocket::ConnectingState;
+      break;
     case QBluetoothSocket::SocketState::UnconnectedState:
       currentState = QAbstractSocket::UnconnectedState;
       break;
@@ -118,8 +122,10 @@ void BluetoothReceiver::handleStateChanged( QBluetoothSocket::SocketState state 
       break;
   }
 
+  qInfo() << "BluetoothReceiver: State changed to" << state;
   if ( currentState == QAbstractSocket::UnconnectedState && mConnectOnDisconnect )
   {
+    qInfo() << QStringLiteral( "BluetoothReceiver: Reconnecting on failure (try #%1)" ).arg( mConnectionFailureCount );
     QTimer::singleShot( 1000, this, &BluetoothReceiver::doConnectDevice );
   }
   else
@@ -155,7 +161,7 @@ void BluetoothReceiver::handleErrorOccurred( QBluetoothSocket::SocketError error
   if ( mSocket->isOpen() )
   {
     emitMessage = true;
-    mSocket->close();
+    QTimer::singleShot( 0, mSocket, &QBluetoothSocket::close );
   }
 
   if ( mConnectionFailureCount > 10 )
@@ -184,6 +190,17 @@ void BluetoothReceiver::doConnectDevice()
   repairDevice( QBluetoothAddress( mAddress ) );
 }
 
+void BluetoothReceiver::doDisconnectDevice()
+{
+  if ( mSocket->state() != QBluetoothSocket::SocketState::UnconnectedState )
+  {
+    qInfo() << "BluetoothReceiver: Disconnecting from device: " << mAddress;
+    mDisconnecting = true;
+    mLastGnssPositionValid = false;
+    mSocket->disconnectFromService();
+  }
+}
+
 QString BluetoothReceiver::socketStateString()
 {
   const QAbstractSocket::SocketState currentState = socketState();
@@ -207,7 +224,7 @@ void BluetoothReceiver::repairDevice( const QBluetoothAddress &address )
     case QBluetoothLocalDevice::Paired:
     case QBluetoothLocalDevice::AuthorizedPaired:
     {
-      mSocket->connectToService( address, QBluetoothUuid( QBluetoothUuid::ServiceClassUuid::SerialPort ), QBluetoothSocket::ReadOnly );
+      mSocket->connectToService( address, QBluetoothUuid( QBluetoothUuid::ServiceClassUuid::SerialPort ), QBluetoothSocket::ReadWrite );
       break;
     }
 
@@ -229,7 +246,7 @@ void BluetoothReceiver::pairingFinished( const QBluetoothAddress &address, QBlue
       case QBluetoothLocalDevice::Paired:
       case QBluetoothLocalDevice::AuthorizedPaired:
       {
-        mSocket->connectToService( address, QBluetoothUuid( QBluetoothUuid::ServiceClassUuid::SerialPort ), QBluetoothSocket::ReadOnly );
+        mSocket->connectToService( address, QBluetoothUuid( QBluetoothUuid::ServiceClassUuid::SerialPort ), QBluetoothSocket::ReadWrite );
         break;
       }
 
@@ -241,5 +258,69 @@ void BluetoothReceiver::pairingFinished( const QBluetoothAddress &address, QBlue
         break;
       }
     }
+  }
+}
+
+void BluetoothReceiver::onCorrectionDataReceived( const QByteArray &data )
+{
+  if ( !mSocket || !mSocket->isOpen() )
+  {
+    return;
+  }
+
+  if ( mAddress.startsWith( "C8:47:8C" ) ) // Beken Corp. handling
+  {
+    auto shortToByteArray = []( qint16 s ) -> QByteArray {
+      QByteArray targets;
+
+      targets.resize( 2 );
+
+      for ( int i = 0; i < targets.length(); i++ )
+      {
+        int offset = ( targets.length() - 1 - i ) * 8;
+        // Cast to quint16 to mimic Java's unsigned right shift (>>>)
+        targets[i] = static_cast<char>( ( static_cast<quint16>( s ) >> offset ) & 0xFF );
+      }
+      return targets;
+    };
+
+    const QByteArray headByte = QStringLiteral( "$$GI" ).toUtf8();
+
+    qint16 length = static_cast<qint16>( data.length() + 1 );
+    QByteArray lengthByte = shortToByteArray( length );
+    std::reverse( lengthByte.begin(), lengthByte.end() );
+
+    char startOfData = 0x02;
+    int checkCode = 0;
+    for ( int i = 0; i < headByte.length(); i++ )
+    {
+      checkCode ^= static_cast<quint8>( 0xFF & headByte[i] );
+    }
+
+    checkCode ^= static_cast<quint8>( 0xFF & lengthByte[0] );
+    checkCode ^= static_cast<quint8>( 0xFF & lengthByte[1] );
+    checkCode ^= static_cast<quint8>( 0xFF & startOfData );
+
+    for ( int i = 0; i < data.length(); i++ )
+    {
+      checkCode ^= static_cast<quint8>( 0xFF & data[i] );
+    }
+    char checkChar = static_cast<char>( checkCode );
+
+    QByteArray packet;
+    packet.reserve( headByte.length() + lengthByte.length() + 1 + data.length() + 1 + 2 );
+
+    packet.append( headByte );
+    packet.append( lengthByte );
+    packet.append( startOfData );
+    packet.append( data );
+    packet.append( checkChar );
+    packet.append( "\r\n" );
+
+    NmeaGnssReceiver::onCorrectionDataReceived( packet );
+  }
+  else // Generic handling
+  {
+    NmeaGnssReceiver::onCorrectionDataReceived( data );
   }
 }

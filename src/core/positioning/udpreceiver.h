@@ -45,6 +45,7 @@ class UdpReceiver : public NmeaGnssReceiver
     void handleConnectDevice() override;
     void handleDisconnectDevice() override;
     void handleError( QAbstractSocket::SocketError error );
+    void handleStateChanged( QAbstractSocket::SocketState state );
 
     QString mAddress;
     int mPort = 0;
@@ -52,6 +53,7 @@ class UdpReceiver : public NmeaGnssReceiver
     QBuffer *mBuffer = nullptr;
 
     bool mReconnectOnDisconnect = false;
+    int mConnectionFailureCount = 0;
     QTimer mReconnectTimer;
 };
 

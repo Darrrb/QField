@@ -14,6 +14,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "filereceiver.h"
 #include "platformutilities.h"
 #include "positioning.h"
 #include "positioningutils.h"
@@ -52,7 +53,6 @@ void Positioning::setupSource()
     mHost.disableRemoting( mPositioningSource );
     // Don't rely on deleteLater(), insure any device is disconnected prior to switching source
     mPositioningSource->setActive( false );
-    mPositioningSource->setDeviceId( QString() );
     mPositioningSource->deleteLater();
     mPositioningSource = nullptr;
   }
@@ -84,6 +84,7 @@ void Positioning::setupSource()
   connect( mPositioningSourceReplica.data(), SIGNAL( activeChanged() ), this, SLOT( onActiveChanged() ) );
   connect( mPositioningSourceReplica.data(), SIGNAL( validChanged() ), this, SLOT( onValidChanged() ) );
   connect( mPositioningSourceReplica.data(), SIGNAL( deviceIdChanged() ), this, SLOT( onDeviceIdChanged() ) );
+  connect( mPositioningSourceReplica.data(), SIGNAL( deviceChanged() ), this, SIGNAL( deviceChanged() ) );
   connect( mPositioningSourceReplica.data(), SIGNAL( elevationCorrectionModeChanged() ), this, SLOT( onElevationCorrectionModeChanged() ) );
   connect( mPositioningSourceReplica.data(), SIGNAL( antennaHeightChanged() ), this, SLOT( onAntennaHeightChanged() ) );
   connect( mPositioningSourceReplica.data(), SIGNAL( loggingChanged() ), this, SLOT( onLoggingChanged() ) );
@@ -95,6 +96,13 @@ void Positioning::setupSource()
   connect( mPositioningSourceReplica.data(), SIGNAL( deviceSocketStateStringChanged() ), this, SIGNAL( deviceSocketStateStringChanged() ) );
   connect( mPositioningSourceReplica.data(), SIGNAL( orientationChanged() ), this, SIGNAL( orientationChanged() ) );
 
+  connect( mPositioningSourceReplica.data(), SIGNAL( enableNtripChanged() ), this, SIGNAL( enableNtripChanged() ) );
+  connect( mPositioningSourceReplica.data(), SIGNAL( ntripSettingsChanged() ), this, SIGNAL( ntripSettingsChanged() ) );
+  connect( mPositioningSourceReplica.data(), SIGNAL( ntripStateChanged() ), this, SIGNAL( ntripStateChanged() ) );
+  connect( mPositioningSourceReplica.data(), SIGNAL( ntripBytesSentChanged() ), this, SIGNAL( ntripBytesSentChanged() ) );
+  connect( mPositioningSourceReplica.data(), SIGNAL( ntripBytesReceivedChanged() ), this, SIGNAL( ntripBytesReceivedChanged() ) );
+  connect( mPositioningSourceReplica.data(), SIGNAL( ntripLastBytesReceivedUtcDateTimeChanged() ), this, SIGNAL( ntripLastBytesReceivedUtcDateTimeChanged() ) );
+
   connect( this, SIGNAL( triggerConnectDevice() ), mPositioningSourceReplica.data(), SLOT( triggerConnectDevice() ) );
   connect( this, SIGNAL( triggerDisconnectDevice() ), mPositioningSourceReplica.data(), SLOT( triggerDisconnectDevice() ) );
 
@@ -102,7 +110,23 @@ void Positioning::setupSource()
   const QList<QString> properties = mProperties.keys();
   for ( const QString &property : properties )
   {
-    mPositioningSourceReplica->setProperty( property.toLatin1(), mProperties[property] );
+    if ( property != QStringLiteral( "active" ) )
+    {
+      mPositioningSourceReplica->setProperty( property.toLatin1(), mProperties[property] );
+    }
+  }
+
+  // Give the OS 2 seconds to fully release the Bluetooth adapter from the dying local/remote source
+  if ( mProperties.contains( "active" ) )
+  {
+    QTimer::singleShot( 2000, this, [this]() {
+      if ( mPositioningSourceReplica && mProperties.contains( "active" ) )
+      {
+        const bool actualActiveValue = mProperties["active"].toBool();
+        mProperties.remove( "active" );
+        mPositioningSourceReplica->setProperty( "active", actualActiveValue );
+      }
+    } );
   }
 }
 
@@ -206,6 +230,7 @@ void Positioning::setActive( bool active )
     if (
       !devId.startsWith( TcpReceiver::identifier + ":" )
       && !devId.startsWith( UdpReceiver::identifier + ":" )
+      && !devId.startsWith( FileReceiver::identifier + ":" )
 #ifdef WITH_SERIALPORT
       && !devId.startsWith( SerialPortReceiver::identifier + ":" )
 #endif
@@ -329,6 +354,11 @@ QString Positioning::deviceSocketStateString() const
   return isSourceAvailable() ? mPositioningSourceReplica->property( "deviceSocketStateString" ).toString() : QString();
 }
 
+double Positioning::deviceBatteryLevel() const
+{
+  return isSourceAvailable() ? mPositioningSourceReplica->property( "deviceBatteryLevel" ).toDouble() : std::numeric_limits<double>::quiet_NaN();
+}
+
 GnssPositionDetails Positioning::deviceDetails() const
 {
   GnssPositionDetails list;
@@ -341,21 +371,7 @@ GnssPositionDetails Positioning::deviceDetails() const
 
 AbstractGnssReceiver::Capabilities Positioning::deviceCapabilities() const
 {
-  const QString deviceId = ( isSourceAvailable() ? mPositioningSourceReplica->property( "deviceId" ) : mProperties.value( "deviceId" ) ).toString();
-  if ( !deviceId.isEmpty() || deviceId.startsWith( TcpReceiver::identifier + ":" ) || deviceId.startsWith( UdpReceiver::identifier + ":" ) )
-  {
-    // NMEA-based devices
-    return AbstractGnssReceiver::Capabilities() | AbstractGnssReceiver::OrthometricAltitude | AbstractGnssReceiver::Logging;
-  }
-#ifdef WITH_SERIALPORT
-  else if ( deviceId.startsWith( SerialPortReceiver::identifier + ":" ) )
-  {
-    // NMEA-based device
-    return AbstractGnssReceiver::Capabilities() | AbstractGnssReceiver::OrthometricAltitude | AbstractGnssReceiver::Logging;
-  }
-#endif
-
-  return AbstractGnssReceiver::NoCapabilities;
+  return isSourceAvailable() ? static_cast<AbstractGnssReceiver::Capabilities>( mPositioningSourceReplica->property( "deviceCapabilities" ).toInt() ) : AbstractGnssReceiver::NoCapabilities;
 }
 
 int Positioning::averagedPositionCount() const
@@ -480,8 +496,10 @@ void Positioning::setBackgroundMode( bool enabled )
   QFile backgroundFile( PositioningSource::backgroundFilePath );
   if ( mBackgroundMode )
   {
-    backgroundFile.open( QFile::WriteOnly );
-    backgroundFile.close();
+    if ( backgroundFile.open( QFile::WriteOnly ) )
+    {
+      backgroundFile.close();
+    }
   }
   else
   {
@@ -498,6 +516,71 @@ void Positioning::setBackgroundMode( bool enabled )
   }
 
   emit backgroundModeChanged();
+}
+
+bool Positioning::enableNtrip() const
+{
+  return ( isSourceAvailable() ? mPositioningSourceReplica->property( "enableNtrip" ) : mProperties.value( "enableNtrip", false ) ).toBool();
+}
+
+void Positioning::setEnableNtrip( bool enableNtrip )
+{
+  if ( isSourceAvailable() )
+  {
+    mPositioningSourceReplica->setProperty( "enableNtrip", enableNtrip );
+  }
+  else
+  {
+    mProperties["enableNtrip"] = enableNtrip;
+    emit enableNtripChanged();
+  }
+}
+
+NtripSettings Positioning::ntripSettings() const
+{
+  if ( isSourceAvailable() )
+  {
+    return mPositioningSourceReplica->property( "ntripSettings" ).value<NtripSettings>();
+  }
+  else if ( mProperties.contains( "ntripSettings" ) )
+  {
+    return mProperties.value( "ntripSettings" ).value<NtripSettings>();
+  }
+
+  return NtripSettings();
+}
+
+void Positioning::setNtripSettings( const NtripSettings &ntripSettings )
+{
+  if ( isSourceAvailable() )
+  {
+    mPositioningSourceReplica->setProperty( "ntripSettings", QVariant::fromValue<NtripSettings>( ntripSettings ) );
+  }
+  else
+  {
+    mProperties["ntripSettings"] = QVariant::fromValue<NtripSettings>( ntripSettings );
+    emit ntripSettingsChanged();
+  }
+}
+
+PositioningSource::NtripState Positioning::ntripState() const
+{
+  return static_cast<PositioningSource::NtripState>( ( isSourceAvailable() ? mPositioningSourceReplica->property( "ntripState" ).toInt() : static_cast<int>( PositioningSource::NtripState::Disconnected ) ) );
+}
+
+qint64 Positioning::ntripBytesSent() const
+{
+  return isSourceAvailable() ? mPositioningSourceReplica->property( "ntripBytesSent" ).toLongLong() : 0;
+}
+
+qint64 Positioning::ntripBytesReceived() const
+{
+  return isSourceAvailable() ? mPositioningSourceReplica->property( "ntripBytesReceived" ).toLongLong() : 0;
+}
+
+QDateTime Positioning::ntripLastBytesReceivedUtcDateTime() const
+{
+  return isSourceAvailable() ? mPositioningSourceReplica->property( "ntripLastBytesReceivedUtcDateTime" ).toDateTime() : QDateTime();
 }
 
 QList<GnssPositionInformation> Positioning::getBackgroundPositionInformation() const

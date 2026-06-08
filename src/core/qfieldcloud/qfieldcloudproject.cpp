@@ -186,6 +186,15 @@ void QFieldCloudProject::setUpdatedAt( const QDateTime &updatedAt )
   emit updatedAtChanged();
 }
 
+void QFieldCloudProject::setRemoteSizeBytes( qint64 remoteSizeBytes )
+{
+  if ( mRemoteSizeBytes == remoteSizeBytes )
+    return;
+
+  mRemoteSizeBytes = remoteSizeBytes;
+  emit remoteSizeBytesChanged();
+}
+
 void QFieldCloudProject::setDataLastUpdatedAt( const QDateTime &dataLastUpdatedAt )
 {
   if ( mDataLastUpdatedAt == dataLastUpdatedAt )
@@ -380,7 +389,7 @@ void QFieldCloudProject::setAttachmentsOnDemandEnabled( bool enabled )
   emit attachmentsOnDemandEnabledChanged();
 }
 
-void QFieldCloudProject::setLastLocalPushDeltas( const QString &lastLocalPushDeltas )
+void QFieldCloudProject::setLastLocalPushDeltas( const QDateTime &lastLocalPushDeltas )
 {
   if ( mLastLocalPushDeltas == lastLocalPushDeltas )
     return;
@@ -389,7 +398,7 @@ void QFieldCloudProject::setLastLocalPushDeltas( const QString &lastLocalPushDel
   emit lastLocalPushDeltasChanged();
 }
 
-void QFieldCloudProject::setLastLocalExportedAt( const QString &lastLocalExportedAt )
+void QFieldCloudProject::setLastLocalExportedAt( const QDateTime &lastLocalExportedAt )
 {
   if ( mLastLocalExportedAt == lastLocalExportedAt )
     return;
@@ -485,10 +494,12 @@ void QFieldCloudProject::downloadThumbnail()
       }
       QTemporaryFile file( QString( "%1/XXXXXX.%2" ).arg( QDir::tempPath(), imageExtension ) );
       file.setAutoRemove( false );
-      file.open();
-      file.write( rawReply->readAll() );
-      file.close();
-      setThumbnailPath( file.fileName() );
+      if ( file.open() )
+      {
+        file.write( rawReply->readAll() );
+        file.close();
+        setThumbnailPath( file.fileName() );
+      }
     };
   } );
 }
@@ -788,7 +799,7 @@ void QFieldCloudProject::packageAndDownload()
 
     setStatus( ProjectStatus::Idle );
 
-    emit downloaded( mName, error );
+    emit downloaded( error );
   } );
 }
 
@@ -840,6 +851,26 @@ void QFieldCloudProject::download()
       // This actually is an Object Storage (S3) implementation specific ETag.
       const QString cloudEtag = fileObject.value( QStringLiteral( "md5sum" ) ).toString();
       const QString localEtag = FileUtils::fileEtag( projectFileName );
+
+      QFileInfo fileInfo( projectFileName );
+      if ( fileInfo.suffix().toLower() == QStringLiteral( "qgs" ) || fileInfo.suffix().toLower() == QStringLiteral( "qgz" ) )
+      {
+        // Clear up all pre-exsting project files to insure the presence of a single, up-to-date project file
+        QDirIterator projectDirIterator( QStringLiteral( "%1/%2/%3" ).arg( QFieldCloudUtils::localCloudDirectory(), mUsername, mId ), { "*.qgs", "*.qgz" }, QDir::Files, QDirIterator::Subdirectories );
+        while ( projectDirIterator.hasNext() )
+        {
+          projectDirIterator.next();
+          QFileInfo projectFileInfo = projectDirIterator.fileInfo();
+          if ( projectFileInfo.absoluteFilePath() != fileInfo.absoluteFilePath() )
+          {
+#ifdef Q_OS_WIN
+            QFile::setPermissions( projectFileInfo.absoluteFilePath(), QFileDevice::ReadUser | QFileDevice::WriteUser | QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ReadGroup | QFileDevice::WriteGroup );
+#endif
+            QFile::remove( projectFileInfo.absoluteFilePath() );
+          }
+        }
+        setLocalPath( QFieldCloudUtils::localProjectFilePath( mUsername, mId ) );
+      }
 
       if ( !fileObject.value( QStringLiteral( "size" ) ).isDouble() || fileName.isEmpty() || cloudEtag.isEmpty() )
       {
@@ -911,7 +942,7 @@ void QFieldCloudProject::download()
     }
 
     mLastExportId = packageId;
-    mLastExportedAt = packagedAt;
+    mLastExportedAt = QDateTime::fromString( packagedAt, Qt::ISODate );
 
     if ( !localizedDatasetsFileNames.isEmpty() && !mSharedDatasetsProjectId.isEmpty() )
     {
@@ -970,7 +1001,14 @@ void QFieldCloudProject::download()
         }
 
         updateActiveFilesToDownload();
-        downloadFiles();
+        if ( !mActiveFilesToDownload.isEmpty() )
+        {
+          downloadFiles();
+        }
+        else
+        {
+          downloadFilesCompleted( true );
+        }
       } );
     }
     else
@@ -978,7 +1016,14 @@ void QFieldCloudProject::download()
       QgsLogger::debug( QStringLiteral( "Project %1: packaged files to download - %2 files, namely: %3" ).arg( mId ).arg( mDownloadFileTransfers.count() ).arg( mDownloadFileTransfers.keys().join( ", " ) ) );
 
       updateActiveFilesToDownload();
-      downloadFiles();
+      if ( !mActiveFilesToDownload.isEmpty() )
+      {
+        downloadFiles();
+      }
+      else
+      {
+        downloadFilesCompleted( true );
+      }
     }
   } );
 }
@@ -1293,7 +1338,7 @@ void QFieldCloudProject::downloadFileConnections( const QString &fileKey )
   } );
 }
 
-void QFieldCloudProject::downloadFilesCompleted()
+void QFieldCloudProject::downloadFilesCompleted( bool emptyDownload )
 {
   QgsLogger::debug( QStringLiteral( "Project %1: All files downloaded." ).arg( mId ) );
   Q_ASSERT( mActiveFilesToDownload.size() == 0 );
@@ -1303,76 +1348,79 @@ void QFieldCloudProject::downloadFilesCompleted()
     setupDeltaFileWrapper();
   }
 
-  const QDir projectPath( QStringLiteral( "%1/%2/%3" ).arg( QFieldCloudUtils::localCloudDirectory(), mUsername, mId ) );
-  const bool currentProjectReloadNeeded = QgsProject::instance()->homePath().startsWith( projectPath.absolutePath() );
-  QStringList gpkgFileNames;
-  if ( currentProjectReloadNeeded )
+  if ( !emptyDownload )
   {
-    // we need to close the project to safely flush the gpkg files and avoid file lock on Windows
-    QDirIterator it( projectPath.absolutePath(), { QStringLiteral( "*.gpkg" ), QStringLiteral( "*.sqlite" ) }, QDir::Filter::Files, QDirIterator::Subdirectories );
-    while ( it.hasNext() )
+    const QDir projectPath( QStringLiteral( "%1/%2/%3" ).arg( QFieldCloudUtils::localCloudDirectory(), mUsername, mId ) );
+    const bool currentProjectReloadNeeded = QgsProject::instance()->homePath().startsWith( projectPath.absolutePath() );
+    QStringList gpkgFileNames;
+    if ( currentProjectReloadNeeded )
     {
-      gpkgFileNames << it.nextFileInfo().absoluteFilePath();
+      // we need to close the project to safely flush the gpkg files and avoid file lock on Windows
+      QDirIterator it( projectPath.absolutePath(), { QStringLiteral( "*.gpkg" ), QStringLiteral( "*.sqlite" ) }, QDir::Filter::Files, QDirIterator::Subdirectories );
+      while ( it.hasNext() )
+      {
+        gpkgFileNames << it.nextFileInfo().absoluteFilePath();
+      }
+
+      QgsProject::instance()->clear();
+      if ( mGpkgFlusher )
+      {
+        for ( const QString &fileName : gpkgFileNames )
+        {
+          mGpkgFlusher->stop( fileName );
+        }
+      }
     }
 
-    QgsProject::instance()->clear();
-    if ( mGpkgFlusher )
+    // move the files from their temporary location to their permanent one
+    if ( !moveDownloadedFilesToPermanentStorage() )
     {
+      emit downloadFinished( tr( "Failed to copy some of the downloaded files on your device. Check your device storage." ) );
+      return;
+    }
+
+    if ( currentProjectReloadNeeded )
+    {
+      // Clear up Geopackage's shm and wal files
       for ( const QString &fileName : gpkgFileNames )
       {
-        mGpkgFlusher->stop( fileName );
-      }
-    }
-  }
-
-  // move the files from their temporary location to their permanent one
-  if ( !moveDownloadedFilesToPermanentStorage() )
-  {
-    emit downloadFinished( tr( "Failed to copy some of the downloaded files on your device. Check your device storage." ) );
-    return;
-  }
-
-  if ( currentProjectReloadNeeded )
-  {
-    // Clear up Geopackage's shm and wal files
-    for ( const QString &fileName : gpkgFileNames )
-    {
-      QFile shmFile( QStringLiteral( "%1-shm" ).arg( fileName ) );
-      if ( shmFile.exists() )
-      {
-        if ( !shmFile.remove() )
+        QFile shmFile( QStringLiteral( "%1-shm" ).arg( fileName ) );
+        if ( shmFile.exists() )
         {
-          QgsMessageLog::logMessage( QStringLiteral( "Failed to remove -shm file '%1' " ).arg( shmFile.fileName() ) );
+          if ( !shmFile.remove() )
+          {
+            QgsMessageLog::logMessage( QStringLiteral( "Failed to remove -shm file '%1' " ).arg( shmFile.fileName() ) );
+          }
+        }
+
+        QFile walFile( QStringLiteral( "%1-wal" ).arg( fileName ) );
+        if ( walFile.exists() )
+        {
+          if ( !walFile.remove() )
+          {
+            QgsMessageLog::logMessage( QStringLiteral( "Failed to remove -wal file '%1' " ).arg( walFile.fileName() ) );
+          }
         }
       }
 
-      QFile walFile( QStringLiteral( "%1-wal" ).arg( fileName ) );
-      if ( walFile.exists() )
-      {
-        if ( !walFile.remove() )
-        {
-          QgsMessageLog::logMessage( QStringLiteral( "Failed to remove -wal file '%1' " ).arg( walFile.fileName() ) );
-        }
-      }
+      AppInterface::instance()->loadFile( QFieldCloudUtils::localProjectFilePath( mUsername, mId ), mName );
     }
-
-    AppInterface::instance()->reloadProject();
   }
 
   setStatus( ProjectStatus::Idle );
   setErrorStatus( NoErrorStatus );
   setCheckout( ProjectCheckout::LocalAndRemoteCheckout );
   setLocalPath( QFieldCloudUtils::localProjectFilePath( mUsername, mId ) );
-  setLastLocalExportedAt( QDateTime::currentDateTimeUtc().toString( Qt::ISODate ) );
+  setLastLocalExportedAt( QDateTime::currentDateTimeUtc() );
   setLastLocalExportId( QUuid::createUuid().toString( QUuid::WithoutBraces ) );
   setLastLocalDataLastUpdatedAt( mDataLastUpdatedAt );
   setLastLocalRestrictedDataLastUpdatedAt( mRestrictedDataLastUpdatedAt );
   setIsOutdated( false );
   setIsProjectOutdated( false );
 
-  QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastExportedAt" ), mLastExportedAt );
+  QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastExportedAt" ), mLastExportedAt.toString( Qt::ISODate ) );
   QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastExportId" ), mLastExportId );
-  QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalExportedAt" ), mLastLocalExportedAt );
+  QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalExportedAt" ), mLastLocalExportedAt.toString( Qt::ISODate ) );
   QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalExportId" ), mLastLocalExportId );
   QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalDataLastUpdatedAt" ), mLastLocalDataLastUpdatedAt );
   QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalRestrictedDataLastUpdatedAt" ), mLastLocalRestrictedDataLastUpdatedAt );
@@ -1438,7 +1486,6 @@ bool QFieldCloudProject::moveDownloadedFilesToPermanentStorage()
 {
   bool hasError = false;
   const QStringList fileKeys = mDownloadFileTransfers.keys();
-
   for ( const QString &fileKey : fileKeys )
   {
     const FileTransfer &fileTransfer = mDownloadFileTransfers[fileKey];
@@ -1457,11 +1504,18 @@ bool QFieldCloudProject::moveDownloadedFilesToPermanentStorage()
 
     // If the file already exists, we need to delete it first, as QT does not support overwriting
     // NOTE: it is possible that someone creates the file in the meantime between this and the next if statement
-    if ( QFile::exists( finalFilePath ) && !QFile::remove( finalFilePath ) )
+    if ( QFile::exists( finalFilePath ) )
     {
-      hasError = true;
-      QgsMessageLog::logMessage( QStringLiteral( "Failed to remove existing file `%1`" ).arg( finalFilePath ) );
-      continue;
+      // Insure correct permissions prior to removing the file
+#ifdef Q_OS_WIN
+      QFile::setPermissions( finalFilePath, QFileDevice::ReadUser | QFileDevice::WriteUser | QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ReadGroup | QFileDevice::WriteGroup );
+#endif
+      if ( !QFile::remove( finalFilePath ) )
+      {
+        hasError = true;
+        QgsMessageLog::logMessage( QStringLiteral( "Failed to remove existing file `%1`" ).arg( finalFilePath ) );
+        continue;
+      }
     }
 
     // Rename the .part file to the final file name
@@ -1474,6 +1528,9 @@ bool QFieldCloudProject::moveDownloadedFilesToPermanentStorage()
     {
       QgsLogger::debug( QStringLiteral( "Moved downloaded file `%1` to `%2`" ).arg( fileTransfer.partialFilePath, finalFilePath ) );
     }
+
+    // Insure correct permissions are allowing for user access
+    QFile::setPermissions( finalFilePath, QFileDevice::ReadUser | QFileDevice::WriteUser | QFileDevice::ReadOwner | QFileDevice::WriteOwner );
   }
 
   return !hasError;
@@ -1639,7 +1696,7 @@ void QFieldCloudProject::push( bool shouldDownloadUpdates )
       emit modificationChanged();
 
       setStatus( ProjectStatus::Idle );
-      setLastLocalPushDeltas( QDateTime::currentDateTimeUtc().toString( Qt::ISODate ) );
+      setLastLocalPushDeltas( QDateTime::currentDateTimeUtc() );
 
       if ( !isOutdated() )
       {
@@ -1648,7 +1705,7 @@ void QFieldCloudProject::push( bool shouldDownloadUpdates )
         QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalDataLastUpdatedAt" ), mLastLocalDataLastUpdatedAt );
       }
 
-      QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalPushDeltas" ), mLastLocalPushDeltas );
+      QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalPushDeltas" ), mLastLocalPushDeltas.toString( Qt::ISODate ) );
 
       mDeltaFileWrapper->reset();
       mDeltaFileWrapper->resetId();
@@ -1714,9 +1771,9 @@ void QFieldCloudProject::push( bool shouldDownloadUpdates )
         mModification |= RemoteModification;
         emit modificationChanged();
         setStatus( ProjectStatus::Idle );
-        setLastLocalPushDeltas( QDateTime::currentDateTimeUtc().toString( Qt::ISODate ) );
+        setLastLocalPushDeltas( QDateTime::currentDateTimeUtc() );
 
-        QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalPushDeltas" ), mLastLocalPushDeltas );
+        QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "lastLocalPushDeltas" ), mLastLocalPushDeltas.toString( Qt::ISODate ) );
 
         // download the updated files, so the files are for sure the same on the client and on the server
         if ( shouldDownloadUpdates )
@@ -2018,6 +2075,7 @@ void QFieldCloudProject::refreshData( ProjectRefreshReason reason )
     setUserRoleOrigin( mUserRoleOrigin = projectData.value( "user_role_origin" ).toString() );
     setCreatedAt( QDateTime::fromString( projectData.value( "created_at" ).toString(), Qt::ISODate ) );
     setUpdatedAt( QDateTime::fromString( projectData.value( "updated_at" ).toString(), Qt::ISODate ) );
+    setRemoteSizeBytes( projectData.value( "file_storage_bytes" ).toInteger() );
     setIsPublic( projectData.value( "is_public" ).toBool() );
     setIsFeatured( projectData.value( "is_featured" ).toBool() );
     setCanRepackage( projectData.value( "can_repackage" ).toBool() );
@@ -2032,6 +2090,7 @@ void QFieldCloudProject::refreshData( ProjectRefreshReason reason )
     QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "userRoleOrigin" ), mUserRoleOrigin );
     QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "createdAt" ), mCreatedAt.toString( Qt::DateFormat::ISODate ) );
     QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "updatedAt" ), mUpdatedAt.toString( Qt::DateFormat::ISODate ) );
+    QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "remoteSizeBytes" ), mRemoteSizeBytes );
     QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "isPublic" ), mIsPublic );
     QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "isFeatured" ), mIsFeatured );
     QFieldCloudUtils::setProjectSetting( mId, QStringLiteral( "canRepackage" ), mCanRepackage );
@@ -2128,6 +2187,7 @@ QFieldCloudProject *QFieldCloudProject::fromDetails( const QVariantHash &details
   project->mStatus = details.value( "status" ).toString() == "failed" ? ProjectStatus::Failing : ProjectStatus::Idle;
   project->mCreatedAt = QDateTime::fromString( details.value( "created_at" ).toString(), Qt::ISODate );
   project->mUpdatedAt = QDateTime::fromString( details.value( "updated_at" ).toString(), Qt::ISODate );
+  project->mRemoteSizeBytes = details.value( "file_storage_bytes" ).toLongLong();
   project->mDataLastUpdatedAt = QDateTime::fromString( details.value( "data_last_updated_at" ).toString(), Qt::ISODate );
   project->mRestrictedDataLastUpdatedAt = QDateTime::fromString( details.value( "restricted_data_last_updated_at" ).toString(), Qt::ISODate );
   project->mCanRepackage = details.value( "can_repackage" ).toBool();
@@ -2135,23 +2195,6 @@ QFieldCloudProject *QFieldCloudProject::fromDetails( const QVariantHash &details
   project->mSharedDatasetsProjectId = details.value( "shared_datasets_project_id" ).toString();
   project->mIsSharedDatasetsProject = details.value( "is_shared_datasets_project" ).toBool();
   project->mAttachmentsOnDemandEnabled = details.value( "is_attachment_download_on_demand" ).toBool();
-
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "owner" ), project->owner() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "name" ), project->name() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "description" ), project->description() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "userRole" ), project->userRole() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "userRoleOrigin" ), project->userRoleOrigin() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "createdAt" ), project->createdAt().toString( Qt::DateFormat::ISODate ) );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "updatedAt" ), project->updatedAt().toString( Qt::DateFormat::ISODate ) );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "canRepackage" ), project->canRepackage() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "needsRepackaging" ), project->needsRepackaging() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "sharedDatasetsProjectId" ), project->sharedDatasetsProjectId() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isSharedDatasetsProject" ), project->isSharedDatasetsProject() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isPublic" ), project->isPublic() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isFeatured" ), project->isFeatured() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isAttachmentDownloadOnDemand" ), project->attachmentsOnDemandEnabled() );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "dataLastUpdatedAt" ), project->mDataLastUpdatedAt.toString( Qt::DateFormat::ISODate ) );
-  QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "restrictedDataLastUpdatedAt" ), project->mRestrictedDataLastUpdatedAt.toString( Qt::DateFormat::ISODate ) );
 
   QString username = connection ? connection->username() : QString();
   if ( !username.isEmpty() )
@@ -2162,6 +2205,24 @@ QFieldCloudProject *QFieldCloudProject::fromDetails( const QVariantHash &details
     {
       restoreLocalSettings( project, localPath );
       project->mCheckout = !project->mLocalPath.isEmpty() ? LocalAndRemoteCheckout : RemoteCheckout;
+
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "owner" ), project->owner() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "name" ), project->name() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "description" ), project->description() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "userRole" ), project->userRole() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "userRoleOrigin" ), project->userRoleOrigin() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "createdAt" ), project->createdAt().toString( Qt::DateFormat::ISODate ) );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "updatedAt" ), project->updatedAt().toString( Qt::DateFormat::ISODate ) );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "remoteSizeBytes" ), project->remoteSizeBytes() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "canRepackage" ), project->canRepackage() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "needsRepackaging" ), project->needsRepackaging() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "sharedDatasetsProjectId" ), project->sharedDatasetsProjectId() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isSharedDatasetsProject" ), project->isSharedDatasetsProject() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isPublic" ), project->isPublic() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isFeatured" ), project->isFeatured() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "isAttachmentDownloadOnDemand" ), project->attachmentsOnDemandEnabled() );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "dataLastUpdatedAt" ), project->mDataLastUpdatedAt.toString( Qt::DateFormat::ISODate ) );
+      QFieldCloudUtils::setProjectSetting( project->id(), QStringLiteral( "restrictedDataLastUpdatedAt" ), project->mRestrictedDataLastUpdatedAt.toString( Qt::DateFormat::ISODate ) );
     }
   }
 
@@ -2187,6 +2248,7 @@ QFieldCloudProject *QFieldCloudProject::fromLocalSettings( const QString &id, QF
   const QString userRoleOrigin = QFieldCloudUtils::projectSetting( id, QStringLiteral( "userRoleOrigin" ) ).toString();
   const QDateTime createdAt = QDateTime::fromString( QFieldCloudUtils::projectSetting( id, QStringLiteral( "createdAt" ) ).toString(), Qt::DateFormat::ISODate );
   const QDateTime updatedAt = QDateTime::fromString( QFieldCloudUtils::projectSetting( id, QStringLiteral( "updatedAt" ) ).toString(), Qt::DateFormat::ISODate );
+  const qint64 remoteSizeBytes = QFieldCloudUtils::projectSetting( id, QStringLiteral( "remoteSizeBytes" ) ).toLongLong();
   const QString sharedDatasetsProjectId = QFieldCloudUtils::projectSetting( id, QStringLiteral( "sharedDatasetsProjectId" ) ).toString();
   const bool isSharedDatasetsProject = QFieldCloudUtils::projectSetting( id, QStringLiteral( "isSharedDatasetsProject" ) ).toBool();
   const bool isAttachmentDownloadOnDemand = QFieldCloudUtils::projectSetting( id, QStringLiteral( "isAttachmentDownloadOnDemand" ) ).toBool();
@@ -2205,6 +2267,7 @@ QFieldCloudProject *QFieldCloudProject::fromLocalSettings( const QString &id, QF
   project->mStatus = status == "failed" ? ProjectStatus::Failing : ProjectStatus::Idle;
   project->mCreatedAt = createdAt;
   project->mUpdatedAt = updatedAt;
+  project->mRemoteSizeBytes = remoteSizeBytes;
   project->mDataLastUpdatedAt = dataLastUpdatedAt;
   project->mRestrictedDataLastUpdatedAt = restrictedDataLastUpdatedAt;
   project->mCanRepackage = false;
@@ -2228,10 +2291,10 @@ QFieldCloudProject *QFieldCloudProject::fromLocalSettings( const QString &id, QF
 void QFieldCloudProject::restoreLocalSettings( QFieldCloudProject *project, const QDir &localPath )
 {
   project->mLastExportId = QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastExportId" ) ).toString();
-  project->mLastExportedAt = QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastExportedAt" ) ).toString();
+  project->mLastExportedAt = QDateTime::fromString( QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastExportedAt" ) ).toString(), Qt::ISODate );
   project->mLastLocalExportId = QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastLocalExportId" ) ).toString();
-  project->mLastLocalExportedAt = QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastLocalExportedAt" ) ).toString();
-  project->mLastLocalPushDeltas = QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastLocalPushDeltas" ) ).toString();
+  project->mLastLocalExportedAt = QDateTime::fromString( QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastLocalExportedAt" ) ).toString(), Qt::ISODate );
+  project->mLastLocalPushDeltas = QDateTime::fromString( QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastLocalPushDeltas" ) ).toString(), Qt::ISODate );
   project->mLastLocalDataLastUpdatedAt = QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastLocalDataLastUpdatedAt" ) ).toDateTime();
   project->mLastLocalRestrictedDataLastUpdatedAt = QFieldCloudUtils::projectSetting( project->id(), QStringLiteral( "lastLocalRestrictedDataLastUpdatedAt" ) ).toDateTime();
   project->mIsOutdated = project->mDataLastUpdatedAt > project->mLastLocalDataLastUpdatedAt;

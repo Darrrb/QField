@@ -18,9 +18,11 @@
 #include "rubberbandmodel.h"
 
 #include <qgscoordinatetransform.h>
+#include <qgsdistancearea.h>
 #include <qgslinestring.h>
 #include <qgspolygon.h>
 #include <qgsproject.h>
+#include <qgsunittypes.h>
 #include <qgsvectorlayer.h>
 #include <qgsvectorlayerutils.h>
 
@@ -385,6 +387,26 @@ QgsPoint GeometryUtils::centroid( const QgsGeometry &geometry )
   return QgsPoint();
 }
 
+QgsPointXY GeometryUtils::reprojectPoint( const QgsPointXY &point, const QgsCoordinateReferenceSystem &sourceCrs, const QgsCoordinateReferenceSystem &destinationCrs )
+{
+  if ( sourceCrs == destinationCrs )
+    return point;
+
+  const QgsCoordinateTransform ct( sourceCrs, destinationCrs, QgsProject::instance() );
+  QgsPointXY reprojectedPoint;
+  try
+  {
+    ct.transform( point.x(), point.y() );
+    reprojectedPoint = ct.transform( point );
+  }
+  catch ( QgsCsException & )
+  {
+    return QgsPointXY();
+  }
+
+  return reprojectedPoint;
+}
+
 QgsPoint GeometryUtils::reprojectPoint( const QgsPoint &point, const QgsCoordinateReferenceSystem &sourceCrs, const QgsCoordinateReferenceSystem &destinationCrs )
 {
   if ( sourceCrs == destinationCrs )
@@ -435,4 +457,14 @@ QgsGeometry GeometryUtils::createGeometryFromWkt( const QString &wkt )
 QgsRectangle GeometryUtils::createRectangleFromPoints( const QgsPoint &p1, const QgsPoint &p2 )
 {
   return QgsRectangle( p1, p2 );
+}
+
+bool GeometryUtils::geometryWithin( const QgsGeometry &geometry, const QgsGeometry &referenceGeometry )
+{
+  return geometry.within( referenceGeometry );
+}
+
+bool GeometryUtils::geometryOverlaps( const QgsGeometry &geometry, const QgsGeometry &referenceGeometry )
+{
+  return geometry.overlaps( referenceGeometry );
 }

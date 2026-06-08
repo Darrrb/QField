@@ -41,6 +41,9 @@ class AttributeFormModelBase : public QStandardItemModel
     FeatureModel *featureModel() const;
     void setFeatureModel( FeatureModel *featureModel );
 
+    bool isWizard() const;
+    void setIsWizard( bool isWizard );
+
     bool hasTabs() const;
     void setHasTabs( bool hasTabs );
 
@@ -87,12 +90,15 @@ class AttributeFormModelBase : public QStandardItemModel
     //! \copydoc AttributeFormModel::deactivateAllRememberValues
     void deactivateAllRememberValues();
 
+    //! Creates an expression context
+    QgsExpressionContext createExpressionContext() const;
+
   signals:
     void featureModelChanged();
+    void isWizardChanged();
     void hasTabsChanged();
     void hasRemembranceChanged();
     void hasConstraintsChanged();
-    void featureChanged();
     void constraintsHardValidChanged();
     void constraintsSoftValidChanged();
 
@@ -115,7 +121,6 @@ class AttributeFormModelBase : public QStandardItemModel
 
     void buildForm( QgsAttributeEditorContainer *container,
                     QStandardItem *parent,
-                    const QString &parentVisibilityExpressions,
                     QList<QStandardItem *> &containers,
                     int currentTabIndex = 0,
                     int columnCount = 1 );
@@ -152,6 +157,9 @@ class AttributeFormModelBase : public QStandardItemModel
     //! Resets the attribute form model
     void resetModel();
 
+    //! Sets up relevant layer-level details and resets the model
+    void onCurrentLayerChanged();
+
     //! Sets up a connection to listen to project map theme change
     void onMapThemeCollectionChanged();
 
@@ -159,6 +167,7 @@ class AttributeFormModelBase : public QStandardItemModel
     QPointer<QgsVectorLayer> mLayer;
     std::unique_ptr<QgsAttributeEditorContainer> mTemporaryContainer;
 
+    bool mIsWizard = false;
     bool mHasTabs = false;
     bool mHasRemembrance = false;
     bool mHasConstraints = false;

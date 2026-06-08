@@ -14,6 +14,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "abstractgnssreceiver.h"
 #include "positioningsource.h"
 #include "qfield_android.h"
 #include "qfieldpositioningservice.h"
@@ -29,6 +30,7 @@ QFieldPositioningService::QFieldPositioningService( int &argc, char **argv )
   : QAndroidService( argc, argv )
 {
   qRegisterMetaType<GnssPositionInformation>( "GnssPositionInformation" );
+  qRegisterMetaType<AbstractGnssReceiver>( "AbstractGnssReceiver" );
 
   mPositioningSource.reset( new PositioningSource( this ) );
   mHost.setHostUrl( QUrl( QStringLiteral( "localabstract:" APP_PACKAGE_NAME "replica" ) ) );
@@ -39,7 +41,6 @@ QFieldPositioningService::QFieldPositioningService( int &argc, char **argv )
   connect( &mNotificationTimer, &QTimer::timeout, this, &QFieldPositioningService::triggerShowNotification );
 
   connect( mPositioningSource.get(), &PositioningSource::positionInformationChanged, this, [=] {
-    qInfo() << "sss got one";
     if ( !mPositioningSource->backgroundMode() && QFile::exists( PositioningSource::backgroundFilePath ) )
     {
       mPositioningSource->setBackgroundMode( true );

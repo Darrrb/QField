@@ -142,7 +142,7 @@ Drawer {
             objectName: "View3DButton"
             anchors.verticalCenter: parent.verticalCenter
             round: true
-            iconSource: Theme.getThemeVectorIcon("ic_3d_24dp")
+            iconSource: Theme.getThemeVectorIcon("ic_3d_white_24dp")
             iconColor: Theme.mainTextColor
             bgcolor: "transparent"
             onClicked: {
@@ -281,6 +281,93 @@ Drawer {
       }
     }
 
+    RowLayout {
+      id: projectInformationLayout
+      Layout.fillWidth: true
+      Layout.leftMargin: mainWindow.sceneLeftMargin + 10
+      Layout.rightMargin: 6
+      Layout.bottomMargin: 5
+
+      Text {
+        id: projectTitleText
+        Layout.fillWidth: true
+        Layout.alignment: Qt.AlignVCenter
+        text: {
+          if (qgisProject) {
+            if (qgisProject.title !== "") {
+              return qgisProject.title;
+            } else if (cloudProjectsModel.currentProject) {
+              return cloudProjectsModel.currentProject.name;
+            } else {
+              return FileUtils.fileName(qgisProject.fileName, false);
+            }
+          }
+          return "";
+        }
+        font: Theme.strongFont
+        color: Theme.mainTextColor
+        elide: Text.ElideRight
+      }
+
+      QfToolButton {
+        id: temporalButton
+        Layout.alignment: Qt.AlignVCenter
+        width: 36
+        height: 36
+        padding: 0
+        visible: flatLayerTree.isTemporal
+        iconSource: Theme.getThemeVectorIcon('ic_temporal_black_24dp')
+        iconColor: mapSettings.isTemporal ? Theme.mainColor : Theme.mainTextColor
+        bgcolor: "transparent"
+        onClicked: temporalProperties.open()
+      }
+
+      QfToolButton {
+        id: projectInformationButton
+
+        property string projectDescription: {
+          if (qgisProject) {
+            if (qgisProject.metadata.abstract !== "") {
+              return qgisProject.metadata.abstract;
+            } else if (cloudProjectsModel.currentProject && cloudProjectsModel.currentProject.description !== "") {
+              return cloudProjectsModel.currentProject.description;
+            }
+          }
+          return "";
+        }
+
+        property string projectAuthor: {
+          if (qgisProject) {
+            if (qgisProject.metadata.author !== "" && qgisProject.metadata.author !== "Not available" && qgisProject.metadata.author !== "root") {
+              return qgisProject.metadata.author;
+            } else if (cloudProjectsModel.currentProject) {
+              return cloudProjectsModel.currentProject.owner;
+            }
+          }
+          return "";
+        }
+
+        Layout.alignment: Qt.AlignVCenter
+        visible: projectDescription != "" || projectAuthor != ""
+        width: 36
+        height: 36
+        padding: 0
+        iconSource: Theme.getThemeVectorIcon('ic_info_white_24dp')
+        iconColor: Theme.mainTextColor
+        bgcolor: "transparent"
+        onClicked: {
+          informationPopup.header = qsTr("Project Information");
+          informationPopup.title = projectTitleText.text;
+
+          informationPopup.descriptionFormat = Text.MarkdownText;
+          informationPopup.description = projectDescription;
+          informationPopup.author = projectAuthor;
+
+          informationPopup.open();
+        }
+      }
+    }
+
     GroupBox {
       id: mapThemeContainer
       Layout.fillWidth: true
@@ -333,7 +420,7 @@ Drawer {
               mapThemeComboBox.model = themes;
               mapThemeComboBox.enabled = themes.length > 1;
               mapThemeComboBox.opacity = themes.length > 1 ? 1 : 0.25;
-              mapThemeContainer.visible = themes.length > 1 || flatLayerTree.isTemporal;
+              mapThemeContainer.visible = themes.length > 1;
               flatLayerTree.updateCurrentMapTheme();
               mapThemeComboBox.currentIndex = flatLayerTree.mapTheme != '' ? mapThemeComboBox.find(flatLayerTree.mapTheme) : -1;
               mapThemeContainer.isLoading = false;
@@ -366,16 +453,6 @@ Drawer {
             font.pointSize: Theme.tipFont.pointSize
             highlighted: mapThemeComboBox.highlightedIndex == index
           }
-        }
-
-        QfToolButton {
-          id: temporalButton
-          Layout.alignment: Qt.AlignVCenter
-          visible: flatLayerTree.isTemporal
-          iconSource: Theme.getThemeVectorIcon('ic_temporal_black_24dp')
-          iconColor: mapSettings.isTemporal ? Theme.mainColor : Theme.mainTextColor
-          bgcolor: "transparent"
-          onClicked: temporalProperties.open()
         }
       }
     }
@@ -439,6 +516,7 @@ Drawer {
         anchors.leftMargin: mainWindow.sceneLeftMargin + 5
         anchors.rightMargin: 5
         bottomMargin: bottomRow.height + 4
+        informationPopup: informationPopup
       }
     }
   }
@@ -545,5 +623,9 @@ Drawer {
   TemporalProperties {
     id: temporalProperties
     mapSettings: dashBoard.mapSettings
+  }
+
+  InformationPopup {
+    id: informationPopup
   }
 }

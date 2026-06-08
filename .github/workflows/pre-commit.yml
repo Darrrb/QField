@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt install -y shfmt
 
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         if: ${{ github.event.issue.pull_request }}
         id: get-pr
         with:
@@ -69,7 +69,7 @@ jobs:
             Reply with `@qfield-fairy style please` to fix it up 🪄.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: EndBug/add-and-commit@v9
+      - uses: EndBug/add-and-commit@v10
         if: failure() && steps.run-fixes.outputs.triggered == 'true' && github.event.issue.pull_request
         with:
           author_name: Style Fairy

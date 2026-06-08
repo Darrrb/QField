@@ -47,6 +47,8 @@ class QFieldCloudProject : public QObject
 
     Q_PROPERTY( QDateTime createdAt READ createdAt NOTIFY createdAtChanged )
     Q_PROPERTY( QDateTime updatedAt READ updatedAt NOTIFY updatedAtChanged )
+    Q_PROPERTY( qint64 remoteSizeBytes READ remoteSizeBytes NOTIFY remoteSizeBytesChanged )
+    Q_PROPERTY( QDateTime dataLastUpdatedAt READ dataLastUpdatedAt NOTIFY dataLastUpdatedAtChanged )
 
     Q_PROPERTY( ProjectStatus status READ status NOTIFY statusChanged )
     Q_PROPERTY( PackagingStatus packagingStatus READ packagingStatus NOTIFY packagingStatusChanged )
@@ -72,8 +74,8 @@ class QFieldCloudProject : public QObject
 
     Q_PROPERTY( bool attachmentsOnDemandEnabled READ attachmentsOnDemandEnabled WRITE setAttachmentsOnDemandEnabled NOTIFY attachmentsOnDemandEnabledChanged )
 
-    Q_PROPERTY( QString lastLocalPushDeltas READ lastLocalPushDeltas NOTIFY lastLocalPushDeltasChanged )
-    Q_PROPERTY( QString lastLocalExportedAt READ lastLocalExportedAt NOTIFY lastLocalExportedAtChanged )
+    Q_PROPERTY( QDateTime lastLocalPushDeltas READ lastLocalPushDeltas NOTIFY lastLocalPushDeltasChanged )
+    Q_PROPERTY( QDateTime lastLocalExportedAt READ lastLocalExportedAt NOTIFY lastLocalExportedAtChanged )
 
     Q_PROPERTY( bool isPublic READ isPublic NOTIFY isPublicChanged )
     Q_PROPERTY( bool isFeatured READ isFeatured NOTIFY isFeaturedChanged )
@@ -259,6 +261,9 @@ class QFieldCloudProject : public QObject
     QDateTime updatedAt() const { return mUpdatedAt; }
     void setUpdatedAt( const QDateTime &updatedAt );
 
+    qint64 remoteSizeBytes() const { return mRemoteSizeBytes; }
+    void setRemoteSizeBytes( qint64 remoteSizeBytes );
+
     QDateTime dataLastUpdatedAt() const { return mDataLastUpdatedAt; }
     void setDataLastUpdatedAt( const QDateTime &dataLastUpdatedAt );
 
@@ -324,11 +329,11 @@ class QFieldCloudProject : public QObject
     bool attachmentsOnDemandEnabled() const { return mAttachmentsOnDemandEnabled; }
     void setAttachmentsOnDemandEnabled( bool enabled );
 
-    QString lastLocalPushDeltas() const { return mLastLocalPushDeltas; }
-    void setLastLocalPushDeltas( const QString &lastLocalPushDeltas );
+    QDateTime lastLocalPushDeltas() const { return mLastLocalPushDeltas; }
+    void setLastLocalPushDeltas( const QDateTime &lastLocalPushDeltas );
 
-    QString lastLocalExportedAt() const { return mLastLocalExportedAt; }
-    void setLastLocalExportedAt( const QString &lastLocalExportedAt );
+    QDateTime lastLocalExportedAt() const { return mLastLocalExportedAt; }
+    void setLastLocalExportedAt( const QDateTime &lastLocalExportedAt );
 
     QString lastLocalExportId() const { return mLastLocalExportId; }
     void setLastLocalExportId( const QString &lastLocalExportId );
@@ -400,6 +405,8 @@ class QFieldCloudProject : public QObject
 
     void createdAtChanged();
     void updatedAtChanged();
+    void remoteSizeBytesChanged();
+
     void dataLastUpdatedAtChanged();
     void restrictedDataLastUpdatedAtChanged();
 
@@ -455,7 +462,7 @@ class QFieldCloudProject : public QObject
 
     void downloadAttachmentFinished( const QString &fileName, const QString &error = QString() );
     void downloadFinished( const QString &error = QString() );
-    void downloaded( const QString &name, const QString &error = QString() );
+    void downloaded( const QString &error = QString() );
 
     void pushFinished( bool isDownloading, const QString &error = QString() );
 
@@ -472,7 +479,7 @@ class QFieldCloudProject : public QObject
     void prepareDownloadTransfer( const QString &projectId, const QString &fileName, qint64 fileSize, const QString &cloudEtag );
     void downloadFiles();
     void updateActiveFilesToDownload();
-    void downloadFilesCompleted();
+    void downloadFilesCompleted( bool emptyDownload = false );
 
     void uploadFiles();
 
@@ -526,6 +533,7 @@ class QFieldCloudProject : public QObject
     ProjectStatus mStatus = ProjectStatus::Idle;
     QDateTime mCreatedAt;
     QDateTime mUpdatedAt;
+    qint64 mRemoteSizeBytes = 0;
     QDateTime mDataLastUpdatedAt;
     QDateTime mRestrictedDataLastUpdatedAt;
     bool mCanRepackage = false;
@@ -569,11 +577,11 @@ class QFieldCloudProject : public QObject
 
     QString mThumbnailPath;
 
-    QString mLastExportedAt;
+    QDateTime mLastExportedAt;
     QString mLastExportId;
-    QString mLastLocalExportedAt;
+    QDateTime mLastLocalExportedAt;
     QString mLastLocalExportId;
-    QString mLastLocalPushDeltas;
+    QDateTime mLastLocalPushDeltas;
 
     QDateTime mLastLocalDataLastUpdatedAt;
     QDateTime mLastLocalRestrictedDataLastUpdatedAt;

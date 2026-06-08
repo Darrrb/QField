@@ -8,6 +8,9 @@ set(QFIELD_CORE_SRCS
     3d/quick3dterrainprovider.cpp
     3d/quick3dmaptexturedata.cpp
     3d/quick3drubberbandgeometry.cpp
+    3d/quick3dgeometry.cpp
+    3d/quick3dgeometryutils.cpp
+    3d/maptoview3d.cpp
     utils/coordinatereferencesystemutils.cpp
     utils/expressioncontextutils.cpp
     utils/featureutils.cpp
@@ -46,6 +49,9 @@ set(QFIELD_CORE_SRCS
     positioning/udpreceiver.cpp
     positioning/positioning.cpp
     positioning/positioningsource.cpp
+    positioning/ntripclient.cpp
+    positioning/ntripsettings.cpp
+    positioning/ntripsourcetablefetcher.cpp
     positioning/positioningdevicemodel.cpp
     positioning/geofencer.cpp
     positioning/positioninginformationmodel.cpp
@@ -60,17 +66,20 @@ set(QFIELD_CORE_SRCS
     qfieldcloud/qfieldcloudconnection.cpp
     qfieldcloud/qfieldcloudproject.cpp
     qfieldcloud/qfieldcloudprojectsmodel.cpp
+    qfieldcloud/qfieldcloudstatus.cpp
     appcoordinateoperationhandlers.cpp
     appexpressioncontextscopesgenerator.cpp
     appinterface.cpp
     attributeformmodel.cpp
     attributeformmodelbase.cpp
+    audioanalyzer.cpp
     audiorecorder.cpp
     barcodedecoder.cpp
     barcodeimageprovider.cpp
     badlayerhandler.cpp
     bookmarkmodel.cpp
     clipboardmanager.cpp
+    cameraorientationnormalizer.cpp
     changelogcontents.cpp
     digitizinglogger.cpp
     distancearea.cpp
@@ -106,7 +115,7 @@ set(QFIELD_CORE_SRCS
     navigationmodel.cpp
     nearfieldreader.cpp
     orderedrelationmodel.cpp
-    parametizedimage.cpp
+    parameterizedimage.cpp
     peliasgeocoder.cpp
     pluginmanager.cpp
     pluginmodel.cpp
@@ -151,6 +160,9 @@ set(QFIELD_CORE_HDRS
     3d/quick3dterrainprovider.h
     3d/quick3dmaptexturedata.h
     3d/quick3drubberbandgeometry.h
+    3d/quick3dgeometryutils.h
+    3d/quick3dgeometry.h
+    3d/maptoview3d.h
     utils/coordinatereferencesystemutils.h
     utils/expressioncontextutils.h
     utils/featureutils.h
@@ -188,6 +200,9 @@ set(QFIELD_CORE_HDRS
     positioning/nmeagnssreceiver.h
     positioning/egenioussreceiver.h
     positioning/filereceiver.h
+    positioning/ntripclient.h
+    positioning/ntripsettings.h
+    positioning/ntripsourcetablefetcher.h
     positioning/tcpreceiver.h
     positioning/udpreceiver.h
     positioning/geofencer.h
@@ -203,17 +218,20 @@ set(QFIELD_CORE_HDRS
     qfieldcloud/qfieldcloudconnection.h
     qfieldcloud/qfieldcloudproject.h
     qfieldcloud/qfieldcloudprojectsmodel.h
+    qfieldcloud/qfieldcloudstatus.h
     appcoordinateoperationhandlers.h
     appexpressioncontextscopesgenerator.h
     appinterface.h
     attributeformmodel.h
     attributeformmodelbase.h
+    audioanalyzer.h
     audiorecorder.h
     barcodedecoder.h
     barcodeimageprovider.h
     badlayerhandler.h
     bookmarkmodel.h
     clipboardmanager.h
+    cameraorientationnormalizer.h
     changelogcontents.h
     digitizinglogger.h
     distancearea.h
@@ -250,7 +268,7 @@ set(QFIELD_CORE_HDRS
     navigationmodel.h
     nearfieldreader.h
     orderedrelationmodel.h
-    parametizedimage.h
+    parameterizedimage.h
     peliasgeocoder.h
     pluginmanager.h
     pluginmodel.h
@@ -291,9 +309,10 @@ list(APPEND QFIELD_CORE_HDRS permissions.h)
 
 if(WITH_BLUETOOTH)
   list(APPEND QFIELD_CORE_SRCS positioning/bluetoothdevicemodel.cpp
-       positioning/bluetoothreceiver.cpp)
+       positioning/bluetoothreceiver.cpp
+       positioning/bluetoothlowenergyreceiver.cpp)
   list(APPEND QFIELD_CORE_HDRS positioning/bluetoothdevicemodel.h
-       positioning/bluetoothreceiver.h)
+       positioning/bluetoothreceiver.h positioning/bluetoothlowenergyreceiver.h)
 endif()
 
 if(WITH_SERIALPORT)
@@ -381,8 +400,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
                              PUBLIC ${CMAKE_SOURCE_DIR}/src/core/platforms/ios)
 endif()
 
-target_compile_features(qfield_core PUBLIC cxx_std_17)
+target_compile_features(qfield_core PUBLIC cxx_std_20)
 set_target_properties(qfield_core PROPERTIES AUTOMOC TRUE)
+
+find_package(Qt6 REQUIRED COMPONENTS CorePrivate GuiPrivate)
 
 target_link_libraries(
   qfield_core

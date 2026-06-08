@@ -63,22 +63,27 @@ FeatureModel::ModelModes FeatureModel::modelMode() const
 void FeatureModel::setFeature( const QgsFeature &feature )
 {
   if ( mModelMode != SingleFeatureModel || feature == mFeature )
+  {
     return;
+  }
 
   beginResetModel();
   mFeature = feature;
+  mSavedFeature = QgsFeature( mFeature.fields() );
   mFeatures.clear();
   mAttributesAllowEdit.clear();
-  emit featureChanged();
   endResetModel();
 
+  emit featureChanged();
   updatePermissions();
 }
 
 void FeatureModel::setFeatures( const QList<QgsFeature> &features )
 {
   if ( mModelMode != MultiFeatureModel )
+  {
     return;
+  }
 
   beginResetModel();
   if ( !features.isEmpty() )
@@ -114,6 +119,9 @@ void FeatureModel::setFeatures( const QList<QgsFeature> &features )
 
     mFeature = QgsFeature();
   }
+
+  mSavedFeature = QgsFeature();
+
   emit featuresChanged();
   endResetModel();
 }
@@ -137,6 +145,7 @@ void FeatureModel::setCurrentLayer( QgsVectorLayer *layer )
     else
     {
       mFeature = QgsFeature( mLayer->fields() );
+
       QMutex *mutex = sMutex;
       QMutexLocker locker( mutex );
       ( *sRememberings )[mLayer].rememberedFeature = mFeature;
@@ -144,13 +153,11 @@ void FeatureModel::setCurrentLayer( QgsVectorLayer *layer )
       const QgsEditFormConfig config = mLayer->editFormConfig();
       for ( int i = 0; i < layer->fields().size(); i++ )
       {
-#if _QGIS_VERSION_INT >= 39900
         ( *sRememberings )[mLayer].rememberedAttributes << ( config.reuseLastValuePolicy( i ) == Qgis::AttributeFormReuseLastValuePolicy::AllowedDefaultOn );
-#else
-        ( *sRememberings )[mLayer].rememberedAttributes << config.reuseLastValue( i );
-#endif
       }
     }
+
+    mSavedFeature = QgsFeature( mLayer->fields() );
 
     if ( mLayer->customPropertyKeys().contains( QStringLiteral( "is_geometry_locked" ) ) )
     {
@@ -470,15 +477,11 @@ bool FeatureModel::setData( const QModelIndex &index, const QVariant &value, int
         ( *sRememberings )[mLayer].rememberedAttributes[index.row()] = value.toBool();
 
         QgsEditFormConfig config = mLayer->editFormConfig();
-#if _QGIS_VERSION_INT >= 39900
-        if ( config.reuseLastValuePolicy( index.row() ) == Qgis::AttributeFormReuseLastValuePolicy::NotAllowed )
+        if ( config.reuseLastValuePolicy( index.row() ) == Qgis::AttributeFormReuseLastValuePolicy::NotAllowed && mProject->lastSaveVersion().majorVersion() >= 4 )
         {
           return false;
         }
         config.setReuseLastValuePolicy( index.row(), value.toBool() ? Qgis::AttributeFormReuseLastValuePolicy::AllowedDefaultOn : Qgis::AttributeFormReuseLastValuePolicy::AllowedDefaultOff );
-#else
-        config.setReuseLastValue( index.row(), value.toBool() );
-#endif
         mLayer->setEditFormConfig( config );
 
         emit dataChanged( index, index, QVector<int>() << role );
@@ -675,14 +678,52 @@ bool FeatureModel::save( bool flushBuffer )
         // We take charge of default values that are set to be applied on feature update to take into account positioning and cloud context
         updateDefaultValues();
 
-        QgsGeometry temporaryGeometry = mFeature.geometry();
-        QgsAttributeMap temporaryAttributeMap = mFeature.attributes().toMap();
         bool changed = false;
-        changed = mLayer->changeGeometry( mFeature.id(), temporaryGeometry, true );
-        changed |= mLayer->changeAttributeValues( mFeature.id(), temporaryAttributeMap, QgsAttributeMap(), true );
-        if ( !changed )
+        if ( mSavedFeature.id() == mFeature.id() && mSavedFeature.fields() == mFeature.fields() )
         {
-          QgsMessageLog::logMessage( tr( "Cannot update feature" ), QStringLiteral( "QField" ), Qgis::Warning );
+          bool hasChanged = false;
+          if ( ( mFeature.hasGeometry() || mSavedFeature.hasGeometry() ) && !mFeature.geometry().equals( mSavedFeature.geometry() ) )
+          {
+            hasChanged = true;
+            QgsGeometry temporaryGeometry = mFeature.geometry();
+            changed = mLayer->changeGeometry( mFeature.id(), temporaryGeometry, true );
+          }
+
+          const QgsAttributes attributes = mFeature.attributes();
+          const QgsAttributes originalAttributes = mSavedFeature.attributes();
+          for ( int idx = 0; idx < attributes.count(); ++idx )
+          {
+            if ( !qgsVariantEqual( attributes.at( idx ), originalAttributes.at( idx ) ) )
+            {
+              hasChanged = true;
+              changed |= mLayer->changeAttributeValue( mFeature.id(), idx, attributes.at( idx ), originalAttributes.at( idx ), true );
+            }
+          }
+
+          if ( hasChanged )
+          {
+            if ( changed )
+            {
+              mSavedFeature = mFeature;
+            }
+            else
+            {
+              QgsMessageLog::logMessage( tr( "Cannot update feature" ), QStringLiteral( "QField" ), Qgis::Warning );
+            }
+          }
+        }
+        else
+        {
+          changed = mLayer->updateFeature( mFeature, true );
+          if ( changed )
+          {
+            mSavedFeature = mFeature;
+          }
+
+          if ( !changed )
+          {
+            QgsMessageLog::logMessage( tr( "Cannot update feature" ), QStringLiteral( "QField" ), Qgis::Warning );
+          }
         }
 
         if ( flushBuffer )
@@ -696,6 +737,7 @@ bool FeatureModel::save( bool flushBuffer )
               if ( modifiedFeature != mFeature )
               {
                 setFeature( modifiedFeature );
+                mSavedFeature = mFeature;
               }
               else
               {
@@ -728,7 +770,7 @@ bool FeatureModel::save( bool flushBuffer )
           }
 
           QgsExpressionContext expressionContext = createExpressionContext();
-          expressionContext.setFeature( mFeature );
+          expressionContext.setFeature( feature );
 
           QgsFields fields = mLayer->fields();
           for ( int i = 0; i < fields.count(); ++i )
@@ -806,6 +848,7 @@ void FeatureModel::resetFeature()
   }
 
   mFeature = QgsFeature( mLayer->fields() );
+  mSavedFeature = QgsFeature( mLayer->fields() );
 }
 
 void FeatureModel::resetFeatureId()
@@ -869,6 +912,7 @@ void FeatureModel::resetAttributes( bool partialReset )
   QgsExpressionContext expressionContext = createExpressionContext();
   expressionContext.setFeature( mFeature );
   mFeature = QgsVectorLayerUtils::createFeature( mLayer, mFeature.geometry(), mFeature.attributes().toMap(), &expressionContext );
+  mSavedFeature = QgsFeature( mLayer->fields() );
   endResetModel();
 
   updatePermissions();
@@ -913,9 +957,9 @@ bool FeatureModel::updateAttributesFromFeature( const QgsFeature &feature )
           continue;
         }
 
-        QgsProperty property = mLayer->editFormConfig().dataDefinedFieldProperties( field.name() ).property( QgsEditFormConfig::DataDefinedProperty::Editable );
-        if ( property.isActive() )
+        if ( mLayer->editFormConfig().dataDefinedFieldProperties( field.name() ).isActive( QgsEditFormConfig::DataDefinedProperty::Editable ) )
         {
+          QgsProperty property = mLayer->editFormConfig().dataDefinedFieldProperties( field.name() ).property( QgsEditFormConfig::DataDefinedProperty::Editable );
           QgsExpression expression( property.asExpression() );
           QgsExpressionContext expressionContext = createExpressionContext();
           expressionContext.setFeature( mFeature );
@@ -937,7 +981,7 @@ bool FeatureModel::updateAttributesFromFeature( const QgsFeature &feature )
   return updated;
 }
 
-void FeatureModel::applyGeometry( bool fromVertexModel )
+void FeatureModel::applyGeometry( bool fromVertexModel, bool skipTopologicalEditing )
 {
   if ( ( !fromVertexModel && !mGeometry ) || ( fromVertexModel && !mVertexModel ) )
   {
@@ -945,7 +989,7 @@ void FeatureModel::applyGeometry( bool fromVertexModel )
   }
 
   const bool wasEditing = mLayer->editBuffer();
-  const bool requiresEditing = ( mProject && mProject->topologicalEditing() );
+  const bool requiresEditing = ( !skipTopologicalEditing && mProject && mProject->topologicalEditing() );
   if ( !wasEditing && requiresEditing )
   {
     mLayer->startEditing();
@@ -1091,7 +1135,7 @@ void FeatureModel::applyGeometry( bool fromVertexModel )
       geometry = deduplicatedGeometry;
   }
 
-  if ( mProject && mProject->topologicalEditing() )
+  if ( !skipTopologicalEditing && mProject && mProject->topologicalEditing() )
   {
     applyGeometryTopography( geometry );
   }
@@ -1195,6 +1239,7 @@ bool FeatureModel::create( bool flushBuffer )
     flushBuffer = flushBuffer || !wasEditing || hasRelations;
     if ( mLayer->addFeature( mFeature ) )
     {
+      mSavedFeature = mFeature;
       if ( mProject && mProject->topologicalEditing() && !mFeature.geometry().isEmpty() )
       {
         applyGeometryTopography( mFeature.geometry() );
@@ -1208,6 +1253,7 @@ bool FeatureModel::create( bool flushBuffer )
           if ( mLayer->getFeatures( QgsFeatureRequest().setFilterFid( createdFeatureId ) ).nextFeature( feat ) )
           {
             setFeature( feat );
+            mSavedFeature = mFeature;
 
             if ( hasRelations )
             {

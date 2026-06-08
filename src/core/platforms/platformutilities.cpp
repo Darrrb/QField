@@ -89,9 +89,11 @@ void PlatformUtilities::initSystem()
     afterUpdate();
     copySampleProjects();
 
-    gitRevFile.open( QIODevice::WriteOnly | QIODevice::Truncate );
-    gitRevFile.write( appGitRev );
-    gitRevFile.close();
+    if ( gitRevFile.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
+    {
+      gitRevFile.write( appGitRev );
+      gitRevFile.close();
+    }
   }
 }
 
@@ -386,23 +388,15 @@ ResourceSource *PlatformUtilities::getGalleryVideo( const QString &prefix, const
   return createResource( prefix, videoFilePath, fileName, parent );
 }
 
-ResourceSource *PlatformUtilities::getFile( const QString &prefix, const QString &filePath, FileType fileType, QObject *parent )
+ResourceSource *PlatformUtilities::getFile( const QString &prefix, const QString &filePath, const QString &mimeType, QObject *parent )
 {
-  QString filter;
-  switch ( fileType )
+  QFileDialog fileDialog( nullptr, tr( "Select File" ), prefix );
+  fileDialog.setMimeTypeFilters( { mimeType } );
+  if ( fileDialog.exec() )
   {
-    case AudioFiles:
-      filter = tr( "Audio files (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)" );
-      break;
-
-    case AllFiles:
-    default:
-      filter = tr( "All files (*.*)" );
-      break;
+    return createResource( prefix, filePath, fileDialog.selectedFiles().at( 0 ), parent );
   }
-
-  QString fileName = QFileDialog::getOpenFileName( nullptr, tr( "Select File" ), prefix, filter );
-  return createResource( prefix, filePath, fileName, parent );
+  return nullptr;
 }
 
 ViewStatus *PlatformUtilities::open( const QString &uri, bool, QObject * )

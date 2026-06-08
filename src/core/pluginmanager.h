@@ -21,6 +21,7 @@
 
 #include <QObject>
 #include <QQmlEngine>
+#include <QTranslator>
 
 /**
  * \ingroup core
@@ -153,6 +154,16 @@ class PluginManager : public QObject
     Q_INVOKABLE bool isAppPluginConfigurable( const QString &uuid ) const;
 
     /**
+     * Returns true if a plugin is currently enabled for a given project \a path.
+     */
+    Q_INVOKABLE bool isProjectPluginEnabled( const QString &path ) const;
+
+    /**
+     * Denies permission for a given project \a path to load a project plugin.
+     */
+    Q_INVOKABLE void denyProjectPluginPermission( const QString &path );
+
+    /**
      * Restores and loads previously enabled application plugins.
      */
     void restoreAppPlugins();
@@ -190,6 +201,8 @@ class PluginManager : public QObject
     void appPluginEnabled( const QString &uuid );
     void appPluginDisabled( const QString &uuid );
 
+    void projectPluginEnabled();
+
     void installTriggered( const QString &name );
     void installProgress( double progress );
     void installEnded( const QString &uuid = QString(), const QString &error = QString() );
@@ -204,6 +217,7 @@ class PluginManager : public QObject
   private:
     QQmlEngine *mEngine = nullptr;
     QMap<QString, QPointer<QObject>> mLoadedPlugins;
+    QMap<QString, QTranslator *> mLoadedPluginTranslators;
 
     QString mPermissionRequestPluginPath;
 

@@ -6,9 +6,8 @@ Node {
   id: root
 
   property alias mapTerrainGeometry: mapTerrainGeometry
-
-  property var texture: null
-  property bool textureReady: false
+  property alias mapTexture: mapTexture
+  property Quick3DMapTextureData mapTextureData
 
   Texture {
     id: neutralTexture
@@ -27,20 +26,33 @@ Node {
     }
   }
 
+  Texture {
+    id: mapTexture
+    textureData: root.mapTextureData
+    generateMipmaps: false
+    mipFilter: Texture.None
+    tilingModeHorizontal: Texture.ClampToEdge
+    tilingModeVertical: Texture.ClampToEdge
+  }
+
   Model {
     id: terrainModel
+    pickable: true
 
     geometry: Quick3DTerrainGeometry {
       id: mapTerrainGeometry
     }
 
     materials: [
-      PrincipledMaterial {
-        id: terrainMaterial
-        baseColorMap: root.textureReady ? root.texture : neutralTexture
-        roughness: root.textureReady ? 0.9 : 0.85
-        metalness: 0.0
-        normalStrength: root.textureReady ? 0.0 : 0.3
+      CustomMaterial {
+        property TextureInput materialTexture: TextureInput {
+          texture: root.mapTextureData.isReady ? mapTexture : neutralTexture
+        }
+        property real gridDensity: 40.0
+        property real materialScale: 1 / mapTerrainGeometry.offsetScale
+        property vector2d materialCenter: Qt.vector2d(0.5 + mapTerrainGeometry.offsetVector.x / 2000, 0.5 + mapTerrainGeometry.offsetVector.z / 2000)
+
+        fragmentShader: "qrc:/3d/terrain_material.frag"
       }
     ]
   }

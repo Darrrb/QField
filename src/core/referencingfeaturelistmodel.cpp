@@ -32,6 +32,7 @@ QHash<int, QByteArray> ReferencingFeatureListModelBase::roleNames() const
   roles[ReferencingFeature] = "referencingFeature";
   roles[NmReferencedFeature] = "nmReferencedFeature";
   roles[NmDisplayString] = "nmDisplayString";
+  roles[AttachmentPath] = "attachmentPath";
 
   return roles;
 }
@@ -66,22 +67,51 @@ int ReferencingFeatureListModelBase::columnCount( const QModelIndex &parent ) co
 QVariant ReferencingFeatureListModelBase::data( const QModelIndex &index, int role ) const
 {
   if ( role == DisplayString )
+  {
     return mEntries.value( index.row() ).displayString;
+  }
   if ( role == ReferencingFeature )
+  {
     return mEntries.value( index.row() ).referencingFeature;
+  }
   if ( role == NmReferencedFeature )
+  {
     return mEntries.value( index.row() ).nmReferencedFeature;
+  }
   if ( role == NmDisplayString )
+  {
     return mEntries.value( index.row() ).nmDisplayString;
+  }
+  if ( role == AttachmentPath )
+  {
+    if ( !mAttachmentFieldName.isEmpty() )
+    {
+      return mEntries.value( index.row() ).referencingFeature.attribute( mAttachmentFieldIndex ).toString();
+    }
+    return QString();
+  }
   return QVariant();
 }
 
 void ReferencingFeatureListModelBase::setFeature( const QgsFeature &feature )
 {
   if ( mFeature == feature )
+  {
     return;
+  }
 
   mFeature = feature;
+  emit featureChanged();
+
+  if ( mRelation.isValid() && mFeature.isValid() && !mLastGathererFeaturesFilter.isEmpty() )
+  {
+    // The updated feature did not change the related features filter, skip reload
+    if ( mLastGathererFeaturesFilter == mRelation.getRelatedFeaturesFilter( mFeature ) )
+    {
+      return;
+    }
+  }
+
   reload();
 }
 
@@ -93,6 +123,11 @@ QgsFeature ReferencingFeatureListModelBase::feature() const
 void ReferencingFeatureListModelBase::setRelation( const QgsRelation &relation )
 {
   mRelation = relation;
+  emit relationChanged();
+
+  mLastGathererFeaturesFilter.clear();
+  updateAttachmentFieldInfo();
+
   reload();
 }
 
@@ -109,16 +144,21 @@ QString ReferencingFeatureListModelBase::currentRelationId() const
 void ReferencingFeatureListModelBase::setCurrentRelationId( const QString &relationId )
 {
   if ( relationId == currentRelationId() )
+  {
     return;
+  }
 
-
-  mRelation = QgsProject::instance()->relationManager()->relation( relationId );
-  reload();
+  setRelation( QgsProject::instance()->relationManager()->relation( relationId ) );
 }
 
 void ReferencingFeatureListModelBase::setNmRelation( const QgsRelation &relation )
 {
   mNmRelation = relation;
+  emit nmRelationChanged();
+
+  mLastGathererFeaturesFilter.clear();
+  updateAttachmentFieldInfo();
+
   reload();
 }
 
@@ -135,10 +175,11 @@ QString ReferencingFeatureListModelBase::currentNmRelationId() const
 void ReferencingFeatureListModelBase::setCurrentNmRelationId( const QString &nmRelationId )
 {
   if ( nmRelationId == currentNmRelationId() )
+  {
     return;
+  }
 
-  mNmRelation = QgsProject::instance()->relationManager()->relation( nmRelationId );
-  reload();
+  setNmRelation( QgsProject::instance()->relationManager()->relation( nmRelationId ) );
 }
 
 void ReferencingFeatureListModelBase::setParentPrimariesAvailable( const bool parentPrimariesAvailable )
@@ -156,7 +197,9 @@ void ReferencingFeatureListModelBase::updateModel()
   beginResetModel();
 
   if ( mGatherer )
+  {
     mEntries = mGatherer->entries();
+  }
 
   emit beforeModelUpdated();
   endResetModel();
@@ -167,7 +210,9 @@ void ReferencingFeatureListModelBase::gathererThreadFinished()
 {
   //ignore spooky signals from ancestor threads
   if ( sender() != mGatherer )
+  {
     return;
+  }
 
   mGatherer->deleteLater();
   mGatherer = nullptr;
@@ -177,7 +222,9 @@ void ReferencingFeatureListModelBase::gathererThreadFinished()
 void ReferencingFeatureListModelBase::reload()
 {
   if ( !mRelation.isValid() || !mFeature.isValid() )
+  {
     return;
+  }
 
   if ( checkParentPrimaries() )
   {
@@ -195,13 +242,16 @@ void ReferencingFeatureListModelBase::reload()
     }
 
     mGatherer = new FeatureGatherer( mFeature, mRelation, mNmRelation );
+    mLastGathererFeaturesFilter = mRelation.getRelatedFeaturesFilter( mFeature );
 
     connect( mGatherer, &FeatureGatherer::collectedValues, this, &ReferencingFeatureListModelBase::updateModel );
     connect( mGatherer, &FeatureGatherer::finished, this, &ReferencingFeatureListModelBase::gathererThreadFinished );
 
     mGatherer->start();
     if ( !wasLoading )
+    {
       emit isLoadingChanged();
+    }
   }
   else
   {
@@ -232,14 +282,18 @@ bool ReferencingFeatureListModelBase::deleteFeature( QgsFeatureId referencingFea
   }
 
   if ( !beforeDeleteFeature( referencingLayer, referencingFeatureId ) )
+  {
     return false;
+  }
 
   if ( !referencingLayer->deleteFeature( referencingFeatureId ) )
   {
     QgsMessageLog::logMessage( tr( "Cannot delete feature" ), "QField", Qgis::Critical );
 
     if ( !referencingLayer->rollBack() )
+    {
       QgsMessageLog::logMessage( tr( "Cannot rollback layer changes in layer %1" ).arg( referencingLayer->name() ), "QField", Qgis::Critical );
+    }
 
     return false;
   }
@@ -249,7 +303,9 @@ bool ReferencingFeatureListModelBase::deleteFeature( QgsFeatureId referencingFea
     QgsMessageLog::logMessage( tr( "Cannot commit layer changes in layer %1." ).arg( referencingLayer->name() ), "QField", Qgis::Critical );
 
     if ( !referencingLayer->rollBack() )
+    {
       QgsMessageLog::logMessage( tr( "Cannot rollback layer changes in layer %1" ).arg( referencingLayer->name() ), "QField", Qgis::Critical );
+    }
 
     return false;
   }
@@ -265,7 +321,9 @@ int ReferencingFeatureListModelBase::getFeatureIdRow( QgsFeatureId featureId )
   for ( const Entry &entry : mEntries )
   {
     if ( entry.referencingFeature.id() == featureId )
+    {
       break;
+    }
     row++;
   }
 
@@ -277,10 +335,72 @@ bool ReferencingFeatureListModelBase::isLoading() const
   return mGatherer;
 }
 
+QString ReferencingFeatureListModelBase::attachmentFieldName() const
+{
+  return mAttachmentFieldName;
+}
+
+int ReferencingFeatureListModelBase::attachmentDocumentViewer() const
+{
+  return mAttachmentDocumentViewer;
+}
+
+QString ReferencingFeatureListModelBase::attachmentStorageType() const
+{
+  return mAttachmentStorageType;
+}
+
+QString ReferencingFeatureListModelBase::attachmentStorageAuthConfigId() const
+{
+  return mAttachmentStorageAuthConfigId;
+}
+
+QString ReferencingFeatureListModelBase::attachmentStorageUrl() const
+{
+  return mAttachmentStorageUrl;
+}
+
+void ReferencingFeatureListModelBase::updateAttachmentFieldInfo()
+{
+  mAttachmentFieldName.clear();
+  mAttachmentFieldIndex = -1;
+  mAttachmentDocumentViewer = 0;
+  mAttachmentStorageType.clear();
+  mAttachmentStorageAuthConfigId.clear();
+  mAttachmentStorageUrl.clear();
+
+  QgsVectorLayer *layer = mRelation.referencingLayer();
+  if ( layer )
+  {
+    for ( int i = 0; i < layer->fields().count(); i++ )
+    {
+      if ( layer->editorWidgetSetup( i ).type() == QLatin1String( "ExternalResource" ) )
+      {
+        const QVariantMap config = layer->editorWidgetSetup( i ).config();
+        mAttachmentFieldName = layer->fields().at( i ).name();
+        mAttachmentFieldIndex = i;
+        mAttachmentDocumentViewer = config.value( QStringLiteral( "DocumentViewer" ), 0 ).toInt();
+        mAttachmentStorageType = config.value( QStringLiteral( "StorageType" ) ).toString();
+        mAttachmentStorageAuthConfigId = config.value( QStringLiteral( "StorageAuthConfigId" ) ).toString();
+        mAttachmentStorageUrl = config.value( QStringLiteral( "StorageUrl" ) ).toString();
+        if ( !mAttachmentStorageUrl.isEmpty() && !mAttachmentStorageUrl.endsWith( QLatin1Char( '/' ) ) )
+        {
+          mAttachmentStorageUrl.append( QLatin1Char( '/' ) );
+        }
+        break;
+      }
+    }
+  }
+
+  emit attachmentDetailsChanged();
+}
+
 bool ReferencingFeatureListModelBase::checkParentPrimaries()
 {
   if ( !mRelation.isValid() || !mFeature.isValid() )
+  {
     return false;
+  }
 
   const bool featureIsNew = std::numeric_limits<QgsFeatureId>::min() == mFeature.id();
   const auto fieldPairs = mRelation.fieldPairs();
@@ -416,6 +536,31 @@ bool ReferencingFeatureListModel::isLoading() const
   return mSourceModel->isLoading();
 }
 
+QString ReferencingFeatureListModel::attachmentFieldName() const
+{
+  return mSourceModel->attachmentFieldName();
+}
+
+int ReferencingFeatureListModel::attachmentDocumentViewer() const
+{
+  return mSourceModel->attachmentDocumentViewer();
+}
+
+QString ReferencingFeatureListModel::attachmentStorageType() const
+{
+  return mSourceModel->attachmentStorageType();
+}
+
+QString ReferencingFeatureListModel::attachmentStorageAuthConfigId() const
+{
+  return mSourceModel->attachmentStorageAuthConfigId();
+}
+
+QString ReferencingFeatureListModel::attachmentStorageUrl() const
+{
+  return mSourceModel->attachmentStorageUrl();
+}
+
 Qt::SortOrder ReferencingFeatureListModel::sortOrder() const
 {
   return mSortOrder;
@@ -424,7 +569,9 @@ Qt::SortOrder ReferencingFeatureListModel::sortOrder() const
 void ReferencingFeatureListModel::setSortOrder( Qt::SortOrder sortOrder )
 {
   if ( mSortOrder == sortOrder )
+  {
     return;
+  }
   mSortOrder = sortOrder;
   emit sortOrderChanged();
 

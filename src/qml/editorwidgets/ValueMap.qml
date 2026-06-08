@@ -84,6 +84,7 @@ EditorWidgetBase {
       id: toggleButtons
       Layout.fillWidth: true
       Layout.minimumHeight: toggleButtons.height
+      Layout.bottomMargin: 5
 
       model: listModel
       textRole: "value"
@@ -97,7 +98,7 @@ EditorWidgetBase {
       }
 
       onItemDeselected: function () {
-        valueChangeRequested("", false);
+        valueChangeRequested("", true);
       }
     }
 
@@ -204,16 +205,15 @@ EditorWidgetBase {
 
         QfSearchBar {
           id: searchBar
-          z: 1
           anchors.left: parent.left
           anchors.right: parent.right
-          height: childrenRect.height
+          height: searchHeight
 
           onSearchTermChanged: {
             listModel.setFilterFixedString(searchTerm);
           }
 
-          onReturnPressed: {
+          onSearchTriggered: {
             if (listModel.rowCount() === 1) {
               resultsList.itemAtIndex(0).performClick();
               searchFeaturePopup.close();

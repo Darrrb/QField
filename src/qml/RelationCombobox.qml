@@ -89,16 +89,15 @@ Item {
 
       QfSearchBar {
         id: searchBar
-        z: 1
         anchors.left: parent.left
         anchors.right: parent.right
-        height: childrenRect.height
+        height: searchHeight
 
         onSearchTermChanged: {
           featureListModel.searchTerm = searchTerm;
         }
 
-        onReturnPressed: {
+        onSearchTriggered: {
           if (featureListModel.rowCount() === 1) {
             resultsList.itemAtIndex(0).performClick();
             searchFeaturePopup.close();
@@ -297,7 +296,21 @@ Item {
       }
 
       font: Theme.defaultFont
-      text.color: displayedTextColor
+      delegate: ItemDelegate {
+        width: ListView.view.width
+        height: Math.max(delegateLabel.implicitHeight + 16, 48)
+        highlighted: comboBox.highlightedIndex === index
+
+        contentItem: Text {
+          id: delegateLabel
+          text: model[comboBox.textRole] ?? ""
+          font: Theme.defaultFont
+          color: comboBox.currentIndex === index ? Theme.mainColor : Theme.mainTextColor
+          wrapMode: Text.WordWrap
+          verticalAlignment: Text.AlignVCenter
+        }
+      }
+
       displayText: {
         if (!isEditing && value === "") {
           return qsTr("Empty");
@@ -305,6 +318,17 @@ Item {
           return qsTr("NULL");
         }
         return comboBox.currentIndex === -1 && value !== undefined ? '(' + value + ')' : comboBox.currentText;
+      }
+
+      contentItem: Text {
+        leftPadding: comboBox.background.visible ? comboBox.Material.textFieldHorizontalPadding : 0
+        topPadding: comboBox.Material.textFieldVerticalPadding
+        bottomPadding: comboBox.Material.textFieldVerticalPadding
+        text: comboBox.displayText
+        font: Theme.defaultFont
+        color: displayedTextColor
+        verticalAlignment: Text.AlignVCenter
+        wrapMode: Text.WordWrap
       }
 
       popup: Popup {
@@ -359,18 +383,11 @@ Item {
       indicator.visible: relationCombobox.enabled || (!isEditable && isEditing)
     }
 
-    FontMetrics {
-      id: fontMetrics
-      font: comboBox.font
-    }
-
     Rectangle {
       id: searchable
       visible: !comboBox.visible
       height: searchableText.height + searchableText.topInset + searchableText.bottomInset
       Layout.fillWidth: true
-      Layout.topMargin: 5
-      Layout.bottomMargin: 5
 
       Text {
         id: searchableLabel
@@ -594,6 +611,11 @@ Item {
       text: qsTr("Invalid relation")
       color: Theme.errorColor
     }
+  }
+
+  FontMetrics {
+    id: fontMetrics
+    font: comboBox.font
   }
 
   Loader {

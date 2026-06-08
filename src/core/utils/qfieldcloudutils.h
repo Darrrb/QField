@@ -76,9 +76,151 @@ struct CloudUserInformation
 /**
  * \ingroup core
  */
+struct CloudSubscriptionInformation
+{
+    Q_GADGET
+
+    Q_PROPERTY( QString plan MEMBER plan )
+    Q_PROPERTY( double storageTotal MEMBER storageTotal )
+    Q_PROPERTY( double storageUsed MEMBER storageUsed )
+    Q_PROPERTY( double storageThresholdWarning MEMBER storageThresholdWarning )
+    Q_PROPERTY( double storageThresholdCritical MEMBER storageThresholdCritical )
+    Q_PROPERTY( QString status MEMBER status )
+
+  public:
+    CloudSubscriptionInformation() = default;
+
+    explicit CloudSubscriptionInformation( const QJsonObject &subscriptionInformation )
+      : plan( subscriptionInformation.value( QStringLiteral( "plan_display_name" ) ).toString() )
+      , storageTotal( subscriptionInformation.value( QStringLiteral( "active_storage_total_bytes" ) ).toDouble() )
+      , storageUsed( subscriptionInformation.value( QStringLiteral( "storage_used_bytes" ) ).toDouble() )
+      , storageThresholdWarning( subscriptionInformation.value( QStringLiteral( "plan_storage_threshold_warning_bytes" ) ).toDouble() )
+      , storageThresholdCritical( subscriptionInformation.value( QStringLiteral( "plan_storage_threshold_critical_bytes" ) ).toDouble() )
+      , status( subscriptionInformation.value( QStringLiteral( "status" ) ).toString() )
+    {}
+
+    bool operator==( const CloudSubscriptionInformation &other ) const
+    {
+      return plan == other.plan && storageTotal == other.storageTotal && storageUsed == other.storageUsed && storageThresholdWarning == other.storageThresholdWarning && storageThresholdCritical == other.storageThresholdCritical && status == other.status;
+    }
+
+    QString plan;
+    double storageTotal = 0;
+    double storageUsed = 0;
+    double storageThresholdWarning = 0;
+    double storageThresholdCritical = 0;
+    QString status;
+};
+
+Q_DECLARE_METATYPE( CloudSubscriptionInformation )
+
+/**
+ * \ingroup core
+ *
+ * Holds whitelabeling information advertised by a QFieldCloud server, such as the
+ * displayed site title and branding assets.
+ */
+struct CloudWhitelabelInformation
+{
+    Q_GADGET
+
+    Q_PROPERTY( QString siteTitle MEMBER siteTitle )
+    Q_PROPERTY( QString logoMain MEMBER logoMain )
+    Q_PROPERTY( QString logoNavbar MEMBER logoNavbar )
+    Q_PROPERTY( QString favicon MEMBER favicon )
+
+  public:
+    CloudWhitelabelInformation() = default;
+
+    explicit CloudWhitelabelInformation( const QVariantMap &whitelabel )
+      : siteTitle( whitelabel.value( QStringLiteral( "site_title" ) ).toString() )
+      , logoMain( whitelabel.value( QStringLiteral( "logo_main" ) ).toString() )
+      , logoNavbar( whitelabel.value( QStringLiteral( "logo_navbar" ) ).toString() )
+      , favicon( whitelabel.value( QStringLiteral( "favicon" ) ).toString() )
+    {}
+
+    bool operator==( const CloudWhitelabelInformation &other ) const
+    {
+      return siteTitle == other.siteTitle && logoMain == other.logoMain && logoNavbar == other.logoNavbar && favicon == other.favicon;
+    }
+
+    bool operator!=( const CloudWhitelabelInformation &other ) const
+    {
+      return !( *this == other );
+    }
+
+    QVariantMap toVariantMap() const
+    {
+      return {
+        { QStringLiteral( "site_title" ), siteTitle },
+        { QStringLiteral( "logo_main" ), logoMain },
+        { QStringLiteral( "logo_navbar" ), logoNavbar },
+        { QStringLiteral( "favicon" ), favicon },
+      };
+    }
+
+    QString siteTitle;
+    QString logoMain;
+    QString logoNavbar;
+    QString favicon;
+};
+
+Q_DECLARE_METATYPE( CloudWhitelabelInformation )
+
+/**
+ * \ingroup core
+ *
+ * Public information about a QFieldCloud server, including whitelabel
+ * branding and the new-user signup URL.
+ */
+struct CloudServerInformation
+{
+    Q_GADGET
+
+    Q_PROPERTY( CloudWhitelabelInformation whitelabel MEMBER whitelabel )
+    Q_PROPERTY( QString signupUrl MEMBER signupUrl )
+
+  public:
+    CloudServerInformation() = default;
+
+    explicit CloudServerInformation( const QVariantMap &serverInformation )
+      : whitelabel( serverInformation.value( QStringLiteral( "whitelabel" ) ).toMap() )
+      , signupUrl( serverInformation.value( QStringLiteral( "signup_url" ) ).toString() )
+    {}
+
+    bool operator==( const CloudServerInformation &other ) const
+    {
+      return whitelabel == other.whitelabel && signupUrl == other.signupUrl;
+    }
+
+    bool operator!=( const CloudServerInformation &other ) const
+    {
+      return !( *this == other );
+    }
+
+    QVariantMap toVariantMap() const
+    {
+      return {
+        { QStringLiteral( "whitelabel" ), whitelabel.toVariantMap() },
+        { QStringLiteral( "signup_url" ), signupUrl },
+      };
+    }
+
+    CloudWhitelabelInformation whitelabel;
+    QString signupUrl;
+};
+
+Q_DECLARE_METATYPE( CloudServerInformation )
+
+/**
+ * \ingroup core
+ */
 class QFieldCloudUtils : public QObject
 {
     Q_OBJECT
+
+    Q_PROPERTY( QString errorCodeOverQuota READ errorCodeOverQuota CONSTANT )
+    Q_PROPERTY( QString errorCodePlanInsufficient READ errorCodePlanInsufficient CONSTANT )
 
   public:
     /**
@@ -161,14 +303,19 @@ class QFieldCloudUtils : public QObject
     //! Removes a \a fileName for a given \a projectId to the pending attachments list
     Q_INVOKABLE static void removePendingAttachment( const QString &username, const QString &projectId, const QString &fileName );
 
+    /**
+     * Returns the URL for managing the subscription for a given \a plan, \a serverUrl, and \a username.
+     * Returns an empty string if the server is not the default QFieldCloud server or if the \a projectOwner does not match the \a username.
+     */
+    Q_INVOKABLE static QString subscriptionManagementUrl( const QString &serverUrl, const QString &plan, const QString &projectOwner, const QString &username );
+
   private:
-    static inline const QString errorCodeOverQuota { QStringLiteral( "over_quota" ) };
-
     static void writeToAttachmentsFile( const QString &username, const QString &projectId, const QStringList &fileNames, const QHash<QString, QString> *fileChecksumMap, const bool &checkSumCheck, QFieldCloudConnection *cloudConnection = nullptr );
-
     static void writeFilesFromDirectory( const QString &dirPath, const QString &projectId, const QHash<QString, QString> *fileChecksumMap, const bool &checkSumCheck, QTextStream &attachmentsStream );
-
     static void writeFileDetails( const QString &fileName, const QString &projectId, const QHash<QString, QString> *fileChecksumMap, const bool &checkSumCheck, QTextStream &attachmentsStream );
+
+    static inline const QString errorCodeOverQuota() { return QStringLiteral( "over_quota" ); };
+    static inline const QString errorCodePlanInsufficient() { return QStringLiteral( "permission_denied_plan_insufficient" ); };
 };
 
 #endif // QFIELDCLOUDUTILS_H

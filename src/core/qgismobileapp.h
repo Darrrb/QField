@@ -34,6 +34,7 @@
 #include "clipboardmanager.h"
 #include "cogoregistry.h"
 #include "drawingtemplatemodel.h"
+#include "focusstack.h"
 #include "pluginmanager.h"
 #include "qfield_core_export.h"
 #include "qfieldappauthrequesthandler.h"
@@ -78,21 +79,6 @@ class QFIELD_CORE_EXPORT QgisMobileapp : public QQmlApplicationEngine
   public:
     explicit QgisMobileapp( QgsApplication *app, QObject *parent = nullptr );
     ~QgisMobileapp() override;
-
-    /**
-     * Returns a list of recent projects.
-     */
-    QList<QPair<QString, QString>> recentProjects();
-
-    /**
-     * Saves a list of recent \a projects.
-     */
-    void saveRecentProjects( const QList<QPair<QString, QString>> &projects );
-
-    /**
-     * Removes the project with a given \a path from the list of recent projects
-     */
-    void removeRecentProject( const QString &path );
 
     /**
      * Set the project or dataset file path to be loaded.
@@ -238,6 +224,7 @@ class QFIELD_CORE_EXPORT QgisMobileapp : public QQmlApplicationEngine
     QString mProjectFilePath;
     QString mProjectFileName;
 
+    std::unique_ptr<FocusStack> mFocusStack;
     std::unique_ptr<QgsGpkgFlusher> mGpkgFlusher;
     std::unique_ptr<LayerObserver> mLayerObserver;
     std::unique_ptr<FeatureHistory> mFeatureHistory;
@@ -254,7 +241,7 @@ class QFIELD_CORE_EXPORT QgisMobileapp : public QQmlApplicationEngine
     std::unique_ptr<CogoRegistry> mCogoRegistry;
 
     // Dummy objects. We are not able to call static functions from QML, so we need something here.
-    QgsCoordinateReferenceSystem mCrsFactory;
+    QgsWkbTypes mWkbTypes;
     QgsUnitTypes mUnitTypes;
     QgsExifTools mExifTools;
 
@@ -264,6 +251,7 @@ class QFIELD_CORE_EXPORT QgisMobileapp : public QQmlApplicationEngine
 
     std::unique_ptr<ScreenDimmer> mScreenDimmer;
     std::unique_ptr<QFieldUrlHandler> mUrlHandler;
+
     QgsApplication *mApp;
 };
 

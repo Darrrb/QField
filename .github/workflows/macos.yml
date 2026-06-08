@@ -52,7 +52,7 @@ jobs:
           echo "CMAKE_BUILD_DIR=${BUILD_ROOT}/builddir" >> $GITHUB_ENV
 
       - name: ⛓️ Setup SSH
-        uses: webfactory/ssh-agent@v0.9.1
+        uses: webfactory/ssh-agent@v0.10.0
         if: ${{ env.SENTRY_AUTH_TOKEN != '' }}
         with:
           ssh-private-key: ${{ secrets.SSH_KEY_DEPLOYMENT_CERTIFICATES }}
@@ -70,12 +70,12 @@ jobs:
         with:
           cmakeVersion: 3.31.6
       - name: 🍭 Setup XCode
-        uses: maxim-lobanov/setup-xcode@v1.6.0
+        uses: maxim-lobanov/setup-xcode@v1.7.0
         with:
           xcode-version: 16.2
 
       - name: 🍮 ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ccache-${{ matrix.triplet }}-qt6
           max-size: 200M
@@ -137,20 +137,20 @@ jobs:
           gtar -cpvzf qfield-app-${{ matrix.triplet }}.tar.gz staging
 
       - name: 📦 Upload package
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: qfield-app-${{ matrix.triplet }}
           path: qfield-app-${{ matrix.triplet }}.tar.gz
 
       - name: 📊 Upload test report
         if: ${{ matrix.run-tests == true && always() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: "test-report-${{ matrix.triplet }}-${{ env.BUILD_TYPE }}"
           path: "${{ env.CMAKE_BUILD_DIR }}/report"
 
       - name: 📑 Upload logs
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: logs-${{ matrix.triplet }}
@@ -158,7 +158,7 @@ jobs:
             ${{ env.CMAKE_BUILD_DIR }}/**/*.log
 
       - name: 💎 Setup ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@v1.310.0
         with:
           ruby-version: '3.4' # Not needed with a .ruby-version file
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
@@ -186,7 +186,7 @@ jobs:
           brew install create-dmg
 
       - name: 📤 Download app
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: qfield-app-*
           path: |
@@ -219,8 +219,8 @@ jobs:
 
           echo "ARTIFACT_PACKAGE_NAME=qfield-dmg" >> $GITHUB_ENV
 
-      - name: 📤 Upload app
-        uses: actions/upload-artifact@v6
+      - name: 📦 Upload artifacts
+        uses: actions/upload-artifact@v7
         id: artifact-macos
         with:
           name: ${{ env.ARTIFACT_PACKAGE_NAME }}
@@ -240,7 +240,7 @@ jobs:
 
       - name: 🚀 Upload release asset
         if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags/v')
-        uses: shogo82148/actions-upload-release-asset@v1
+        uses: shogo82148/actions-upload-release-asset@v1.10.1
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: "qfield.dmg"

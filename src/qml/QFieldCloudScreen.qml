@@ -15,6 +15,7 @@ Page {
   signal viewProjectFolder(string projectPath)
 
   property string requestedProjectDetails: ""
+  property QFieldCloudStatus cloudServiceStatus: null
 
   leftPadding: mainWindow.sceneLeftMargin
   rightPadding: mainWindow.sceneRightMargin
@@ -27,7 +28,7 @@ Page {
     showCancelButton: false
     showMenuButton: true
 
-    busyIndicatorState: cloudConnection.status === QFieldCloudConnection.Connecting || cloudConnection.state === QFieldCloudConnection.Busy ? 'on' : 'off' || cloudProjectsModel.busyProjectIds.length > 0
+    busyIndicatorState: cloudConnection.status === QFieldCloudConnection.Connecting ? 'on' : 'off'
     busyIndicatorValue: busyIndicatorState === 'on' ? 0 : 1
 
     topMargin: mainWindow.sceneTopMargin
@@ -88,15 +89,15 @@ Page {
         Layout.margins: 10
         width: 48
         height: 48
-        border.color: Theme.mainColor
-        border.width: 1
         radius: width / 2
-        clip: true
+        color: Theme.controlBackgroundAlternateColor
+        layer.enabled: true
 
         Rectangle {
-          id: roundMask
-          anchors.fill: parent
-          anchors.margins: 1
+          id: cloudAvatarMask
+          anchors.centerIn: parent
+          width: cloudAvatar.width * 2
+          height: cloudAvatar.height * 2
           radius: width / 2
           color: "white"
           visible: false
@@ -105,24 +106,23 @@ Page {
 
         Image {
           id: cloudAvatar
-          anchors.fill: parent
-          anchors.margins: 1
+          anchors.centerIn: parent
           fillMode: Image.PreserveAspectFit
           smooth: true
-          source: cloudConnection.avatarUrl !== '' ? cloudConnection.avatarUrl : 'qrc:/images/qfieldcloud_logo.svg'
+          source: cloudConnection.avatarUrl !== '' ? cloudConnection.avatarUrl : 'qrc:/images/nyuki.svg'
           width: 48
           height: 48
           sourceSize.width: width * screen.devicePixelRatio
           sourceSize.height: height * screen.devicePixelRatio
           layer.enabled: true
           layer.effect: QfOpacityMask {
-            maskSource: roundMask
+            maskSource: cloudAvatarMask
           }
 
           onStatusChanged: {
             // In case the avatar URL fails to load or the image is corrupted, revert to our lovely Nyuki
             if (status == Image.Error) {
-              source = 'qrc:/images/qfieldcloud_logo.svg';
+              source = 'qrc:/images/nyuki.svg';
             }
           }
         }
@@ -166,6 +166,7 @@ Page {
           id: qfieldCloudLogin
           isVisible: connectionSettings.visible
           width: connectionSettings.width
+          cloudServiceStatus: qfieldCloudScreen.cloudServiceStatus
         }
       }
 
@@ -189,23 +190,93 @@ Page {
         id: projects
         spacing: 2
 
+        QFieldCloudStatusBanner {
+          cloudServiceStatus: qfieldCloudScreen.cloudServiceStatus
+        }
+
         QfTabBar {
           id: filterBar
-          model: [qsTr("My Projects"), qsTr("Community")]
           Layout.fillWidth: true
           Layout.preferredHeight: defaultHeight
+          visible: false
+          model: [qsTr("Projects")]
         }
 
         QfSearchBar {
           id: searchBar
           Layout.fillWidth: true
-          Layout.preferredHeight: 41
-          placeHolderText: qsTr("Search for project")
+          Layout.preferredHeight: searchHeight
+          enableFilterButton: true
+          filterActive: projectFilter.visible
+          placeHolderText: qsTr("Search for projects")
+          parameterKeys: ["owner", "include"]
+          z: 10
+
+          QFieldCloudProjectFilter {
+            id: projectFilter
+            width: parent.width
+            height: Math.min(mainWindow.height - mainWindow.sceneTopMargin - mainWindow.sceneBottomMargin - 186, 400)
+            visible: false
+
+            currentUsername: cloudConnection.username
+
+            onQueryStringChanged: {
+              if (visible) {
+                searchBar.setSearchTerm(queryString);
+              }
+            }
+
+            onApplyFilter: {
+              table.model.textFilter = queryString;
+              searchBar.setSearchTerm(queryString);
+              visible = false;
+            }
+          }
+
+          onFilterClicked: {
+            if (!projectFilter.visible) {
+              projectFilter.visible = true;
+              projectFilter.updateQueryFromString(searchBar.searchTerm);
+            } else {
+              projectFilter.applyFilter();
+            }
+          }
+
+          onSearchTermChanged: {
+            if (!projectFilter.visible) {
+              table.model.textFilter = searchBar.searchTerm;
+            }
+          }
+
+          onSearchTermEdited: {
+            if (projectFilter.visible) {
+              projectFilter.updateQueryFromString(searchBar.searchTerm);
+            }
+          }
+
+          onSearchTriggered: {
+            if (projectFilter.visible) {
+              projectFilter.applyFilter();
+            } else {
+              table.model.textFilter = searchBar.searchTerm;
+            }
+          }
+
+          onCleared: {
+            if (projectFilter.visible) {
+              projectFilter.clear();
+            } else {
+              table.model.textFilter = "";
+            }
+          }
         }
 
-        Item {
+        Rectangle {
           Layout.fillWidth: true
           Layout.fillHeight: true
+          color: Theme.controlBackgroundColor
+          border.color: Theme.controlBorderColor
+          border.width: 1
 
           ListView {
             id: table
@@ -213,17 +284,10 @@ Page {
             property bool overshootRefresh: false
 
             model: QFieldCloudProjectsFilterModel {
+              id: filterModel
               projectsModel: cloudProjectsModel
-              filter: filterBar.currentIndex === 0 ? QFieldCloudProjectsFilterModel.PrivateProjects : QFieldCloudProjectsFilterModel.PublicProjects
               showLocalOnly: cloudConnection.status !== QFieldCloudConnection.LoggedIn
               showInValidProjects: settings ? settings.valueBool("/QField/showInvalidProjects", false) : false
-              showFeaturedOnTop: filterBar.currentIndex === 1
-              textFilter: searchBar.searchTerm
-              onFilterChanged: {
-                if (cloudConnection.state === QFieldCloudConnection.Idle && cloudProjectsModel.busyProjectIds.length === 0) {
-                  refreshProjectsList(false, filter === QFieldCloudProjectsFilterModel.PublicProjects);
-                }
-              }
             }
 
             ScrollBar.vertical: QfScrollBar {
@@ -253,18 +317,21 @@ Page {
                 }
               }
             }
+            enabled: !projectFilter.visible
+            opacity: enabled ? 1 : 0.5
             clip: true
 
             onMovingChanged: {
               if (!moving && overshootRefresh && cloudConnection.state === QFieldCloudConnection.Idle && cloudProjectsModel.busyProjectIds.length === 0) {
-                refreshProjectsList(false, filterBar.currentIndex !== 0);
+                refreshProjectsList(false);
               }
               overshootRefresh = false;
             }
 
             onVerticalOvershootChanged: {
-              if (verticalOvershoot < -100 || verticalOvershoot > 100)
+              if (verticalOvershoot < -100) {
                 overshootRefresh = true;
+              }
             }
 
             delegate: Rectangle {
@@ -281,7 +348,7 @@ Page {
 
               width: parent ? parent.width : undefined
               height: line.height
-              color: Theme.controlBackgroundColor
+              color: "transparent"
               border.color: Theme.controlBorderColor
               border.width: 1
               radius: 2
@@ -290,7 +357,7 @@ Page {
                 anchors.bottom: line.bottom
                 anchors.left: line.left
                 anchors.right: parent.right
-                height: 6
+                height: 4
                 indeterminate: PackagingStatus !== QFieldCloudProject.PackagingFinishedStatus && DownloadProgress === 0.0
                 value: DownloadProgress
                 visible: Status === QFieldCloudProject.ProjectStatus.Downloading
@@ -302,11 +369,11 @@ Page {
                 width: parent.width
                 leftPadding: 6
                 rightPadding: 6
-                topPadding: 4
-                bottomPadding: 8
+                topPadding: 6
+                bottomPadding: 6
                 spacing: 2
 
-                ParametizedImage {
+                ParameterizedImage {
                   id: type
                   anchors.verticalCenter: line.verticalCenter
 
@@ -365,11 +432,12 @@ Page {
                 ColumnLayout {
                   id: inner
                   width: projectDelegate.width - type.width - menuButton.width - 16
+                  anchors.verticalCenter: line.verticalCenter
+                  spacing: 2
 
                   Text {
                     id: projectTitle
                     Layout.fillWidth: true
-                    topPadding: 5
                     leftPadding: 3
                     text: Name
                     font.pointSize: Theme.tipFont.pointSize
@@ -383,7 +451,7 @@ Page {
                     leftPadding: 3
                     text: {
                       if (cloudConnection.status !== QFieldCloudConnection.LoggedIn) {
-                        return qsTr('Available locally');
+                        return StringUtils.snippet(Description);
                       } else {
                         var status = '';
 
@@ -416,36 +484,22 @@ Page {
                         case QFieldCloudProject.NoErrorStatus:
                           break;
                         case QFieldCloudProject.DownloadErrorStatus:
-                          status = qsTr('Downloading error. ') + ErrorString;
+                          status = qsTr('Downloading error. ') + QFieldCloudUtils.userFriendlyErrorString(ErrorString);
                           break;
                         case QFieldCloudProject.PushErrorStatus:
-                          status = qsTr('Uploading error. ') + ErrorString;
+                          status = qsTr('Uploading error. ') + QFieldCloudUtils.userFriendlyErrorString(ErrorString);
                           break;
                         }
+
                         if (!status) {
-                          switch (Checkout) {
-                          case QFieldCloudProject.LocalCheckout:
-                            status = UserRoleOrigin === "public" ? qsTr('Available locally') : qsTr('Available locally, missing on the cloud');
-                            break;
-                          case QFieldCloudProject.RemoteCheckout:
-                            status = qsTr('Available on the cloud');
-                            break;
-                          case QFieldCloudProject.LocalAndRemoteCheckout:
-                            status = qsTr('Available locally');
-                            if (ProjectOutdated) {
-                              status += qsTr(', updated data available on the cloud');
-                            }
-                            break;
-                          default:
-                            break;
-                          }
+                          status = StringUtils.snippet(Description);
                         }
-                        var localChanges = (LocalDeltasCount > 0) ? qsTr(', has changes locally') : '';
-                        var str = status + localChanges;
+
+                        var str = status;
                         return str.trim();
                       }
                     }
-                    visible: text != ""
+                    visible: text !== ""
                     font.pointSize: Theme.tipFont.pointSize - 2
                     color: Theme.secondaryTextColor
                     wrapMode: Text.WordWrap
@@ -517,18 +571,6 @@ Page {
               }
             }
 
-            Label {
-              anchors.fill: parent
-              anchors.margins: 20
-              visible: cloudConnection.status === QFieldCloudConnection.LoggedIn && parent.count === 0 && filterBar.currentIndex === 0
-              text: cloudProjectsModel.isRefreshing ? qsTr("Refreshing projects list") : qsTr("No cloud projects found. To get started, %1read the documentation%2.").arg("<a href=\"https://docs.qfield.org/get-started/tutorials/get-started-qfc/\">").arg("</a>")
-              font: Theme.defaultFont
-              wrapMode: Text.WordWrap
-              horizontalAlignment: Text.AlignHCenter
-              verticalAlignment: Text.AlignVCenter
-              onLinkActivated: link => Qt.openUrlExternally(link)
-            }
-
             MouseArea {
               property Item pressedItem
               propagateComposedEvents: false
@@ -582,19 +624,61 @@ Page {
               }
             }
           }
+
+          Label {
+            anchors.fill: parent
+            anchors.margins: 20
+            visible: cloudConnection.status === QFieldCloudConnection.LoggedIn && filterBar.currentIndex === 0 && table.count === 0
+            text: {
+              let labelText = "";
+              if (cloudProjectsModel.isRefreshing) {
+                labelText = qsTr("Refreshing projects list...");
+              } else if (table.model.isSearching) {
+                labelText = qsTr("Searching for projects...");
+              } else if (searchBar.searchTerm.trim() !== "") {
+                labelText = qsTr("No cloud projects found.");
+                const parameters = projectFilter.getQueryParametersFromString(searchBar.searchTerm);
+                if (parameters["includePublic"] === false) {
+                  if (cloudConnection.url == cloudConnection.defaultUrl) {
+                    labelText += "\n\n" + qsTr("Try to %1include public projects%2 and see what the community has to offer.").arg("<a href=\"#includePublic\">").arg("</a>");
+                  } else {
+                    labelText += "\n\n" + qsTr("Try to %1include public projects%2.").arg("<a href=\"#includePublic\">").arg("</a>");
+                  }
+                }
+              } else {
+                labelText = qsTr("No cloud projects found.") + "\n\n" + qsTr("To get started, %1read the documentation%2.").arg("<a href=\"https://docs.qfield.org/get-started/tutorials/get-started-qfc/\">").arg("</a>");
+              }
+              return labelText;
+            }
+            textFormat: Text.MarkdownText
+            font: Theme.defaultFont
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            onLinkActivated: link => {
+              if (link === "#includePublic") {
+                searchBar.setSearchTerm("include:public " + searchBar.searchTerm.trim());
+              } else {
+                Qt.openUrlExternally(link);
+              }
+            }
+          }
         }
 
         RowLayout {
           Layout.fillWidth: true
           Layout.topMargin: 5
+          visible: !projectFilter.visible
 
           QfButton {
             id: refreshProjectsListBtn
             Layout.fillWidth: true
             text: qsTr("Refresh projects list")
             enabled: cloudConnection.status === QFieldCloudConnection.LoggedIn && cloudConnection.state === QFieldCloudConnection.Idle && cloudProjectsModel.busyProjectIds.length === 0
+            showProgress: cloudProjectsModel.isRefreshing || table.model.isSearching
+            progressValue: 0
             onClicked: {
-              refreshProjectsList(true, filterBar.currentIndex !== 0);
+              refreshProjectsList(true);
             }
           }
 
@@ -813,7 +897,7 @@ Page {
     }
     onAccepted: {
       cloudProjectsModel.removeLocalProject(projectActions.projectId);
-      iface.removeRecentProject(projectActions.projectLocalPath);
+      welcomeScreen.model.removeRecentProject(projectActions.projectLocalPath);
       welcomeScreen.model.reloadModel();
       if (projectActions.projectLocalPath === qgisProject.fileName) {
         iface.clearProject();
@@ -861,21 +945,23 @@ Page {
     target: cloudProjectsModel
 
     function onProjectAppended(projectId, hasError, errorString) {
-      requestedProjectDetails = "";
-      if (hasError) {
-        displayToast(qsTr("QFieldCloud project details fetching failed"));
-      } else {
-        projectDetails.cloudProject = cloudProjectsModel.findProject(projectId);
-        projectsSwipeView.currentIndex = 1;
+      if (requestedProjectDetails != "") {
+        requestedProjectDetails = "";
+        if (hasError) {
+          displayToast(qsTr("QFieldCloud project details fetching failed"));
+        } else {
+          projectDetails.cloudProject = cloudProjectsModel.findProject(projectId);
+          projectsSwipeView.currentIndex = 1;
+        }
       }
     }
   }
 
-  function refreshProjectsList(shouldResetModel, shouldFetchPublic) {
+  function refreshProjectsList(shouldResetModel) {
     if (cloudConnection.state !== QFieldCloudConnection.Idle && cloudProjectsModel.busyProjectIds.length === 0) {
       return;
     }
-    cloudProjectsModel.refreshProjectsList(shouldResetModel, shouldFetchPublic);
+    cloudProjectsModel.refreshProjectsList(shouldResetModel);
     displayToast(qsTr("Refreshing projects list"));
   }
 
@@ -913,7 +999,7 @@ Page {
           projectsSwipeView.visible = false;
           connectionSettings.visible = true;
         }
-        cloudConnection.getAuthenticationProviders();
+        cloudConnection.getServerInformation();
         break;
       case QFieldCloudConnection.Connecting:
         const hasProjects = table.count !== 0;
@@ -949,6 +1035,11 @@ Page {
   Keys.onReleased: event => {
     if (event.key === Qt.Key_Back || event.key === Qt.Key_Escape) {
       event.accepted = true;
+      if (projectFilter.visible) {
+        projectFilter.applyFilter();
+        return;
+      }
+
       header.onFinished();
     }
   }

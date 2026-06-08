@@ -99,6 +99,8 @@ class QFieldCloudProjectsModel : public QAbstractListModel
       ProjectsFetchOffset = QNetworkRequest::User + 2,
       ResetModel = QNetworkRequest::User + 3,
       ProjectId = QNetworkRequest::User + 4,
+      ProjectOwnerName = QNetworkRequest::User + 5,
+      ProjectSearchTerm = QNetworkRequest::User + 6,
     };
 
     Q_ENUM( ColumnRole )
@@ -144,10 +146,9 @@ class QFieldCloudProjectsModel : public QAbstractListModel
     /**
      * Requests the cloud projects list from the server.
      * \param shouldResetModel set to TRUE to reset the model
-     * \param shouldFetchPublic set to TRUE to refresh public projects
      * \param projectFetchOffset offset for pagination
      */
-    Q_INVOKABLE void refreshProjectsList( bool shouldResetModel = true, bool shouldFetchPublic = false, int projectFetchOffset = 0 );
+    Q_INVOKABLE void refreshProjectsList( bool shouldResetModel = true, int projectFetchOffset = 0 );
 
     //! Pushes all local deltas for given \a projectId. If \a shouldDownloadUpdates is true, also calls `downloadProject`.
     Q_INVOKABLE void projectPush( const QString &projectId, const bool shouldDownloadUpdates );
@@ -186,7 +187,13 @@ class QFieldCloudProjectsModel : public QAbstractListModel
     Q_INVOKABLE QFieldCloudProject *findProject( const QString &projectId ) const;
 
     //! Fetches a cloud project for a given \a projectId and appends it to the model.
-    Q_INVOKABLE void appendProject( const QString &projectId );
+    Q_INVOKABLE void appendProject( const QString &projectId, bool forceRefresh = false );
+
+    //! Fetches all cloud projects tied to a given \a search term and/or \a owner name.
+    Q_INVOKABLE void appendProjects( const QString &owner, const QString &search, int projectFetchOffset = 0 );
+
+    //! Returns a list of unique project owners, excluding projects where the user has access only through public visibility.
+    Q_INVOKABLE QStringList uniqueOwners() const;
 
     /**
      * Transform a locally-stored project into a cloud project by uploading its content to the
@@ -210,7 +217,8 @@ class QFieldCloudProjectsModel : public QAbstractListModel
 
     void projectCreated( const QString &projectId, const bool hasError = false, const QString &errorString = QString() );
     void projectAppended( const QString &projectId, const bool hasError = false, const QString &errorString = QString() );
-    void projectDownloaded( const QString &projectId, const QString &projectName, const bool hasError = false, const QString &errorString = QString() );
+    void projectsAppended( const QString &owner, const QString &search, const bool hasError = false, const QString &errorString = QString() );
+    void projectDownloaded( const QString &projectId, const QString &projectName, const QString &projectOwner, const bool hasError = false, const QString &errorString = QString() );
     void pushFinished( const QString &projectId, bool isDownloadingProject, bool hasError = false, const QString &errorString = QString() );
 
     void deltaListModelChanged();
@@ -262,20 +270,13 @@ class QFieldCloudProjectsFilterModel : public QSortFilterProxyModel
     Q_OBJECT
 
     Q_PROPERTY( QFieldCloudProjectsModel *projectsModel READ projectsModel WRITE setProjectsModel NOTIFY projectsModelChanged )
-    Q_PROPERTY( ProjectsFilter filter READ filter WRITE setFilter NOTIFY filterChanged )
-    Q_PROPERTY( bool showLocalOnly READ showLocalOnly WRITE setShowLocalOnly NOTIFY showLocalOnlyChanged )
     Q_PROPERTY( QString textFilter READ textFilter WRITE setTextFilter NOTIFY textFilterChanged )
+    Q_PROPERTY( bool showLocalOnly READ showLocalOnly WRITE setShowLocalOnly NOTIFY showLocalOnlyChanged )
     Q_PROPERTY( bool showInValidProjects READ showInValidProjects WRITE setShowInValidProjects NOTIFY showInValidProjectsChanged )
     Q_PROPERTY( bool showFeaturedOnTop READ showFeaturedOnTop WRITE setShowFeaturedOnTop NOTIFY showFeaturedOnTopChanged )
+    Q_PROPERTY( bool isSearching READ isSearching NOTIFY isSearchingChanged )
 
   public:
-    enum ProjectsFilter
-    {
-      PrivateProjects,
-      PublicProjects,
-    };
-    Q_ENUM( ProjectsFilter )
-
     explicit QFieldCloudProjectsFilterModel( QObject *parent = nullptr );
 
     /**
@@ -288,16 +289,6 @@ class QFieldCloudProjectsFilterModel : public QSortFilterProxyModel
      * \param projectsModel the source cloud project model
      */
     void setProjectsModel( QFieldCloudProjectsModel *projectsModel );
-
-    /**
-     * Returns the current cloud projects filter.
-     */
-    ProjectsFilter filter() const;
-
-    /**
-     * Sets the cloud project \a filter.
-     */
-    void setFilter( ProjectsFilter filter );
 
     /**
      * Returns whether the filtered cloud projects list will only contain those available locally.
@@ -345,6 +336,11 @@ class QFieldCloudProjectsFilterModel : public QSortFilterProxyModel
      */
     bool showFeaturedOnTop() const;
 
+    /**
+     * Returns TRUE while an asynchronous projects appending was triggered by a text filter.
+     */
+    bool isSearching() const;
+
   signals:
 
     void projectsModelChanged();
@@ -353,6 +349,11 @@ class QFieldCloudProjectsFilterModel : public QSortFilterProxyModel
     void textFilterChanged();
     void showInValidProjectsChanged();
     void showFeaturedOnTopChanged();
+    void isSearchingChanged();
+
+  private slots:
+    void triggerProjectsAppending();
+    void projectsAppended( const QString &owner, const QString &search, const bool hasError = false, const QString &errorString = QString() );
 
   protected:
     bool lessThan( const QModelIndex &sourceLeft, const QModelIndex &sourceRight ) const override;
@@ -360,13 +361,16 @@ class QFieldCloudProjectsFilterModel : public QSortFilterProxyModel
 
   private:
     QFieldCloudProjectsModel *mSourceModel = nullptr;
-    ProjectsFilter mFilter = PrivateProjects;
     bool mShowLocalOnly = false;
     bool mShowInValidProjects = false;
     bool mShowFeaturedOnTop = false;
     QString mTextFilter;
-};
+    QStringList mKeywordFilter;
+    QString mOwnerFilter;
+    bool mIncludePublic = false;
+    bool mIsSearching = false;
 
-Q_DECLARE_METATYPE( QFieldCloudProjectsFilterModel::ProjectsFilter )
+    QTimer mProjectsAppendingTimer;
+};
 
 #endif // QFIELDCLOUDPROJECTSMODEL_H

@@ -15,6 +15,7 @@
  ***************************************************************************/
 
 #include "bluetoothdevicemodel.h"
+#include "bluetoothlowenergyreceiver.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -30,46 +31,43 @@ BluetoothDeviceModel::BluetoothDeviceModel( QObject *parent )
 
 BluetoothDeviceModel::~BluetoothDeviceModel()
 {
-  stopServiceDiscovery();
+  stopDeviceDiscovery();
 }
 
 void BluetoothDeviceModel::initiateDiscoveryAgent()
 {
   mLocalDevice = std::make_unique<QBluetoothLocalDevice>();
-  mServiceDiscoveryAgent = std::make_unique<QBluetoothServiceDiscoveryAgent>();
+  mDeviceDiscoveryAgent = std::make_unique<QBluetoothDeviceDiscoveryAgent>();
 
-  connect( mServiceDiscoveryAgent.get(), &QBluetoothServiceDiscoveryAgent::serviceDiscovered, this, &BluetoothDeviceModel::serviceDiscovered );
-  connect( mServiceDiscoveryAgent.get(), qOverload<QBluetoothServiceDiscoveryAgent::Error>( &QBluetoothServiceDiscoveryAgent::errorOccurred ), this, [this]( QBluetoothServiceDiscoveryAgent::Error error ) {
-    if ( error != QBluetoothServiceDiscoveryAgent::NoError )
+  connect( mDeviceDiscoveryAgent.get(), &QBluetoothDeviceDiscoveryAgent::deviceDiscovered, this, &BluetoothDeviceModel::deviceDiscovered );
+  connect( mDeviceDiscoveryAgent.get(), qOverload<QBluetoothDeviceDiscoveryAgent::Error>( &QBluetoothDeviceDiscoveryAgent::errorOccurred ), this, [this]( QBluetoothDeviceDiscoveryAgent::Error error ) {
+    if ( error != QBluetoothDeviceDiscoveryAgent::NoError )
     {
-      setLastError( mServiceDiscoveryAgent->errorString() );
+      setLastError( mDeviceDiscoveryAgent->errorString() );
+      emit lastDiscoveredCountChanged();
       setScanningStatus( Failed );
     }
   } );
-  connect( mServiceDiscoveryAgent.get(), &QBluetoothServiceDiscoveryAgent::finished, [this]() {
-    if ( mServiceDiscoveryAgent->error() == QBluetoothServiceDiscoveryAgent::NoError )
+  connect( mDeviceDiscoveryAgent.get(), &QBluetoothDeviceDiscoveryAgent::finished, this, [this]() {
+    if ( mDeviceDiscoveryAgent->error() == QBluetoothDeviceDiscoveryAgent::NoError )
     {
-      if ( mScanningStatus == FastScanning )
-      {
-        startServiceDiscovery();
-      }
-      else
-      {
-        setScanningStatus( Succeeded );
-      }
+      emit lastDiscoveredCountChanged();
+      setScanningStatus( Succeeded );
     }
     else
     {
-      setLastError( mServiceDiscoveryAgent->errorString() );
+      setLastError( mDeviceDiscoveryAgent->errorString() );
+      emit lastDiscoveredCountChanged();
       setScanningStatus( Failed );
     }
   } );
-  connect( mServiceDiscoveryAgent.get(), &QBluetoothServiceDiscoveryAgent::canceled, [this]() {
+  connect( mDeviceDiscoveryAgent.get(), &QBluetoothDeviceDiscoveryAgent::canceled, this, [this]() {
+    emit lastDiscoveredCountChanged();
     setScanningStatus( Canceled );
   } );
 }
 
-void BluetoothDeviceModel::startServiceDiscovery()
+void BluetoothDeviceModel::startDeviceDiscovery()
 {
   // Handle Bluetooth permission
   if ( !mBluetoothPermissionChecked )
@@ -83,7 +81,7 @@ void BluetoothDeviceModel::startServiceDiscovery()
         if ( permission.status() == Qt::PermissionStatus::Granted )
         {
           mBluetoothPermissionChecked = true;
-          startServiceDiscovery();
+          startDeviceDiscovery();
         }
         else
         {
@@ -114,7 +112,7 @@ void BluetoothDeviceModel::startServiceDiscovery()
         if ( permission.status() == Qt::PermissionStatus::Granted )
         {
           mLocationPermissionChecked = true;
-          startServiceDiscovery();
+          startDeviceDiscovery();
         }
         else
         {
@@ -133,76 +131,84 @@ void BluetoothDeviceModel::startServiceDiscovery()
     mLocationPermissionChecked = true;
   }
 
-  if ( !mServiceDiscoveryAgent )
+  if ( !mDeviceDiscoveryAgent )
   {
     initiateDiscoveryAgent();
   }
 
-  if ( mServiceDiscoveryAgent->isActive() )
+  if ( mDeviceDiscoveryAgent->isActive() )
   {
-    stopServiceDiscovery();
+    stopDeviceDiscovery();
   }
 
-  mServiceDiscoveryAgent->setUuidFilter( QBluetoothUuid( QBluetoothUuid::ServiceClassUuid::SerialPort ) );
+  mLastDiscoveredCount = 0;
 
-  if ( mScanningStatus == FastScanning )
-  {
-    // set scanning status _prior to_ start as start itself can error and then we get a broken status sequence
-    setScanningStatus( FullScanning );
-    mServiceDiscoveryAgent->clear();
-    mServiceDiscoveryAgent->start( QBluetoothServiceDiscoveryAgent::FullDiscovery );
-  }
-  else
-  {
-    // set scanning status _prior to_ start as start itself can error and then we get a broken status sequence
-    setScanningStatus( FastScanning );
-    mServiceDiscoveryAgent->clear();
-    mServiceDiscoveryAgent->start( QBluetoothServiceDiscoveryAgent::MinimalDiscovery );
-  }
+  // set scanning status _prior to_ start as start itself can error and then we get a broken status sequence
+  setScanningStatus( Discovering );
+
+#if defined( Q_OS_IOS )
+  mDeviceDiscoveryAgent->start( QBluetoothDeviceDiscoveryAgent::LowEnergyMethod );
+#else
+  mDeviceDiscoveryAgent->start();
+#endif
 }
 
-void BluetoothDeviceModel::stopServiceDiscovery()
+void BluetoothDeviceModel::stopDeviceDiscovery()
 {
-  if ( !mServiceDiscoveryAgent )
+  if ( !mDeviceDiscoveryAgent )
     return;
 
-  if ( mServiceDiscoveryAgent->isActive() )
+  if ( mDeviceDiscoveryAgent->isActive() )
   {
-    mServiceDiscoveryAgent->stop();
+    mDeviceDiscoveryAgent->stop();
     setScanningStatus( Canceled );
   }
 }
 
-void BluetoothDeviceModel::serviceDiscovered( const QBluetoothServiceInfo &service )
+void BluetoothDeviceModel::deviceDiscovered( const QBluetoothDeviceInfo &info )
 {
-  qInfo() << QStringLiteral( "Bluetooth service discovered: name %1, address %2, pairing status %3" )
-               .arg( service.device().name() )
-               .arg( service.device().address().toString() )
-               .arg( mLocalDevice->pairingStatus( service.device().address() ) );
-  //only list the paired devices so the user has control over it.
-  //but in linux (not android) we list unpaired as well, since it needs to repair them later (or pair them at all).
-  const QPair<QString, QString> serviceDiscovered = qMakePair( service.device().name(), service.device().address().toString() );
-  if ( mDiscoveredDevices.contains( serviceDiscovered ) )
+  for ( qsizetype i = 0; i < mDiscoveredDevices.size(); i++ )
+  {
+    if ( deviceAddress( mDiscoveredDevices[i] ) == deviceAddress( info ) )
+    {
+      qInfo() << QStringLiteral( "Bluetooth device information updated: name %1, address %2, pairing status %3" )
+                   .arg( info.name(), info.address().toString(), deviceAddress( info ) )
+                   .arg( mLocalDevice->pairingStatus( info.address() ) );
+
+      mDiscoveredDevices.replace( i, info );
+
+      QModelIndex idx = index( i, 0 );
+      emit dataChanged( idx, idx );
+      return;
+    }
+  }
+
+  qInfo() << QStringLiteral( "Bluetooth device information discovered: name %1, address %2, pairing status %3" )
+               .arg( info.name(), info.address().toString(), deviceAddress( info ) )
+               .arg( mLocalDevice->pairingStatus( info.address() ) );
+
+#if defined( Q_OS_ANDROID )
+  // Only list paired devices users have control over it.
+  const bool paired = mLocalDevice->pairingStatus( info.address() ) != QBluetoothLocalDevice::Unpaired;
+  if ( !paired )
+  {
     return;
+  }
+#endif
 
   const int index = static_cast<int>( mDiscoveredDevices.size() );
   beginInsertRows( QModelIndex(), index, index );
-#ifdef Q_OS_ANDROID
-  if ( mLocalDevice->pairingStatus( service.device().address() ) != QBluetoothLocalDevice::Unpaired )
-  {
-    mDiscoveredDevices.append( serviceDiscovered );
-  }
-#else
-  mDiscoveredDevices.append( serviceDiscovered );
-#endif
+  mDiscoveredDevices.append( info );
   endInsertRows();
+
+  mLastDiscoveredCount++;
 }
 
 int BluetoothDeviceModel::findIndexFromAddress( const QString &address ) const
 {
   for ( int i = 0; i < mDiscoveredDevices.size(); i++ )
   {
-    if ( mDiscoveredDevices.at( i ).second == address )
+    if ( deviceAddress( mDiscoveredDevices.at( i ) ) == address )
     {
       return i;
     }
@@ -218,19 +224,39 @@ int BluetoothDeviceModel::rowCount( const QModelIndex &parent ) const
 
 QVariant BluetoothDeviceModel::data( const QModelIndex &index, int role ) const
 {
+  if ( index.row() == -1 || index.row() >= mDiscoveredDevices.size() )
+  {
+    return QVariant();
+  }
+
+  const QBluetoothDeviceInfo info = mDiscoveredDevices.at( index.row() );
   switch ( role )
   {
     case Qt::DisplayRole:
-      return QStringLiteral( "%1 (%2)" ).arg( mDiscoveredDevices.at( index.row() ).first, mDiscoveredDevices.at( index.row() ).second );
-      break;
+      return QStringLiteral( "%1" ).arg( !info.name().isEmpty() ? info.name().trimmed() : deviceAddress( info ) );
 
     case DeviceAddressRole:
-      return mDiscoveredDevices.at( index.row() ).second;
-      break;
+      return deviceAddress( info );
 
     case DeviceNameRole:
-      return mDiscoveredDevices.at( index.row() ).first;
-      break;
+      return info.name();
+
+    case DeviceClassicSupportRole:
+      return ( info.coreConfigurations() & QBluetoothDeviceInfo::BaseRateCoreConfiguration || info.coreConfigurations() & QBluetoothDeviceInfo::BaseRateAndLowEnergyCoreConfiguration ? true : false );
+
+    case DeviceLowEnergySupportRole:
+      return ( info.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration || info.coreConfigurations() & QBluetoothDeviceInfo::BaseRateAndLowEnergyCoreConfiguration ? true : false );
+
+    case DeviceLowEnergyByDefaultRole:
+#if defined( Q_OS_IOS )
+      return true;
+#endif
+      if ( info.coreConfigurations() & QBluetoothDeviceInfo::LowEnergyCoreConfiguration || info.coreConfigurations() & QBluetoothDeviceInfo::BaseRateAndLowEnergyCoreConfiguration )
+      {
+        const QList<QBluetoothUuid> supportedServices = BluetoothLowEnergyReceiver::serviceChars.keys();
+        return std::any_of( supportedServices.begin(), supportedServices.end(), [&info]( const QBluetoothUuid &service ) { return info.serviceUuids().contains( service ); } );
+      }
+      return false;
   }
   return QVariant();
 }
@@ -239,8 +265,11 @@ QHash<int, QByteArray> BluetoothDeviceModel::roleNames() const
 {
   QHash<int, QByteArray> roles = QAbstractItemModel::roleNames();
 
-  roles[DeviceAddressRole] = "deviceAddress";
-  roles[DeviceNameRole] = "deviceName";
+  roles[DeviceAddressRole] = "DeviceAddress";
+  roles[DeviceNameRole] = "DeviceName";
+  roles[DeviceClassicSupportRole] = "DeviceClassicSupport";
+  roles[DeviceLowEnergySupportRole] = "DeviceLowEnergySupport";
+  roles[DeviceLowEnergyByDefaultRole] = "DeviceLowEnergyByDefault";
 
   return roles;
 }
@@ -252,7 +281,7 @@ void BluetoothDeviceModel::setScanningStatus( const BluetoothDeviceModel::Scanni
     return;
   }
 
-  qDebug() << "BluetoothDeviceModel: Status of service discovery changed to: " << scanningStatus;
+  qDebug() << "BluetoothDeviceModel: Status of device discovery changed to: " << scanningStatus;
   mScanningStatus = scanningStatus;
   emit scanningStatusChanged( mScanningStatus );
 }
@@ -264,7 +293,7 @@ void BluetoothDeviceModel::setLastError( const QString &lastError )
     return;
   }
 
-  qDebug() << "BluetoothDeviceModel: Service discovery error received: " << lastError;
+  qDebug() << "BluetoothDeviceModel: device discovery error received: " << lastError;
   mLastError = lastError;
   emit lastErrorChanged( mLastError );
 }
@@ -276,7 +305,7 @@ int BluetoothDeviceModel::addDevice( const QString &name, const QString &address
 
   for ( int i = 0; i < mDiscoveredDevices.size(); i++ )
   {
-    if ( mDiscoveredDevices.at( i ).first == name && mDiscoveredDevices.at( i ).second == address )
+    if ( mDiscoveredDevices.at( i ).name() == name && deviceAddress( mDiscoveredDevices.at( i ) ) == address )
     {
       return i;
     }
@@ -284,8 +313,21 @@ int BluetoothDeviceModel::addDevice( const QString &name, const QString &address
 
   const int index = static_cast<int>( mDiscoveredDevices.size() );
   beginInsertRows( QModelIndex(), index, index );
-  mDiscoveredDevices << qMakePair( name, address );
+#if defined( Q_OS_IOS ) || defined( Q_OS_MACOS )
+  mDiscoveredDevices << QBluetoothDeviceInfo( QBluetoothUuid( address ), name, 0 );
+#else
+  mDiscoveredDevices << QBluetoothDeviceInfo( QBluetoothAddress( address ), name, 0 );
+#endif
   endInsertRows();
 
   return index;
+}
+
+QString BluetoothDeviceModel::deviceAddress( const QBluetoothDeviceInfo &info ) const
+{
+#if defined( Q_OS_IOS ) || defined( Q_OS_MACOS )
+  return info.deviceUuid().toString();
+#else
+  return info.address().toString();
+#endif
 }

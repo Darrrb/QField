@@ -9,6 +9,8 @@ import Theme
  * \ingroup qml
  */
 Page {
+  id: page
+
   signal finished
 
   property alias currentPanel: bar.currentIndex
@@ -35,6 +37,53 @@ Page {
   property alias snapToCommonAngleDegrees: registry.snapToCommonAngleDegrees
   property alias snapToCommonAngleTolerance: registry.snapToCommonAngleTolerance
 
+  property bool proxyEnabled: false
+  property string proxyType: "DefaultProxy"
+  property string proxyHost: ""
+  property int proxyPort: 0
+  property string proxyUser: ""
+  property string proxyPassword: ""
+  property string proxyExcludedUrls: ""
+
+  // Guard to avoid writing back to QSettings during the initial load from QSettings.
+  property bool proxySettingsLoaded: false
+
+  onProxyEnabledChanged: {
+    if (proxySettingsLoaded) {
+      settings.setValue('proxy/proxy-enabled', proxyEnabled);
+    }
+  }
+  onProxyTypeChanged: {
+    if (proxySettingsLoaded) {
+      settings.setValue('proxy/proxy-type', proxyType);
+    }
+  }
+  onProxyHostChanged: {
+    if (proxySettingsLoaded) {
+      settings.setValue('proxy/proxy-host', proxyHost);
+    }
+  }
+  onProxyPortChanged: {
+    if (proxySettingsLoaded) {
+      settings.setValue('proxy/proxy-port', proxyPort);
+    }
+  }
+  onProxyUserChanged: {
+    if (proxySettingsLoaded) {
+      settings.setValue('proxy/proxy-user', proxyUser);
+    }
+  }
+  onProxyPasswordChanged: {
+    if (proxySettingsLoaded) {
+      settings.setValue('proxy/proxy-password', proxyPassword);
+    }
+  }
+  onProxyExcludedUrlsChanged: {
+    if (proxySettingsLoaded) {
+      settings.setValue('proxy/proxy-excluded-urls', proxyExcludedUrls);
+    }
+  }
+
   leftPadding: mainWindow.sceneLeftMargin
   rightPadding: mainWindow.sceneRightMargin
 
@@ -46,10 +95,25 @@ Page {
       // a crash occured while the native camera was launched, disable it
       nativeCamera2 = false;
     }
+    proxyEnabled = settings.valueBool('proxy/proxy-enabled', false);
+    proxyType = settings.value('proxy/proxy-type', 'DefaultProxy');
+    proxyHost = settings.value('proxy/proxy-host', '');
+    proxyPort = settings.valueInt('proxy/proxy-port', 0);
+    proxyUser = settings.value('proxy/proxy-user', '');
+    proxyPassword = settings.value('proxy/proxy-password', '');
+    const excludedRaw = settings.value('proxy/proxy-excluded-urls', '');
+    proxyExcludedUrls = Array.isArray(excludedRaw) ? excludedRaw.join(', ') : (excludedRaw || '');
+    const typeIdx = proxyTypeComboBox.indexOfValue(proxyType);
+    proxyTypeComboBox.currentIndex = typeIdx >= 0 ? typeIdx : 0;
+    proxySettingsLoaded = true;
   }
 
   function reset() {
     variableEditor.reset();
+  }
+
+  function applyProxySettings() {
+    iface.setupNetworkProxy();
   }
 
   Settings {
@@ -203,13 +267,13 @@ Page {
     }
     ListElement {
       title: qsTr("Use native camera")
-      description: qsTr("If enabled, anonymized metrics will be collected and sent to help improve the experience for everyone.")
+      description: qsTr("If enabled, the native camera provided by the operating system will be used.")
       settingAlias: "nativeCamera2"
       isVisible: true
     }
     ListElement {
       title: qsTr("Send anonymized metrics")
-      description: qsTr("If enabled, anonymized metrics will be collected and sent to help improve %1 for everyone.")
+      description: qsTr("If enabled, anonymized metrics will be collected and sent to help improve the user experience for everyone.")
       settingAlias: "enableInfoCollection"
       isVisible: true
     }
@@ -644,14 +708,12 @@ Page {
 
                 onCurrentValueChanged: {
                   if (initialized) {
-                    settings.setValue("appearance", currentValue);
-                    Theme.applyAppearance();
+                    Theme.appearance = currentValue;
                   }
                 }
 
                 Component.onCompleted: {
-                  var appearance = settings.value("appearance", 'system');
-                  currentIndex = indexOfValue(appearance);
+                  currentIndex = indexOfValue(Theme.appearance);
                   initialized = true;
                 }
               }
@@ -701,14 +763,12 @@ Page {
 
                 onCurrentValueChanged: {
                   if (initialized) {
-                    settings.setValue("fontScale", currentValue);
-                    Theme.applyFontScale();
+                    Theme.fontScale = currentValue;
                   }
                 }
 
                 Component.onCompleted: {
-                  var fontScale = settings.value("fontScale", 1.0);
-                  currentIndex = indexOfValue(fontScale);
+                  currentIndex = indexOfValue(Theme.fontScale);
                   initialized = true;
                 }
               }
@@ -783,6 +843,224 @@ Page {
               rowSpacing: 5
 
               Label {
+                text: qsTr('Network')
+                font: Theme.strongFont
+                color: Theme.mainTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+                Layout.columnSpan: 2
+              }
+
+              Label {
+                text: qsTr("Enable proxy")
+                font: Theme.defaultFont
+                color: Theme.mainTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+              }
+
+              QfSwitch {
+                id: proxyEnabledSwitch
+                Layout.preferredWidth: implicitContentWidth
+                Layout.alignment: Qt.AlignTop | Qt.AlignRight
+                checked: proxyEnabled
+                onCheckedChanged: proxyEnabled = checked
+              }
+
+              Label {
+                text: qsTr("Type")
+                font: Theme.defaultFont
+                color: proxyEnabledSwitch.checked ? Theme.mainTextColor : Theme.secondaryTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                Layout.leftMargin: 8
+                visible: proxyEnabledSwitch.checked
+              }
+
+              QfComboBox {
+                id: proxyTypeComboBox
+                enabled: proxyEnabledSwitch.checked
+                visible: proxyEnabledSwitch.checked
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                Layout.leftMargin: 8
+                Layout.alignment: Qt.AlignVCenter
+                font: Theme.defaultFont
+
+                popup.font: Theme.defaultFont
+                popup.topMargin: mainWindow.sceneTopMargin
+                popup.bottomMargin: mainWindow.sceneTopMargin
+
+                model: ListModel {
+                  ListElement {
+                    name: qsTr("System default")
+                    value: "DefaultProxy"
+                  }
+                  ListElement {
+                    name: "HTTP"
+                    value: "HttpProxy"
+                  }
+                  ListElement {
+                    name: "SOCKS5"
+                    value: "Socks5Proxy"
+                  }
+                }
+                textRole: "name"
+                valueRole: "value"
+
+                property bool initialized: false
+
+                onCurrentValueChanged: {
+                  if (initialized) {
+                    proxyType = currentValue;
+                  }
+                }
+
+                Component.onCompleted: {
+                  currentIndex = indexOfValue(proxyType);
+                  if (currentIndex < 0)
+                    currentIndex = 0;
+                  initialized = true;
+                }
+              }
+
+              Label {
+                text: qsTr("Host")
+                font: Theme.defaultFont
+                color: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy' ? Theme.mainTextColor : Theme.secondaryTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.leftMargin: 8
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+              }
+
+              QfTextField {
+                id: proxyHostField
+                enabled: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                font: Theme.defaultFont
+                Layout.fillWidth: true
+                placeholderText: qsTr("e.g. proxy.example.com")
+                inputMethodHints: Qt.ImhUrlCharactersOnly
+                text: proxyHost
+                onTextChanged: proxyHost = text
+              }
+
+              Label {
+                text: qsTr("Port")
+                font: Theme.defaultFont
+                color: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy' ? Theme.mainTextColor : Theme.secondaryTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.leftMargin: 8
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+              }
+
+              QfTextField {
+                id: proxyPortField
+                enabled: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                font: Theme.defaultFont
+                Layout.fillWidth: true
+                placeholderText: qsTr("e.g. 8888")
+                inputMethodHints: Qt.ImhDigitsOnly
+                validator: IntValidator {
+                  bottom: 0
+                  top: 65535
+                }
+                text: proxyPort > 0 ? proxyPort : ''
+                onTextChanged: proxyPort = text.length > 0 ? parseInt(text) : 0
+              }
+
+              Label {
+                text: qsTr("Username")
+                font: Theme.defaultFont
+                color: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy' ? Theme.mainTextColor : Theme.secondaryTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.leftMargin: 8
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+              }
+
+              QfTextField {
+                id: proxyUserField
+                enabled: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                font: Theme.defaultFont
+                Layout.fillWidth: true
+                placeholderText: qsTr("Optional")
+                text: proxyUser
+                onTextChanged: proxyUser = text
+              }
+
+              Label {
+                text: qsTr("Password")
+                font: Theme.defaultFont
+                color: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy' ? Theme.mainTextColor : Theme.secondaryTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.leftMargin: 8
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+              }
+
+              QfTextField {
+                id: proxyPasswordField
+                enabled: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                visible: proxyEnabledSwitch.checked && proxyType !== 'DefaultProxy'
+                font: Theme.defaultFont
+                Layout.fillWidth: true
+                echoMode: TextInput.Password
+                placeholderText: qsTr("Optional")
+                text: proxyPassword
+                onTextChanged: proxyPassword = text
+              }
+
+              Label {
+                text: qsTr("URLs excluded from proxy (comma-separated)")
+                font: Theme.defaultFont
+                color: proxyEnabledSwitch.checked ? Theme.mainTextColor : Theme.secondaryTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                Layout.leftMargin: 8
+                visible: proxyEnabledSwitch.checked
+              }
+
+              QfTextField {
+                id: proxyExcludedUrlsField
+                enabled: proxyEnabledSwitch.checked
+                visible: proxyEnabledSwitch.checked
+                font: Theme.defaultFont
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                Layout.leftMargin: 8
+                placeholderText: qsTr("e.g. localhost, 192.168.*")
+                text: proxyExcludedUrls
+                onTextChanged: proxyExcludedUrls = text
+              }
+
+              Label {
+                text: qsTr("Configure a network proxy to route QField's traffic through a proxy server. Useful for corporate networks and VPNs.")
+                font: Theme.tipFont
+                color: Theme.secondaryTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+              }
+            }
+
+            GridLayout {
+              Layout.fillWidth: true
+              Layout.leftMargin: 20
+              Layout.rightMargin: 20
+
+              columns: 2
+              columnSpacing: 0
+              rowSpacing: 5
+
+              Label {
                 text: qsTr('Advanced')
                 font: Theme.strongFont
                 color: Theme.mainTextColor
@@ -836,6 +1114,17 @@ Page {
               columns: 2
               columnSpacing: 0
               rowSpacing: 5
+
+              Label {
+                text: qsTr('Positioning Device')
+                font: Theme.strongFont
+                color: Theme.mainTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.topMargin: 5
+                Layout.bottomMargin: 5
+                Layout.columnSpan: 2
+              }
 
               Label {
                 Layout.fillWidth: true
@@ -1014,11 +1303,11 @@ Page {
                   switch (positionSource.deviceSocketState) {
                   case QAbstractSocket.ConnectedState:
                   case QAbstractSocket.BoundState:
-                    return qsTr('Connected to %1').arg(positioningSettings.positioningDeviceName);
+                    return qsTr('Connected to %1').arg(positioningSettings.positioningDeviceName.trim());
                   case QAbstractSocket.UnconnectedState:
-                    return qsTr('Connect to %1').arg(positioningSettings.positioningDeviceName);
+                    return qsTr('Connect to %1').arg(positioningSettings.positioningDeviceName.trim());
                   default:
-                    return qsTr('Connecting to %1').arg(positioningSettings.positioningDeviceName);
+                    return qsTr('Connecting to %1').arg(positioningSettings.positioningDeviceName.trim());
                   }
                 }
                 enabled: positionSource.deviceSocketState === QAbstractSocket.UnconnectedState
@@ -1033,6 +1322,162 @@ Page {
                   }
                 }
               }
+
+              RowLayout {
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                visible: positionSource.deviceCapabilities & AbstractGnssReceiver.NtripCorrection
+
+                Label {
+                  text: qsTr("Enable NTRIP corrections")
+                  font: Theme.defaultFont
+                  color: Theme.mainTextColor
+                  wrapMode: Text.WordWrap
+                  Layout.fillWidth: true
+
+                  MouseArea {
+                    anchors.fill: parent
+                    onClicked: enableNtripClient.toggle()
+                  }
+                }
+
+                QfToolButton {
+                  id: showNtripSettings
+                  Layout.preferredWidth: 48
+                  Layout.preferredHeight: 48
+                  Layout.alignment: Qt.AlignVCenter
+
+                  iconSource: Theme.getThemeVectorIcon("ic_tune_white_24dp")
+                  iconColor: Theme.mainTextColor
+                  bgcolor: "transparent"
+                  clip: true
+
+                  onClicked: {
+                    positioningNtripSettings.updateFromNtripSettings(PositioningUtils.createNtripSettings(positioningSettings.ntripSettings));
+                    positioningNtripSettings.open();
+                  }
+                }
+
+                QfSwitch {
+                  id: enableNtripClient
+                  Layout.preferredWidth: implicitContentWidth
+                  Layout.alignment: Qt.AlignVCenter
+                  checked: positioningSettings.enableNtrip && positionSource.ntripState !== Positioning.NtripState.Disconnected
+                  visible: enabled
+
+                  onClicked: {
+                    if (positioningSettings.enableNtrip) {
+                      if (positionSource.ntripSettings.isValid && positionSource.ntripState === Positioning.NtripState.Disconnected) {
+                        // The server has disconnected, tapping on the toggle must indicate an intent to reconnect
+                        positioningSettings.enableNtrip = false;
+                        positioningSettings.enableNtrip = true;
+                      } else {
+                        positioningSettings.enableNtrip = false;
+                      }
+                    } else {
+                      positioningSettings.enableNtrip = true;
+                    }
+                  }
+                }
+              }
+
+              GridLayout {
+                id: ntripFeedbackLayout
+                Layout.fillWidth: true
+                Layout.rightMargin: 6
+                Layout.columnSpan: 2
+                columns: 2
+                columnSpacing: 2
+                rowSpacing: 2
+                visible: positioningSettings.enableNtrip && positionSource.deviceCapabilities & AbstractGnssReceiver.NtripCorrection
+
+                Label {
+                  Layout.fillWidth: true
+                  font: Theme.tipFont
+                  color: Theme.secondaryTextColor
+                  wrapMode: Text.WordWrap
+                  text: {
+                    if (positionSource.ntripSettings.isValid) {
+                      switch (positionSource.ntripState) {
+                      case Positioning.NtripState.Disconnected:
+                        return qsTr("NTRIP client disconnected");
+                      case Positioning.NtripState.Connecting:
+                        return qsTr("NTRIP client connecting");
+                      case Positioning.NtripState.Connected:
+                        return qsTr("NTRIP client connected");
+                      }
+                    } else {
+                      return qsTr("Please provide valid NTRIP settings");
+                    }
+                  }
+                }
+
+                RowLayout {
+                  Layout.alignment: Qt.AlignRight
+
+                  Label {
+                    visible: positionSource.ntripState === Positioning.NtripState.Connected
+                    font: Theme.tipFont
+                    color: Theme.secondaryTextColor
+                    wrapMode: Text.WordWrap
+                    text: {
+                      if (page.visible && positionSource.ntripState === Positioning.NtripState.Connected) {
+                        return "↑" + positionSource.ntripBytesSent + " ↓" + positionSource.ntripBytesReceived;
+                      }
+                      return '';
+                    }
+                  }
+
+                  Rectangle {
+                    id: ntripIndicator
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.bottomMargin: 1
+                    Layout.preferredWidth: 12
+                    Layout.preferredHeight: 12
+                    radius: height / 2
+                    opacity: 1
+                    color: {
+                      if (positionSource.ntripState === Positioning.NtripState.Connected) {
+                        return positionSource.ntripCurrentness ? Theme.positionColor : Theme.warningColor;
+                      }
+                      return Theme.secondaryTextColor;
+                    }
+
+                    SequentialAnimation {
+                      running: page.visible && positionSource.ntripState === Positioning.NtripState.Connected && !positionSource.ntripCurrentness
+                      loops: Animation.Infinite
+
+                      onStopped: ntripIndicator.opacity = 1.0
+
+                      NumberAnimation {
+                        target: ntripIndicator
+                        property: "opacity"
+                        to: 0.0
+                        duration: 1000
+                        easing.type: Easing.InOutQuad
+                      }
+
+                      NumberAnimation {
+                        target: ntripIndicator
+                        property: "opacity"
+                        to: 1.0
+                        duration: 1000
+                        easing.type: Easing.InOutQuad
+                      }
+                    }
+                  }
+                }
+
+                Label {
+                  Layout.fillWidth: true
+                  Layout.columnSpan: 2
+                  visible: positionSource.ntripState === Positioning.NtripState.Connected
+                  font: Theme.tipFont
+                  color: Theme.secondaryTextColor
+                  wrapMode: Text.WordWrap
+                  text: positionSource.ntripSettings.mountPoint
+                }
+              }
             }
 
             GridLayout {
@@ -1041,6 +1486,17 @@ Page {
               columns: 2
               columnSpacing: 0
               rowSpacing: 5
+
+              Label {
+                text: qsTr('Map Canvas')
+                font: Theme.strongFont
+                color: Theme.mainTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.topMargin: 5
+                Layout.bottomMargin: 2
+                Layout.columnSpan: 2
+              }
 
               Label {
                 text: qsTr("Show position information")
@@ -1113,6 +1569,17 @@ Page {
               }
 
               Label {
+                text: qsTr('Digitizing & Editing')
+                font: Theme.strongFont
+                color: Theme.mainTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+                Layout.bottomMargin: 5
+                Layout.columnSpan: 2
+              }
+
+              Label {
                 id: measureLabel
                 Layout.fillWidth: true
                 Layout.columnSpan: 2
@@ -1137,7 +1604,7 @@ Page {
                 property bool loaded: false
                 Component.onCompleted: {
                   // This list matches the Tracker::MeasureType enum, with SecondsSinceStart removed
-                  var measurements = [qsTr("Timestamp (milliseconds since epoch)"), qsTr("Ground speed"), qsTr("Bearing"), qsTr("Horizontal accuracy"), qsTr("Vertical accuracy"), qsTr("PDOP"), qsTr("HDOP"), qsTr("VDOP")];
+                  var measurements = [qsTr("Timestamp (seconds since epoch)"), qsTr("Ground speed"), qsTr("Bearing"), qsTr("Horizontal accuracy"), qsTr("Vertical accuracy"), qsTr("PDOP"), qsTr("HDOP"), qsTr("VDOP")];
                   measureComboBox.model = measurements;
                   measureComboBox.currentIndex = positioningSettings.digitizingMeasureType - 1;
                   loaded = true;
@@ -1189,76 +1656,78 @@ Page {
                 }
               }
 
-              Label {
-                text: qsTr("Bad accuracy threshold [m]")
-                font: Theme.defaultFont
-                color: Theme.mainTextColor
-                wrapMode: Text.WordWrap
+              RowLayout {
+                Layout.columnSpan: 2
                 Layout.fillWidth: true
-                enabled: accuracyIndicator.checked
                 visible: accuracyIndicator.checked
-                Layout.leftMargin: 8
-              }
+                enabled: accuracyIndicator.checked
 
-              QfTextField {
-                id: accuracyBadInput
-                width: antennaHeightActivated.width
-                font: Theme.defaultFont
-                enabled: accuracyIndicator.checked
-                visible: accuracyIndicator.checked
-                horizontalAlignment: TextInput.AlignHCenter
-                Layout.preferredWidth: width
-                inputMethodHints: Qt.ImhFormattedNumbersOnly
-                validator: DoubleValidator {
-                  locale: 'C'
+                Label {
+                  text: qsTr("Bad accuracy threshold")
+                  font: Theme.defaultFont
+                  color: Theme.mainTextColor
+                  wrapMode: Text.WordWrap
+                  Layout.fillWidth: true
                 }
 
-                Component.onCompleted: {
-                  text = isNaN(positioningSettings.accuracyBad) ? '' : positioningSettings.accuracyBad;
-                }
+                QfTextField {
+                  id: accuracyBadInput
+                  font: Theme.defaultFont
+                  horizontalAlignment: TextInput.AlignRight
+                  suffixText: qsTr("m")
+                  inputMethodHints: Qt.ImhFormattedNumbersOnly
+                  validator: DoubleValidator {
+                    locale: 'C'
+                  }
 
-                onTextChanged: {
-                  if (text.length === 0 || isNaN(text)) {
-                    positioningSettings.accuracyBad = NaN;
-                  } else {
-                    positioningSettings.accuracyBad = parseFloat(text);
+                  Component.onCompleted: {
+                    text = isNaN(positioningSettings.accuracyBad) ? '' : positioningSettings.accuracyBad;
+                  }
+
+                  onTextChanged: {
+                    if (text.length === 0 || isNaN(text)) {
+                      positioningSettings.accuracyBad = NaN;
+                    } else {
+                      positioningSettings.accuracyBad = parseFloat(text);
+                    }
                   }
                 }
               }
 
-              Label {
-                text: qsTr("Excellent accuracy threshold [m]")
-                font: Theme.defaultFont
-                color: Theme.mainTextColor
-                wrapMode: Text.WordWrap
+              RowLayout {
+                Layout.columnSpan: 2
                 Layout.fillWidth: true
-                enabled: accuracyIndicator.checked
                 visible: accuracyIndicator.checked
-                Layout.leftMargin: 8
-              }
+                enabled: accuracyIndicator.checked
 
-              QfTextField {
-                id: accuracyExcellentInput
-                width: antennaHeightActivated.width
-                font: Theme.defaultFont
-                enabled: accuracyIndicator.checked
-                visible: accuracyIndicator.checked
-                horizontalAlignment: TextInput.AlignHCenter
-                Layout.preferredWidth: width
-                inputMethodHints: Qt.ImhFormattedNumbersOnly
-                validator: DoubleValidator {
-                  locale: 'C'
+                Label {
+                  text: qsTr("Excellent accuracy threshold")
+                  font: Theme.defaultFont
+                  color: Theme.mainTextColor
+                  wrapMode: Text.WordWrap
+                  Layout.fillWidth: true
                 }
 
-                Component.onCompleted: {
-                  text = isNaN(positioningSettings.accuracyExcellent) ? '' : positioningSettings.accuracyExcellent;
-                }
+                QfTextField {
+                  id: accuracyExcellentInput
+                  font: Theme.defaultFont
+                  horizontalAlignment: TextInput.AlignRight
+                  suffixText: qsTr("m")
+                  inputMethodHints: Qt.ImhFormattedNumbersOnly
+                  validator: DoubleValidator {
+                    locale: 'C'
+                  }
 
-                onTextChanged: {
-                  if (text.length === 0 || isNaN(text)) {
-                    positioningSettings.accuracyExcellent = NaN;
-                  } else {
-                    positioningSettings.accuracyExcellent = parseFloat(text);
+                  Component.onCompleted: {
+                    text = isNaN(positioningSettings.accuracyExcellent) ? '' : positioningSettings.accuracyExcellent;
+                  }
+
+                  onTextChanged: {
+                    if (text.length === 0 || isNaN(text)) {
+                      positioningSettings.accuracyExcellent = NaN;
+                    } else {
+                      positioningSettings.accuracyExcellent = parseFloat(text);
+                    }
                   }
                 }
               }
@@ -1334,39 +1803,38 @@ Page {
                 }
               }
 
-              Label {
-                text: qsTr("Minimum number of positions collected")
-                font: Theme.defaultFont
-                color: Theme.mainTextColor
-                wrapMode: Text.WordWrap
+              RowLayout {
+                Layout.columnSpan: 2
                 Layout.fillWidth: true
-                enabled: averagedPositioning.checked
                 visible: averagedPositioning.checked
-                Layout.leftMargin: 8
-              }
+                enabled: averagedPositioning.checked
 
-              QfTextField {
-                id: averagedPositioningMinimumCount
-                width: averagedPositioning.width
-                font: Theme.defaultFont
-                enabled: averagedPositioning.checked
-                visible: averagedPositioning.checked
-                horizontalAlignment: TextInput.AlignHCenter
-                Layout.preferredWidth: width
-                inputMethodHints: Qt.ImhFormattedNumbersOnly
-                validator: IntValidator {
-                  locale: 'C'
+                Label {
+                  text: qsTr("Minimum positions count")
+                  font: Theme.defaultFont
+                  color: Theme.mainTextColor
+                  Layout.fillWidth: true
                 }
 
-                Component.onCompleted: {
-                  text = isNaN(positioningSettings.averagedPositioningMinimumCount) ? '' : positioningSettings.averagedPositioningMinimumCount;
-                }
+                QfTextField {
+                  id: averagedPositioningMinimumCount
+                  font: Theme.defaultFont
+                  horizontalAlignment: TextInput.AlignRight
+                  inputMethodHints: Qt.ImhDigitsOnly
+                  validator: IntValidator {
+                    locale: 'C'
+                  }
 
-                onTextChanged: {
-                  if (text.length === 0 || isNaN(text)) {
-                    positioningSettings.averagedPositioningMinimumCount = NaN;
-                  } else {
-                    positioningSettings.averagedPositioningMinimumCount = parseInt(text);
+                  Component.onCompleted: {
+                    text = isNaN(positioningSettings.averagedPositioningMinimumCount) ? '' : positioningSettings.averagedPositioningMinimumCount;
+                  }
+
+                  onTextChanged: {
+                    if (text.length === 0 || isNaN(text)) {
+                      positioningSettings.averagedPositioningMinimumCount = NaN;
+                    } else {
+                      positioningSettings.averagedPositioningMinimumCount = parseInt(text);
+                    }
                   }
                 }
               }
@@ -1414,6 +1882,17 @@ Page {
               }
 
               Label {
+                text: qsTr('Elevation Adjustment')
+                font: Theme.strongFont
+                color: Theme.mainTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+                Layout.bottomMargin: 5
+                Layout.columnSpan: 2
+              }
+
+              Label {
                 text: qsTr("Antenna height compensation")
                 font: Theme.defaultFont
                 color: Theme.mainTextColor
@@ -1436,40 +1915,40 @@ Page {
                 }
               }
 
-              Label {
-                text: qsTr("Antenna height [m]")
-                enabled: antennaHeightActivated.checked
-                visible: antennaHeightActivated.checked
-                font: Theme.defaultFont
-                color: Theme.mainTextColor
-                wrapMode: Text.WordWrap
+              RowLayout {
+                Layout.columnSpan: 2
                 Layout.fillWidth: true
-                textFormat: Text.RichText
-                Layout.leftMargin: 8
-              }
-
-              QfTextField {
-                id: antennaHeightInput
-                enabled: antennaHeightActivated.checked
                 visible: antennaHeightActivated.checked
-                width: antennaHeightActivated.width
-                font: Theme.defaultFont
-                horizontalAlignment: TextInput.AlignHCenter
-                Layout.preferredWidth: width
-                inputMethodHints: Qt.ImhFormattedNumbersOnly
-                validator: DoubleValidator {
-                  locale: 'C'
+                enabled: antennaHeightActivated.checked
+
+                Label {
+                  text: qsTr("Antenna height")
+                  font: Theme.defaultFont
+                  color: Theme.mainTextColor
+                  wrapMode: Text.WordWrap
+                  Layout.fillWidth: true
                 }
 
-                Component.onCompleted: {
-                  text = isNaN(positioningSettings.antennaHeight) ? '' : positioningSettings.antennaHeight;
-                }
+                QfTextField {
+                  id: antennaHeightInput
+                  font: Theme.defaultFont
+                  horizontalAlignment: TextInput.AlignRight
+                  suffixText: qsTr("m")
+                  inputMethodHints: Qt.ImhFormattedNumbersOnly
+                  validator: DoubleValidator {
+                    locale: 'C'
+                  }
 
-                onTextChanged: {
-                  if (text.length === 0 || isNaN(text)) {
-                    positioningSettings.antennaHeight = NaN;
-                  } else {
-                    positioningSettings.antennaHeight = parseFloat(text);
+                  Component.onCompleted: {
+                    text = isNaN(positioningSettings.antennaHeight) ? '' : positioningSettings.antennaHeight;
+                  }
+
+                  onTextChanged: {
+                    if (text.length === 0 || isNaN(text)) {
+                      positioningSettings.antennaHeight = NaN;
+                    } else {
+                      positioningSettings.antennaHeight = parseFloat(text);
+                    }
                   }
                 }
               }
@@ -1629,6 +2108,18 @@ Page {
               }
 
               Label {
+                text: qsTr('Advanced')
+                font: Theme.strongFont
+                color: Theme.mainTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+                Layout.bottomMargin: 5
+                Layout.columnSpan: 2
+                visible: positionSource.deviceCapabilities & AbstractGnssReceiver.Logging
+              }
+
+              Label {
                 text: qsTr("Log NMEA sentences from device to file")
                 font: Theme.defaultFont
                 color: Theme.mainTextColor
@@ -1695,6 +2186,14 @@ Page {
     }
   }
 
+  PositioningNtripSettings {
+    id: positioningNtripSettings
+
+    onApply: {
+      positioningSettings.ntripSettings = createSettingsMap();
+    }
+  }
+
   header: QfPageHeader {
     title: qsTr("%1 Settings").arg(appName)
 
@@ -1707,6 +2206,7 @@ Page {
     onFinished: {
       parent.finished();
       variableEditor.apply();
+      applyProxySettings();
     }
   }
 
@@ -1714,6 +2214,7 @@ Page {
     if (event.key === Qt.Key_Back || event.key === Qt.Key_Escape) {
       event.accepted = true;
       variableEditor.apply();
+      applyProxySettings();
       finished();
     }
   }

@@ -57,19 +57,7 @@ EditorWidgetBase {
         }
       }
       if (main.isDateTimeType) {
-        // if the field is a QDate, the automatic conversion to JS date [1]
-        // leads to the creation of date time object with the time zone.
-        // For instance shapefiles has support for dates but not date/time or time.
-        // So a date coming from a shapefile as 2001-01-01 will become 2000-12-31 19:00:00 -05 in QML/JS (in the carribeans).
-        // And when formatting this with the display format, this is shown as 2000-12-31.
-        // So we detect if the field is a date only and revert the time zone offset.
-        // [1] http://doc.qt.io/qt-5/qtqml-cppintegration-data.html#basic-qt-data-types
-        if (main.fieldIsDate) {
-          const date = new Date(value);
-          return Qt.formatDateTime(new Date(date.getTime() + date.getTimezoneOffset() * 60000), displayFormat);
-        } else {
-          return Qt.formatDateTime(value, displayFormat);
-        }
+        return Qt.formatDateTime(value, displayFormat);
       } else {
         let dateFormat = config['display_format'] !== undefined ? config['display_format'] : '';
         if (!!config['field_format_overwrite']) {
@@ -133,7 +121,11 @@ EditorWidgetBase {
             usedDate = value;
           }
           if (!(usedDate instanceof Date)) {
-            usedDate = Date.fromLocaleString(Qt.locale(), label.text, !!config['field_iso_format'] ? 'yyyy-MM-dd HH:mm:ss+t' : config['display_format']);
+            let dateFormat = config['field_format'] !== undefined ? config['field_format'] : 'yyyy-MM-dd';
+            if (!!config['field_format_overwrite']) {
+              dateFormat = !!config['field_iso_format'] ? 'yyyy-MM-dd HH:mm:ss+t' : config['field_format'];
+            }
+            usedDate = Date.fromLocaleString(Qt.locale(), value, dateFormat);
           }
           todayButton.forceActiveFocus();
           calendarPanel.selectedDate = usedDate;
@@ -145,7 +137,7 @@ EditorWidgetBase {
         let newDate = Date.fromLocaleString(Qt.locale(), label.text, !!config['field_iso_format'] ? 'yyyy-MM-dd HH:mm:ss+t' : config['display_format']);
         if (newDate.toLocaleString() !== "") {
           if (!main.isDateTimeType) {
-            newDate = Qt.formatDateTime(newDate, !!config['field_iso_format'] ? Qt.ISODate : config['field_format']);
+            newDate = convertDateToFieldFormattedString(newDate);
           }
           valueChangeRequested(newDate, newDate === undefined);
         } else {
@@ -207,11 +199,7 @@ EditorWidgetBase {
         if (main.isDateTimeType) {
           valueChangeRequested(currentDate, false);
         } else {
-          let dateFormat = config['display_format'] !== undefined ? config['display_format'] : '';
-          if (!!config['field_format_overwrite']) {
-            dateFormat = !!config['field_iso_format'] ? 'yyyy-MM-dd HH:mm:ss+t' : config['field_format'];
-          }
-          const textDate = Qt.formatDateTime(currentDate, dateFormat);
+          const textDate = convertDateToFieldFormattedString(currentDate);
           valueChangeRequested(textDate, false);
         }
         displayToast(qsTr('Date value set to today.'));
@@ -226,20 +214,39 @@ EditorWidgetBase {
 
   QfCalendarPanel {
     id: calendarPanel
-    showTimePicker: main.fieldIsDateTime || main.fieldIsTime || (main.fieldIsString && config['field_format_overwrite'] && (config['field_format'].includes("HH:mm") || !!config['field_iso_format'])) || (main.fieldIsString && !config['field_format_overwrite'])
-    showDatePicker: main.fieldIsDate || main.fieldIsDateTime || (main.fieldIsString && config['field_format_overwrite'] && (config['field_format'].includes("yyyy-MM") || config['field_format'].includes("yyyy.MM") || !!config['field_iso_format'])) || (main.fieldIsString && !config['field_format_overwrite'])
+
+    showTimePicker: {
+      if (main.fieldIsDateTime || main.fieldIsTime) {
+        return true;
+      } else if (main.fieldIsString && !!config['field_format_overwrite'] && (config['field_format'].includes("HH:mm") || !!config['field_iso_format'])) {
+        return true;
+      }
+      return false;
+    }
+    showDatePicker: {
+      if (main.fieldIsTime) {
+        return false;
+      } else if (main.fieldIsString && !!config['field_format_overwrite'] && !config['field_format'].includes("yyyy-MM") && !config['field_format'].includes("yyyy.MM") && !config['field_iso_format']) {
+        return false;
+      }
+      return true;
+    }
 
     onDateTimePicked: date => {
       if (main.isDateTimeType) {
         valueChangeRequested(date, date === undefined);
       } else {
-        let dateFormat = config['display_format'] !== undefined ? config['display_format'] : '';
-        if (!!config['field_format_overwrite']) {
-          dateFormat = !!config['field_iso_format'] ? 'yyyy-MM-dd HH:mm:ss+t' : config['field_format'];
-        }
-        const textDate = Qt.formatDateTime(date, dateFormat);
+        const textDate = convertDateToFieldFormattedString(date);
         valueChangeRequested(textDate, date === undefined);
       }
     }
+  }
+
+  function convertDateToFieldFormattedString(date) {
+    let dateFormat = config['field_format'] !== undefined ? config['field_format'] : 'yyyy-MM-dd';
+    if (!!config['field_format_overwrite']) {
+      dateFormat = !!config['field_iso_format'] ? 'yyyy-MM-dd HH:mm:ss+t' : config['field_format'];
+    }
+    return Qt.formatDateTime(date, dateFormat);
   }
 }

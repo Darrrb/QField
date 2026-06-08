@@ -70,10 +70,15 @@ QString FileUtils::absolutePath( const QString &filePath )
   return fileInfo.absolutePath();
 }
 
-QString FileUtils::fileName( const QString &filePath )
+QString FileUtils::nativeSeparatorsPath( const QString &filePath )
+{
+  return QDir::toNativeSeparators( filePath );
+}
+
+QString FileUtils::fileName( const QString &filePath, bool includeSuffix )
 {
   QFileInfo fileInfo( filePath );
-  return fileInfo.fileName();
+  return includeSuffix ? fileInfo.fileName() : fileInfo.completeBaseName();
 }
 
 QString FileUtils::fileSuffix( const QString &filePath )
@@ -88,9 +93,23 @@ bool FileUtils::fileExists( const QString &filePath )
   return ( fileInfo.exists() && fileInfo.isFile() );
 }
 
-QString FileUtils::representFileSize( qint64 bytes )
+QString FileUtils::representFileSize( qint64 bytes, bool decimalRepresentation )
 {
-  return QgsFileUtils::representFileSize( bytes );
+  QStringList list;
+  list << QObject::tr( "KB" ) << QObject::tr( "MB" ) << QObject::tr( "GB" ) << QObject::tr( "TB" );
+
+  QStringListIterator i( list );
+  QString unit = QObject::tr( "B" );
+
+  double fileSize = bytes;
+  const double factor = decimalRepresentation ? 1000.0 : 1024.0;
+  while ( fileSize >= factor && i.hasNext() )
+  {
+    fileSize /= factor;
+    unit = i.next();
+  }
+
+  return QStringLiteral( "%1 %2" ).arg( QString::number( fileSize, 'f', bytes >= factor * 2 ? 2 : 0 ), unit );
 }
 
 QString FileUtils::sanitizeFilePath( const QString &filePath, const QString &replacement )
@@ -399,7 +418,9 @@ void FileUtils::addImageStamp( const QString &imagePath, const QString &text, co
   QgsReadWriteContext readWriteContent;
   readWriteContent.setPathResolver( QgsProject::instance()->pathResolver() );
   QVariantMap metadata = QgsExifTools::readTags( imagePath );
-  QImage img( imagePath );
+  QImageReader imageReader( imagePath );
+  imageReader.setAutoTransform( true );
+  QImage img = imageReader.read();
   if ( !img.isNull() )
   {
     QPainter painter( &img );
@@ -492,6 +513,11 @@ void FileUtils::addImageStamp( const QString &imagePath, const QString &text, co
 
     for ( const QString &key : metadata.keys() )
     {
+      if ( key == QLatin1String( "Exif.Image.Orientation" ) )
+      {
+        // The rotation transform already happened when we loaded the image, skip the tag
+        continue;
+      }
       QgsExifTools::tagImage( imagePath, key, metadata[key] );
     }
   }
@@ -851,7 +877,7 @@ bool FileUtils::unzip( const QString &zipFilename, const QString &dir, QStringLi
 bool FileUtils::isDeletable( const QString &filePath )
 {
   const QFileInfo fileInfo( filePath );
-  if ( !fileInfo.exists() || !fileInfo.isFile() )
+  if ( !fileInfo.exists() )
   {
     return false;
   }
@@ -896,6 +922,38 @@ bool FileUtils::isDeletable( const QString &filePath )
     return false;
   }
 
+  if ( fileInfo.isDir() )
+  {
+    static const QStringList userManagedRoots = {
+      QStringLiteral( "Imported Projects" ),
+      QStringLiteral( "Imported Datasets" ),
+      QStringLiteral( "Created Projects" ) };
+
+    QStringList appRoots;
+    appRoots << PlatformUtilities::instance()->applicationDirectory();
+    appRoots << PlatformUtilities::instance()->additionalApplicationDirectories();
+    appRoots.erase( std::remove_if( appRoots.begin(), appRoots.end(), []( const QString &appRoot ) {
+                      return appRoot.isEmpty();
+                    } ),
+                    appRoots.end() );
+
+    if ( appRoots.isEmpty() )
+      return false;
+
+    const QString parentCanonicalPath = QFileInfo( fileInfo.absolutePath() ).canonicalFilePath();
+    return std::any_of( appRoots.cbegin(), appRoots.cend(), [&parentCanonicalPath]( const QString &appRoot ) {
+      return std::any_of( userManagedRoots.cbegin(), userManagedRoots.cend(), [&appRoot, &parentCanonicalPath]( const QString &subDir ) {
+        const QString canonicalRoot = QFileInfo( QStringLiteral( "%1/%2" ).arg( appRoot, subDir ) ).canonicalFilePath();
+        return !canonicalRoot.isEmpty() && parentCanonicalPath == canonicalRoot;
+      } );
+    } );
+  }
+
+  if ( !fileInfo.isFile() )
+  {
+    return false;
+  }
+
   const QString suffix = fileInfo.suffix().toLower();
 
   static const QStringList allowedExtensions = { "pdf", "png", "jpg", "jpeg", "mp4", "mp4a", "mp3" };
@@ -911,30 +969,39 @@ QVariantMap FileUtils::deleteFiles( const QStringList &filePaths )
   {
     if ( !isDeletable( filePath ) )
     {
-      qWarning() << QStringLiteral( "Cannot delete file (not allowed): %1" ).arg( filePath );
+      QgsMessageLog::logMessage( QObject::tr( "Cannot delete file (not allowed): %1" ).arg( filePath ), QString(), Qgis::MessageLevel::Warning );
       results[filePath] = false;
       continue;
     }
 
     const QFileInfo fileInfo( filePath );
     const QString canonicalPath = fileInfo.canonicalFilePath();
-    QFile file( canonicalPath );
 
-    if ( !file.exists() )
+    if ( !QFileInfo::exists( canonicalPath ) )
     {
-      qWarning() << QStringLiteral( "File does not exist: %1" ).arg( filePath );
+      QgsMessageLog::logMessage( QObject::tr( "File does not exist: %1" ).arg( filePath ), QString(), Qgis::MessageLevel::Warning );
       results[filePath] = false;
       continue;
     }
 
-    const bool success = file.remove();
-    if ( success )
+    bool success = false;
+    if ( fileInfo.isDir() )
     {
-      qDebug() << QStringLiteral( "Successfully deleted file: %1" ).arg( filePath );
+      QDir dir( canonicalPath );
+      success = dir.removeRecursively();
+      if ( !success )
+      {
+        QgsMessageLog::logMessage( QObject::tr( "Failed to delete directory: %1" ).arg( filePath ), QString(), Qgis::MessageLevel::Warning );
+      }
     }
     else
     {
-      qWarning() << QStringLiteral( "Failed to delete file: %1 - %2" ).arg( filePath, file.errorString() );
+      QFile file( canonicalPath );
+      success = file.remove();
+      if ( !success )
+      {
+        QgsMessageLog::logMessage( QObject::tr( "Failed to delete file: %1 - %2" ).arg( filePath, file.errorString() ), QString(), Qgis::MessageLevel::Warning );
+      }
     }
 
     results[filePath] = success;

@@ -63,5 +63,7 @@
     <string name="import_operation_unsupported">Il tuo dispositivo non supporta questa operazione di importazione.</string>
     <string name="export_operation_unsupported">Il tuo dispositivo non supporta questa operazione di esportazione.</string>
     <string name="processing_message">Elaborazione...</string>
-    <string name="positioning_title">Posizione</string>
-    </resources>
+    <string name="positioning_title">Posizionamento</string>
+    <string name="positioning_running">Servizio di posizionamento in esecuzione</string>
+    <string name="copy_to_clipboard">Copia negli appunti</string>
+</resources>

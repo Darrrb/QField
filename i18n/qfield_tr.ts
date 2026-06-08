@@ -283,8 +283,20 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
         <translation>Bluetooth cihazı tespit edilemedi</translation>
     </message>
     <message>
-        <source>Deeper scanning for paired devices</source>
-        <translation>Daha derin tarama için eşleştirilmiş cihazlar</translation>
+        <source>Use Bluetooth Low Energy (BLE)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Bluetooth device configuration:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Low Energy (BLE)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Classic (BT)</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -610,6 +622,10 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Collapse All</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project Information</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -945,6 +961,18 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Hard constraints not satisfied</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Previous page</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Next page</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -1354,16 +1382,23 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <translation>Konumlandırma</translation>
     </message>
     <message>
-        <source>Precise view</source>
-        <translation>Kesin görünüm</translation>
-    </message>
-    <message>
         <source>Sensors</source>
         <translation>Sensörler</translation>
     </message>
     <message>
         <source>Elevation profile</source>
         <translation>Yükseklik profili</translation>
+    </message>
+    <message>
+        <source>NTRIP</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>InformationPopup</name>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -1618,7 +1653,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Sample projects</source>
-        <translation>Örnek projeler</translation>
+        <translation type="vanished">Örnek projeler</translation>
     </message>
     <message>
         <source>Created projects</source>
@@ -1931,6 +1966,25 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
 </context>
 <context>
+    <name>NtripSourceTableFetcher</name>
+    <message>
+        <source>Unexpected response from NTRIP caster</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Disconnected before receiving source table</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No mountpoints found in NTRIP source table</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP source table fetch error: </source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>OrderedRelationModel</name>
     <message>
         <source>Cannot start editing</source>
@@ -2032,15 +2086,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>All files (*.*)</source>
-        <translation>Tüm dosyalar (*.*)</translation>
+        <translation type="vanished">Tüm dosyalar (*.*)</translation>
     </message>
     <message>
         <source>Select File</source>
         <translation>Dosya Seç</translation>
-    </message>
-    <message>
-        <source>Audio files (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</source>
-        <translation>Ses dosyaları (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</translation>
     </message>
     <message>
         <source>Removal Confirmation</source>
@@ -2151,6 +2201,14 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <source>No plugins have been installed yet, switch to the %1available plugins%3 tab to try some right away.&lt;br&gt;&lt;br&gt;For more information, %2read the documentation%3.</source>
         <translation>Henüz hiç eklenti yüklenmedi, hemen denemek için %1mevcut eklentiler%3 sekmesine geçin.&lt;br&gt;&lt;br&gt;Daha fazla bilgi için, %2belgelere bakın%3.</translation>
     </message>
+    <message>
+        <source>The currently opened project has loaded a project plugin</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Deny permission</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>PositionInformationView</name>
@@ -2254,7 +2312,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Bluetooth (NMEA)</source>
-        <translation>Bluetooth (NMEA)</translation>
+        <translation type="vanished">Bluetooth (NMEA)</translation>
     </message>
     <message>
         <source>TCP (NMEA)</source>
@@ -2291,6 +2349,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Logs file (NMEA)</source>
         <translation>Günlük dosyası (NMEA)</translation>
+    </message>
+    <message>
+        <source>Bluetooth BT + BLE (NMEA)</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2342,6 +2404,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>ant.</source>
         <translation>ant.</translation>
+    </message>
+    <message>
+        <source>%1/s</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2408,6 +2474,65 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
 </context>
 <context>
+    <name>PositioningNtripSettings</name>
+    <message>
+        <source>NTRIP Settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>Port</translation>
+    </message>
+    <message>
+        <source>Protocol</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP Revision 1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP Revision 2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Kullanıcı adı</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Parola</translation>
+    </message>
+    <message>
+        <source>Mount point</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Identifier:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Data format:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Distance:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Forward position to NTRIP caster</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP SSL/TLS</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>PositioningPreciseView</name>
     <message>
         <source>Dist.</source>
@@ -2416,6 +2541,30 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Positioning accuracy too low for this precision level</source>
         <translation>Bu hassasiyet seviyesi için konumlandırma doğruluğu çok düşük</translation>
+    </message>
+    <message>
+        <source>Audio proximity feedback</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Rotate view</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Rotation source</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Compass</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Movement</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Precision</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2549,6 +2698,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <source>QFieldCloud allows to synchronize and merge the data collected by your team in %1. From small individual projects to large data collection campaigns. </source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>Automatically push changes on a regular interval</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>ProjectUtils</name>
@@ -2590,6 +2743,18 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Track color</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Note attachments</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Açıklama</translation>
+    </message>
+    <message>
+        <source>Attachments</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2755,7 +2920,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Server URL
 (Leave empty to use the default server)</source>
-        <translation>Sunucu URL&apos;si
+        <translation type="vanished">Sunucu URL&apos;si
 (Varsayılan sunucuyu kullanmak için boş bırakın)</translation>
     </message>
     <message>
@@ -2808,7 +2973,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud</source>
-        <translation>QFieldCloud</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>or</source>
@@ -2817,6 +2982,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Sign in using %1</source>
         <translation>%1 kullanarak oturum aç</translation>
+    </message>
+    <message>
+        <source>%1Server URL
+(Leave empty to use the default server)</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2831,11 +3001,19 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud had troubles packaging your project</source>
-        <translation>QFieldCloud, projenizi paketlerken sorunlar yaşadı</translation>
+        <translation type="vanished">QFieldCloud, projenizi paketlerken sorunlar yaşadı</translation>
     </message>
     <message>
         <source>Some layers have not been packaged correctly on QFieldCloud. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server. Please check the logs of the latest packaging job on the qfield.cloud website.</source>
-        <translation>QFieldCloud&apos;da bazı katmanlar doğru bir şekilde paketlenmemiştir. Bu katmanlar yanlış yapılandırılmış olabilir veya veri kaynakları QFieldCloud sunucusundan erişilemez durumdadır. Lütfen qfield.cloud web sitesinde en son paketleme işinin günlüklerini kontrol edin.</translation>
+        <translation type="vanished">QFieldCloud&apos;da bazı katmanlar doğru bir şekilde paketlenmemiştir. Bu katmanlar yanlış yapılandırılmış olabilir veya veri kaynakları QFieldCloud sunucusundan erişilemez durumdadır. Lütfen qfield.cloud web sitesinde en son paketleme işinin günlüklerini kontrol edin.</translation>
+    </message>
+    <message>
+        <source>Some layers have not been packaged correctly. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Please check the detailed feedback below and the latest packaging job logs on the QFieldCloud website.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2862,11 +3040,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Connecting to the cloud.</source>
-        <translation>Buluta bağlanıyor.</translation>
+        <translation type="vanished">Buluta bağlanıyor.</translation>
     </message>
     <message>
         <source>Greetings &lt;strong&gt;%1&lt;/strong&gt;.</source>
-        <translation>Merhaba &lt;strong&gt;%1&lt;/strong&gt;.</translation>
+        <translation type="vanished">Merhaba &lt;strong&gt;%1&lt;/strong&gt;.</translation>
     </message>
     <message>
         <source>This QFieldCloud project was first downloaded with another cloud account. Please sign in with the original account for this project to use the QFieldCloud functionality.</source>
@@ -3084,6 +3262,22 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
         <source>%n file(s) remaining</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
     </message>
+    <message>
+        <source>Used %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProject</name>
@@ -3260,6 +3454,49 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
         <source>Synchronizing</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>Using %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Storage size</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QFieldCloudProjectFilter</name>
+    <message>
+        <source>Predefined Filters</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Criteria</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Include public projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Arama</translation>
+    </message>
+    <message>
+        <source>%1&apos;s projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>My own projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Title or description contains</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Owner is</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProjectsModel</name>
@@ -3424,11 +3661,11 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
     </message>
     <message>
         <source>My Projects</source>
-        <translation>Projelerim</translation>
+        <translation type="vanished">Projelerim</translation>
     </message>
     <message>
         <source>Community</source>
-        <translation>Topluluk</translation>
+        <translation type="vanished">Topluluk</translation>
     </message>
     <message>
         <source>(Available locally)</source>
@@ -3456,7 +3693,7 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
     </message>
     <message>
         <source>Available locally, missing on the cloud</source>
-        <translation>Yerel olarak mevcut, bulutta eksik</translation>
+        <translation type="vanished">Yerel olarak mevcut, bulutta eksik</translation>
     </message>
     <message>
         <source>Available on the cloud, missing locally</source>
@@ -3464,7 +3701,7 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
     </message>
     <message>
         <source>Available locally</source>
-        <translation>Yerel olarak mevcut</translation>
+        <translation type="vanished">Yerel olarak mevcut</translation>
     </message>
     <message>
         <source>Has changes. </source>
@@ -3511,10 +3748,6 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
         <translation>Proje Eylemleri</translation>
     </message>
     <message>
-        <source>, updated data available on the cloud</source>
-        <translation>, bulutta güncellenmiş veriler mevcut</translation>
-    </message>
-    <message>
         <source>QFieldCloud is packaging the latest data just for you; this might take some time, please hold tight</source>
         <translation>QFieldCloud, sizin için en son verileri paketliyor; bu biraz zaman alabilir, lütfen bekleyin</translation>
     </message>
@@ -3531,14 +3764,6 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
         <translation>Proje indirmek için QFieldCloud ile iletişime geçiliyor</translation>
     </message>
     <message>
-        <source>No cloud projects found. To get started, %1read the documentation%2.</source>
-        <translation>Hiç bulut projesi bulunamadı. Başlamak için %1belgeyi okuyun%2.</translation>
-    </message>
-    <message>
-        <source>Search for project</source>
-        <translation>Proje ara</translation>
-    </message>
-    <message>
         <source>Sign out</source>
         <translation>Çıkış yap</translation>
     </message>
@@ -3549,14 +3774,6 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
     <message>
         <source>Show invalid projects</source>
         <translation>Geçersiz projeleri göster</translation>
-    </message>
-    <message>
-        <source>Available on the cloud</source>
-        <translation>Bulutta mevcut</translation>
-    </message>
-    <message>
-        <source>, has changes locally</source>
-        <translation>, yerel olarak değişiklikler var</translation>
     </message>
     <message>
         <source>View Project Details</source>
@@ -3582,6 +3799,38 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
         <source>Push changes</source>
         <translation>Değişiklikleri Gönder</translation>
     </message>
+    <message>
+        <source>Projects</source>
+        <translation>Projeler</translation>
+    </message>
+    <message>
+        <source>Refreshing projects list...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Searching for projects...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No cloud projects found.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>To get started, %1read the documentation%2.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2 and see what the community has to offer.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search for projects</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudService</name>
@@ -3595,6 +3844,29 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
     </message>
 </context>
 <context>
+    <name>QFieldCloudStatus</name>
+    <message>
+        <source>QFieldCloud server is not reachable</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The server at %1 could not be reached. Please check your internet connection.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>QFieldCloud is under maintenance</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>QFieldCloud service is degraded</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>There is an ongoing incident</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>QFieldCloudUtils</name>
     <message>
         <source>A server error has occured, please try again.</source>
@@ -3605,8 +3877,12 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
         <translation>Bir ağ hatası oluştu, lütfen tekrar deneyin.</translation>
     </message>
     <message>
-        <source>Your account&apos;s available storage is full.</source>
-        <translation>Hesabınızdaki kullanılabilir depolama alanı doludur.</translation>
+        <source>The project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The project owner&apos;s subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -3737,6 +4013,10 @@ Projeyi görüntülemeye ve kullanmaya devam edebilseniz de, geri alınamaz veri
     <message>
         <source>Download folder from WebDAV server</source>
         <translation>WebDAV sunucusundan klasör indir</translation>
+    </message>
+    <message>
+        <source>Delete folder</source>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>Delete file</source>
@@ -4112,7 +4392,7 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Minimum number of positions collected</source>
-        <translation>Toplanan minimum konum sayısı</translation>
+        <translation type="vanished">Toplanan minimum konum sayısı</translation>
     </message>
     <message>
         <source>Automatically end collection when minimum number is met</source>
@@ -4128,7 +4408,7 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Antenna height [m]</source>
-        <translation>Anten yüksekliği [m]</translation>
+        <translation type="vanished">Anten yüksekliği [m]</translation>
     </message>
     <message>
         <source>Z values which are recorded from the positioning device will be corrected by this value. If a value of 1.6 is entered, this will result in a correction of -1.6 for each recorded value.</source>
@@ -4168,7 +4448,7 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>Zaman damgası (epoch&apos;tan itibaren milisaniye)</translation>
+        <translation type="vanished">Zaman damgası (epoch&apos;tan itibaren milisaniye)</translation>
     </message>
     <message>
         <source>Ground speed</source>
@@ -4335,14 +4615,6 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
         <translation>Etkinleştirildiğinde, harita kullanıcı tarafından döndürülebilir.</translation>
     </message>
     <message>
-        <source>Bad accuracy threshold [m]</source>
-        <translation>Kötü doğruluk eşiği [m]</translation>
-    </message>
-    <message>
-        <source>Excellent accuracy threshold [m]</source>
-        <translation>Harika doğruluk eşiği [m]</translation>
-    </message>
-    <message>
         <source>Enforce accuracy requirement</source>
         <translation>Doğruluk gereksinimini zorla</translation>
     </message>
@@ -4411,19 +4683,127 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
         <translation type="unfinished"/>
     </message>
     <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve the experience for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve %1 for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>This value will correct the Z values recorded from the positioning device. If a value of 1.6 is entered, the system will automatically subtract 1.6 from each recorded value. Make sure to insert the effective antenna height, i.e. pole length + antenna phase center offset.</source>
         <translation type="unfinished"/>
     </message>
     <message>
         <source>%1 Settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable proxy</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>System default</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. proxy.example.com</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>Port</translation>
+    </message>
+    <message>
+        <source>e.g. 8888</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Kullanıcı adı</translation>
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Parola</translation>
+    </message>
+    <message>
+        <source>URLs excluded from proxy (comma-separated)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. localhost, 192.168.*</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Configure a network proxy to route QField&apos;s traffic through a proxy server. Useful for corporate networks and VPNs.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, the native camera provided by the operating system will be used.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, anonymized metrics will be collected and sent to help improve the user experience for everyone.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Positioning Device</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable NTRIP corrections</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client disconnected</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client connecting</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client connected</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Please provide valid NTRIP settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Elevation Adjustment</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Bad accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>m</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Excellent accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum positions count</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Antenna height</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -4616,6 +4996,42 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
         <source>Circle #2: point</source>
         <translation type="unfinished"/>
     </message>
+    <message>
+        <source>KB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>MB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>GB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>TB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>B</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Cannot delete file (not allowed): %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>File does not exist: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete directory: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete file: %1 - %2</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QfActionButton</name>
@@ -4696,6 +5112,51 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     <message>
         <source>close</source>
         <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfDialog</name>
+    <message>
+        <source>OK</source>
+        <translation>Tamam</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Vazgeç</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Hayır</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfMeterBar</name>
+    <message>
+        <source>Storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to manage storage</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfOverlayContainer</name>
+    <message>
+        <source>Positioning</source>
+        <translation>Konumlandırma</translation>
     </message>
 </context>
 <context>
@@ -4966,6 +5427,10 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
         <source>%n feature(s)</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
     </message>
+    <message>
+        <source>Open Form</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>Reshape</name>
@@ -5177,7 +5642,7 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Minimum time [sec]</source>
-        <translation>Minimum zaman [sn]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the time between the last and new vertex meets a configured mimimum value.</source>
@@ -5189,7 +5654,7 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Minimum distance [%1]</source>
-        <translation>Minimum mesafe [%1]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the distance between the last and new vertex meets a configured mimimum value.</source>
@@ -5220,10 +5685,6 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
         <translation>Hatalı mesafe koruması</translation>
     </message>
     <message>
-        <source>Maximum tolerated distance [%1]</source>
-        <translation>Maximum tolere edilen mesafe [%1]</translation>
-    </message>
-    <message>
         <source>When enabled, vertex addition will not occur when the distance between the last and new vertex is greater than a configured maximum value.</source>
         <translation>Etkinleştirildiğinde, vertex eklemesi, son ve yeni vertex arasındaki mesafe yapılandırılmış maksimum değerden büyük olduğunda gerçekleşmeyecektir.</translation>
     </message>
@@ -5237,7 +5698,7 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>Zaman damgası (epoch&apos;tan itibaren milisaniye)</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>Ground speed</source>
@@ -5289,6 +5750,26 @@ Bunun yerine minimum cihaz taraması yapmak için iptal edin.</translation>
     </message>
     <message>
         <source>Track on layer %1 resumed</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum time</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>sec</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum distance</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Maximum tolerated distance</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -5894,6 +6375,21 @@ project</source>
     </message>
 </context>
 <context>
+    <name>gallery_relation_editor</name>
+    <message>
+        <source>QFieldCloud on-demand attachment error: </source>
+        <translation>QFieldCloud talep üzerine ekleme hatası: </translation>
+    </message>
+    <message>
+        <source>The external storage&apos;s authentication configuration ID is missing, please insure it is imported into %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Learn more</source>
+        <translation>Daha fazla bilgi edinin</translation>
+    </message>
+</context>
+<context>
     <name>ordered_relation_editor</name>
     <message>
         <source>Ensure contraints</source>
@@ -6167,7 +6663,7 @@ project</source>
     </message>
     <message>
         <source>Precise View Settings</source>
-        <translation>Hassas Görünüm Ayarları</translation>
+        <translation type="vanished">Hassas Görünüm Ayarları</translation>
     </message>
     <message>
         <source>0.25m Precision</source>
@@ -6231,11 +6727,11 @@ project</source>
     </message>
     <message>
         <source>%1 Precision</source>
-        <translation>%1 Hassasiyet</translation>
+        <translation type="vanished">%1 Hassasiyet</translation>
     </message>
     <message>
         <source>Enable Audio Proximity Feedback</source>
-        <translation>Ses Yakınlık Geri Bildirimini Etkinleştir</translation>
+        <translation type="vanished">Ses Yakınlık Geri Bildirimini Etkinleştir</translation>
     </message>
     <message>
         <source>Positioning Options</source>
@@ -6761,6 +7257,54 @@ to show actions</source>
     <message>
         <source>Do you want to import &lt;b&gt;%1&lt;/b&gt; from &lt;b&gt;%2&lt;/b&gt; into %3?</source>
         <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Long press on your location marker to show actions</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Plugin Manager</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project plugin loaded</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as your subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade plan</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as the project owner&apos;s subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable NTRIP Corrections</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Long press on the destination marker to show actions</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>meters</source>
+        <translation>metre</translation>
     </message>
 </context>
 <context>

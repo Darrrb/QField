@@ -48,7 +48,7 @@ repos:
       exclude: android
 
 - repo: https://github.com/ambv/black
-  rev: 22.3.0
+  rev: 26.3.1
   hooks:
     - id: black
 
@@ -81,8 +81,8 @@ repos:
   hooks:
     - id: qmlformat
       # args: ["--check"]
-      # additional_dependencies:
-      #   - PySide6-Essentials==6.8.3
+      additional_dependencies:
+        - PySide6-Essentials==6.10.2
 
 - repo: https://github.com/open-vcpkg/pre-commit
   rev: v1.0.1

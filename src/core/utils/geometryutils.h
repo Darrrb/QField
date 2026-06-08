@@ -79,9 +79,7 @@ class QFIELD_CORE_EXPORT GeometryUtils : public QObject
     //! Adds a ring to a polygon with given \a fid using the ring in the rubberband model.
     static Q_INVOKABLE GeometryOperationResult addRingFromRubberband( QgsVectorLayer *layer, QgsFeatureId fid, RubberbandModel *rubberBandModel );
 
-    /**
-     * Performs a split using the line in the rubberband model.
-     */
+    //! Performs a split using the line in the rubberband model.
     static Q_INVOKABLE GeometryOperationResult splitFeatureFromRubberband( QgsVectorLayer *layer, QgsFeatureId fid, RubberbandModel *rubberBandModel );
 
     //! Converts QGeoCoordinate to QgsPoint.
@@ -93,8 +91,11 @@ class QFIELD_CORE_EXPORT GeometryUtils : public QObject
     //! Returns a reprojected \a point from the stated \a crs to WGS84.
     static Q_INVOKABLE QgsPoint reprojectPointToWgs84( const QgsPoint &point, const QgsCoordinateReferenceSystem &crs );
 
-    //! Returns a reprojected \a point from the stated \a sourceCrs to a \a destinationCrs.
+    //! Returns a reprojected QgsPoint \a point from the stated \a sourceCrs to a \a destinationCrs.
     static Q_INVOKABLE QgsPoint reprojectPoint( const QgsPoint &point, const QgsCoordinateReferenceSystem &sourceCrs, const QgsCoordinateReferenceSystem &destinationCrs );
+
+    //! Returns a reprojected QgsPointXY \a point from the stated \a sourceCrs to a \a destinationCrs.
+    static Q_INVOKABLE QgsPointXY reprojectPoint( const QgsPointXY &point, const QgsCoordinateReferenceSystem &sourceCrs, const QgsCoordinateReferenceSystem &destinationCrs );
 
     //! Returns an empty (i.e. null) point.
     static Q_INVOKABLE QgsPoint emptyPoint() { return QgsPoint(); }
@@ -116,6 +117,12 @@ class QFIELD_CORE_EXPORT GeometryUtils : public QObject
 
     //! Returns a rectangle from two points.
     static Q_INVOKABLE QgsRectangle createRectangleFromPoints( const QgsPoint &p1, const QgsPoint &p2 );
+
+    //! Returns TRUE is a geometry is within a reference geometry.
+    static Q_INVOKABLE bool geometryWithin( const QgsGeometry &geometry, const QgsGeometry &referenceGeometry );
+
+    //! Returns TRUE is a geometry overlaps a reference geometry.
+    static Q_INVOKABLE bool geometryOverlaps( const QgsGeometry &geometry, const QgsGeometry &referenceGeometry );
 };
 
 #endif // GEOMETRYUTILS_H

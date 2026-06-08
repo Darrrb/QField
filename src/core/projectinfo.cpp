@@ -15,7 +15,6 @@
  ***************************************************************************/
 
 
-#include "expressioncontextutils.h"
 #include "projectinfo.h"
 
 #include <QDateTime>
@@ -23,6 +22,7 @@
 #include <QString>
 #include <QTextDocument>
 #include <qgscolorutils.h>
+#include <qgsexpressioncontextutils.h>
 #include <qgslayertree.h>
 #include <qgslayertreemodel.h>
 #include <qgslinesymbol.h>
@@ -319,6 +319,10 @@ void ProjectInfo::setCloudUserInformation( const CloudUserInformation cloudUserI
   if ( cloudUserInformation.isEmpty() )
     return;
 
+  // Inject variables into the global scope until we have a better solution upstream
+  QgsExpressionContextUtils::setGlobalVariable( "cloud_username", cloudUserInformation.username );
+  QgsExpressionContextUtils::setGlobalVariable( "cloud_useremail", cloudUserInformation.email );
+
   mSettings.beginGroup( QStringLiteral( "/qgis/projectInfo/%1/cloudUserInfo" ).arg( mFilePath ) );
   mSettings.setValue( QStringLiteral( "json" ), cloudUserInformation.toJson() );
   mSettings.endGroup();
@@ -376,11 +380,7 @@ void ProjectInfo::saveLayerRememberedFields( QgsMapLayer *layer )
   const QgsFields fields = vlayer->fields();
   for ( int i = 0; i < fields.size(); i++ )
   {
-#if _QGIS_VERSION_INT >= 39900
     rememberedFields.insert( fields.at( i ).name(), config.reuseLastValuePolicy( i ) == Qgis::AttributeFormReuseLastValuePolicy::AllowedDefaultOn );
-#else
-    rememberedFields.insert( fields.at( i ).name(), config.reuseLastValue( i ) );
-#endif
   }
 
   const bool isDataset = QgsProject::instance()->readBoolEntry( QStringLiteral( "QField" ), QStringLiteral( "isDataset" ), false );
@@ -573,11 +573,10 @@ void ProjectInfo::restoreSettings( QString &projectFilePath, QgsProject *project
         const QStringList fieldNames = rememberedFields.keys();
         for ( const QString &fieldName : fieldNames )
         {
-#if _QGIS_VERSION_INT >= 39900
-          config.setReuseLastValuePolicy( vlayer->fields().indexFromName( fieldName ), Qgis::AttributeFormReuseLastValuePolicy::AllowedDefaultOn );
-#else
-          config.setReuseLastValue( vlayer->fields().indexFromName( fieldName ), rememberedFields[fieldName].toBool() );
-#endif
+          if ( config.reuseLastValuePolicy( vlayer->fields().indexFromName( fieldName ) ) != Qgis::AttributeFormReuseLastValuePolicy::NotAllowed || project->lastSaveVersion().majorVersion() < 4 )
+          {
+            config.setReuseLastValuePolicy( vlayer->fields().indexFromName( fieldName ), rememberedFields[fieldName].toBool() ? Qgis::AttributeFormReuseLastValuePolicy::AllowedDefaultOn : Qgis::AttributeFormReuseLastValuePolicy::AllowedDefaultOff );
+          }
         }
         vlayer->setEditFormConfig( config );
       }
@@ -657,8 +656,13 @@ void ProjectInfo::restoreSettings( QString &projectFilePath, QgsProject *project
   const QStringList variableNames = settings.allKeys();
   for ( const QString &name : variableNames )
   {
-    ExpressionContextUtils::setProjectVariable( project, name, settings.value( name ).toString() );
+    QgsExpressionContextUtils::setProjectVariable( project, name, settings.value( name ).toString() );
   }
+
+  // Inject variables into the global scope until we have a better solution upstream
+  QJsonObject cloudUserInformationObject = QSettings().value( QStringLiteral( "/qgis/projectInfo/%1/cloudUserInfo/json" ).arg( projectFilePath ), QStringLiteral( "{}" ) ).toJsonValue().toObject();
+  QgsExpressionContextUtils::setGlobalVariable( "cloud_username", cloudUserInformationObject.value( "username" ).toString() );
+  QgsExpressionContextUtils::setGlobalVariable( "cloud_useremail", cloudUserInformationObject.value( "email" ).toString() );
 }
 
 QVariantMap ProjectInfo::getTitleDecorationConfiguration()

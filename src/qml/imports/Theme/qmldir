@@ -9,11 +9,12 @@ QfDialog 1.0 QfDialog.qml
 QfDropShadow 1.0 QfDropShadow.qml
 QfExpandableGroupBox 1.0 QfExpandableGroupBox.qml
 QfMenu 1.0 QfMenu.qml
+QfMeterBar 1.0 QfMeterBar.qml
 QfOpacityMask 1.0 QfOpacityMask.qml
 QfOverlayContainer 1.0 QfOverlayContainer.qml
 QfPageHeader 1.0 QfPageHeader.qml
 QfPopup 1.0 QfPopup.qml
-QfProgrerssRing 1.0 QfProgrerssRing.qml
+QfProgressRing 1.0 QfProgressRing.qml
 QfProjectThumbnail 1.0 QfProjectThumbnail.qml
 QfScrollBar 1.0 QfScrollBar.qml
 QfSearchBar 1.0 QfSearchBar.qml

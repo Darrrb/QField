@@ -27,7 +27,7 @@
     </message>
     <message>
         <source>%1 app directories</source>
-        <translation type="unfinished"/>
+        <translation>%1 பயன்பாட்டு கோப்பகங்கள்</translation>
     </message>
     <message>
         <source>%1 app directory</source>
@@ -210,7 +210,7 @@
     </message>
     <message numerus="yes">
         <source>%n device(s) found</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%n சாதனம்(கள்) கண்டறியப்பட்டன</numerusform><numerusform>%n சாதனம்(கள்) கண்டறியப்பட்டன</numerusform></translation>
     </message>
     <message>
         <source>Scanning canceled</source>
@@ -283,8 +283,20 @@ Cancel to make a minimal device scan instead.</source>
         <translation>ஊடலை சாதனங்கள் எதுவும் கண்டறியப்படவில்லை.</translation>
     </message>
     <message>
-        <source>Deeper scanning for paired devices</source>
-        <translation>இணைக்கப்பட்ட சாதனங்களுக்கான ஆழமான ச்கேனிங்</translation>
+        <source>Use Bluetooth Low Energy (BLE)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Bluetooth device configuration:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Low Energy (BLE)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Classic (BT)</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -611,6 +623,10 @@ Cancel to make a minimal device scan instead.</source>
     <message>
         <source>Collapse All</source>
         <translation>அனைத்தையும் சுருக்கு</translation>
+    </message>
+    <message>
+        <source>Project Information</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -947,6 +963,18 @@ Cancel to make a minimal device scan instead.</source>
         <source>Hard constraints not satisfied</source>
         <translation>கடுமையான கட்டுப்பாடுகள் நிறைவு அடையவில்லை</translation>
     </message>
+    <message>
+        <source>Previous page</source>
+        <translation>முந்தைய பக்கம்</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>சேமி</translation>
+    </message>
+    <message>
+        <source>Next page</source>
+        <translation>அடுத்த பக்கம்</translation>
+    </message>
 </context>
 <context>
     <name>FeatureHistory</name>
@@ -972,31 +1000,31 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message numerus="yes">
         <source>Undo creation of %n feature(s) on layer %1.</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%1 அடுக்கில் %n உறுப்புகளை உருவாக்கியதை ரத்து செய்.</numerusform><numerusform>%1 அடுக்கில் %n உறுப்புகளை உருவாக்கியதை ரத்து செய்.</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>Undo creation of %n feature(s).</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%n அம்சங்களை உருவாக்கியதை ரத்துசெய்</numerusform><numerusform>%n அம்சங்களை உருவாக்கியதை ரத்துசெய்</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>Undo deletion of %n feature(s) on layer %1.</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%1 அடுக்கில் உள்ள %n சிறப்பம்சங்களின் நீக்கத்தை ரத்து செய்.</numerusform><numerusform>%1 அடுக்கில் உள்ள %n சிறப்பம்சங்களின் நீக்கத்தை ரத்து செய்.</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>Undo deletion of %n feature(s).</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%n அம்சங்களின் நீக்கத்தை ரத்து செய்</numerusform><numerusform>%n அம்சங்களின் நீக்கத்தை ரத்து செய்</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>Undo modifications on %n feature(s) on layer %1.</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>அடுக்கு %1-இல் உள்ள %n சிறப்பம்சங்களின் மாற்றங்களை ரத்து செய்.</numerusform><numerusform>அடுக்கு %1-இல் உள்ள %n சிறப்பம்சங்களின் மாற்றங்களை ரத்து செய்.</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>Undo modifications on %n feature(s).</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%n கூறுகளில் செய்யப்பட்ட மாற்றங்களை ரத்து செய்</numerusform><numerusform>%n கூறுகளில் செய்யப்பட்ட மாற்றங்களை ரத்து செய்</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>Redo creation of %n feature(s) on layer %1</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%1 அடுக்கில் %n சிறப்பம்சங்களை உருவாக்குவதை மீண்டும் செய்</numerusform><numerusform>%1 அடுக்கில் %n சிறப்பம்சங்களை உருவாக்குவதை மீண்டும் செய்</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>Redo creation of %n feature(s)</source>
@@ -1354,16 +1382,23 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <translation>நிலைப்படுத்துதல்</translation>
     </message>
     <message>
-        <source>Precise view</source>
-        <translation>துல்லியமான பார்வை</translation>
-    </message>
-    <message>
         <source>Sensors</source>
         <translation>சென்சார்கள்</translation>
     </message>
     <message>
         <source>Elevation profile</source>
         <translation>உயர சுயவிவரம்</translation>
+    </message>
+    <message>
+        <source>NTRIP</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>InformationPopup</name>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -1619,7 +1654,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Sample projects</source>
-        <translation>மாதிரி திட்டங்கள்</translation>
+        <translation type="vanished">மாதிரி திட்டங்கள்</translation>
     </message>
     <message>
         <source>Created projects</source>
@@ -1932,6 +1967,25 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
 </context>
 <context>
+    <name>NtripSourceTableFetcher</name>
+    <message>
+        <source>Unexpected response from NTRIP caster</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Disconnected before receiving source table</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No mountpoints found in NTRIP source table</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP source table fetch error: </source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>OrderedRelationModel</name>
     <message>
         <source>Cannot start editing</source>
@@ -2033,15 +2087,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>All files (*.*)</source>
-        <translation>அனைத்து கோப்புகளும் (*.*)</translation>
+        <translation type="vanished">அனைத்து கோப்புகளும் (*.*)</translation>
     </message>
     <message>
         <source>Select File</source>
         <translation>கோப்பைத் தேர்ந்தெடு</translation>
-    </message>
-    <message>
-        <source>Audio files (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</source>
-        <translation>ஆடியோ கோப்புகள் (*.mp3 *.aac *.ogg *.m4a *.mp4 *.mov)</translation>
     </message>
     <message>
         <source>Removal Confirmation</source>
@@ -2152,6 +2202,14 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
         <source>No plugins have been installed yet, switch to the %1available plugins%3 tab to try some right away.&lt;br&gt;&lt;br&gt;For more information, %2read the documentation%3.</source>
         <translation>இன்னும் செருகுநிரல்கள் எதுவும் நிறுவப்படவில்லை, %1கிடைக்கும் செருகுநிரல்கள்%3 தாவலுக்கு மாறவும், சிலவற்றை இப்போதே முயற்சிக்கவும்.&lt;br&gt;&lt;br&gt;மேலும் தகவலுக்கு, %2ஆவணத்தைப் படிக்கவும்%3.</translation>
     </message>
+    <message>
+        <source>The currently opened project has loaded a project plugin</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Deny permission</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>PositionInformationView</name>
@@ -2255,7 +2313,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Bluetooth (NMEA)</source>
-        <translation>ஊடலை (NMEA)</translation>
+        <translation type="vanished">ஊடலை (NMEA)</translation>
     </message>
     <message>
         <source>TCP (NMEA)</source>
@@ -2292,6 +2350,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Logs file (NMEA)</source>
         <translation>பதிவுகள் கோப்பு (NMEA)</translation>
+    </message>
+    <message>
+        <source>Bluetooth BT + BLE (NMEA)</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2343,6 +2405,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>ant.</source>
         <translation>எறும்பு.</translation>
+    </message>
+    <message>
+        <source>%1/s</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2409,6 +2475,65 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
 </context>
 <context>
+    <name>PositioningNtripSettings</name>
+    <message>
+        <source>NTRIP Settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>துறைமுகம்</translation>
+    </message>
+    <message>
+        <source>Protocol</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP Revision 1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP Revision 2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>பயனர் பெயர்</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>கடவுச்சொல்</translation>
+    </message>
+    <message>
+        <source>Mount point</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Identifier:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Data format:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Distance:</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Forward position to NTRIP caster</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP SSL/TLS</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
     <name>PositioningPreciseView</name>
     <message>
         <source>Dist.</source>
@@ -2417,6 +2542,30 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Positioning accuracy too low for this precision level</source>
         <translation>இந்த துல்லிய நிலைக்கு பொருத்துதல் துல்லியம் மிகவும் குறைவாக உள்ளது</translation>
+    </message>
+    <message>
+        <source>Audio proximity feedback</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Rotate view</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Rotation source</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Compass</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Movement</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Precision</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2548,6 +2697,10 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud allows to synchronize and merge the data collected by your team in %1. From small individual projects to large data collection campaigns. </source>
+        <translation>QField இல் உங்கள் குழுவால் சேகரிக்கப்பட்ட தரவை  %1 ஒத்திசைக்கவும் ஒன்றிணைக்கவும் QFieldCloud அனுமதிக்கிறது. சிறிய தனிப்பட்ட திட்டங்கள் முதல் பெரிய தரவு சேகரிப்பு பிரச்சாரங்கள் வரை.</translation>
+    </message>
+    <message>
+        <source>Automatically push changes on a regular interval</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2592,6 +2745,18 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Track color</source>
         <translation>தட வண்ணம்</translation>
+    </message>
+    <message>
+        <source>Note attachments</source>
+        <translation>குறிப்பு இணைப்புகள்</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>விவரம்</translation>
+    </message>
+    <message>
+        <source>Attachments</source>
+        <translation>இணைப்புகள்</translation>
     </message>
 </context>
 <context>
@@ -2756,7 +2921,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Server URL
 (Leave empty to use the default server)</source>
-        <translation>சேவையக முகவரி 
+        <translation type="vanished">சேவையக முகவரி 
 (இயல்புநிலை சேவையகத்தைப் பயன்படுத்த காலியாக விடவும்)</translation>
     </message>
     <message>
@@ -2809,7 +2974,7 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud</source>
-        <translation>QFieldCloud</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>or</source>
@@ -2818,6 +2983,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     <message>
         <source>Sign in using %1</source>
         <translation>% 1ஐப் பயன்படுத்தி உள்நுழைக</translation>
+    </message>
+    <message>
+        <source>%1Server URL
+(Leave empty to use the default server)</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2832,11 +3002,19 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>QFieldCloud had troubles packaging your project</source>
-        <translation>QFieldCloud இல் உங்கள் திட்டத்தை பேக்கேசிங் செய்வதில் சிக்கல் ஏற்பட்டது</translation>
+        <translation type="vanished">QFieldCloud இல் உங்கள் திட்டத்தை பேக்கேசிங் செய்வதில் சிக்கல் ஏற்பட்டது</translation>
     </message>
     <message>
         <source>Some layers have not been packaged correctly on QFieldCloud. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server. Please check the logs of the latest packaging job on the qfield.cloud website.</source>
-        <translation>QFieldCloud இல் சில அடுக்குகள் சரியாக தொகுக்கப்படவில்லை. இந்த அடுக்குகள் தவறாக உள்ளமைக்கப்படலாம் அல்லது அவற்றின் தரவு மூலத்தை QFieldCloud சேவையகத்திலிருந்து அணுக முடியாது. qfield.cloud இணையதளத்தில் அண்மைக் கால பேக்கேசிங் வேலையின் பதிவுகளை சரிபார்க்கவும்.</translation>
+        <translation type="vanished">QFieldCloud இல் சில அடுக்குகள் சரியாக தொகுக்கப்படவில்லை. இந்த அடுக்குகள் தவறாக உள்ளமைக்கப்படலாம் அல்லது அவற்றின் தரவு மூலத்தை QFieldCloud சேவையகத்திலிருந்து அணுக முடியாது. qfield.cloud இணையதளத்தில் அண்மைக் கால பேக்கேசிங் வேலையின் பதிவுகளை சரிபார்க்கவும்.</translation>
+    </message>
+    <message>
+        <source>Some layers have not been packaged correctly. These layers might be misconfigured or their data source is not accessible from the QFieldCloud server.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Please check the detailed feedback below and the latest packaging job logs on the QFieldCloud website.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -2863,11 +3041,11 @@ The features geometries will be combined into feature &apos;%1&apos;, which will
     </message>
     <message>
         <source>Connecting to the cloud.</source>
-        <translation>மேகத்துடன் இணைக்கிறது.</translation>
+        <translation type="vanished">மேகத்துடன் இணைக்கிறது.</translation>
     </message>
     <message>
         <source>Greetings &lt;strong&gt;%1&lt;/strong&gt;.</source>
-        <translation>வாழ்த்துக்கள் &lt;strong&gt;% 1&lt;/strong&gt;.</translation>
+        <translation type="vanished">வாழ்த்துக்கள் &lt;strong&gt;% 1&lt;/strong&gt;.</translation>
     </message>
     <message>
         <source>This QFieldCloud project was first downloaded with another cloud account. Please sign in with the original account for this project to use the QFieldCloud functionality.</source>
@@ -3083,7 +3261,23 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message numerus="yes">
         <source>%n file(s) remaining</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%n கோப்புகள் மீதமுள்ளன</numerusform><numerusform>%n கோப்புகள் மீதமுள்ளன</numerusform></translation>
+    </message>
+    <message>
+        <source>Used %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -3261,6 +3455,49 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>Synchronizing</source>
         <translation>ஒத்திசைத்தல்</translation>
     </message>
+    <message>
+        <source>Using %1 of %2</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Storage size</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QFieldCloudProjectFilter</name>
+    <message>
+        <source>Predefined Filters</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Criteria</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Include public projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>தேடல்</translation>
+    </message>
+    <message>
+        <source>%1&apos;s projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>My own projects</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Title or description contains</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Owner is</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudProjectsModel</name>
@@ -3425,11 +3662,11 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>My Projects</source>
-        <translation>எனது திட்டங்கள்</translation>
+        <translation type="vanished">எனது திட்டங்கள்</translation>
     </message>
     <message>
         <source>Community</source>
-        <translation>சமூகம்</translation>
+        <translation type="vanished">சமூகம்</translation>
     </message>
     <message>
         <source>(Available locally)</source>
@@ -3457,7 +3694,7 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Available locally, missing on the cloud</source>
-        <translation>உள்நாட்டில் கிடைக்கிறது, மேகக்கணியில் இல்லை</translation>
+        <translation type="vanished">உள்நாட்டில் கிடைக்கிறது, மேகக்கணியில் இல்லை</translation>
     </message>
     <message>
         <source>Available on the cloud, missing locally</source>
@@ -3465,7 +3702,7 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message>
         <source>Available locally</source>
-        <translation>உள்நாட்டில் கிடைக்கும்</translation>
+        <translation type="vanished">உள்நாட்டில் கிடைக்கும்</translation>
     </message>
     <message>
         <source>Has changes. </source>
@@ -3512,10 +3749,6 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation>திட்ட நடவடிக்கைகள்</translation>
     </message>
     <message>
-        <source>, updated data available on the cloud</source>
-        <translation>, மேகக்கணியில் புதுப்பிக்கப்பட்ட தரவு கிடைக்கிறது</translation>
-    </message>
-    <message>
         <source>QFieldCloud is packaging the latest data just for you; this might take some time, please hold tight</source>
         <translation>QFieldCloud உங்களுக்கான அண்மைக் கால தரவை பேக்கேசிங் செய்கிறது; இதற்கு சிறிது நேரம் ஆகலாம், தயவுசெய்து இறுக்கமாகப் பிடித்துக் கொள்ளுங்கள்</translation>
     </message>
@@ -3532,14 +3765,6 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation>திட்டத்தைப் பதிவிறக்க QFieldCloud ஐ அணுகவும்</translation>
     </message>
     <message>
-        <source>No cloud projects found. To get started, %1read the documentation%2.</source>
-        <translation>முகில் திட்டப்பணிகள் எதுவும் இல்லை. தொடங்குவதற்கு,% 1ஆவணத்தை படிக்கவும்% 2.</translation>
-    </message>
-    <message>
-        <source>Search for project</source>
-        <translation>திட்டத்தைத் தேடுங்கள்</translation>
-    </message>
-    <message>
         <source>Sign out</source>
         <translation>விடுபதிகை</translation>
     </message>
@@ -3550,14 +3775,6 @@ While you can still view and use the project, it is strongly recommended to rese
     <message>
         <source>Show invalid projects</source>
         <translation>தவறான திட்டங்களைக் காட்டு</translation>
-    </message>
-    <message>
-        <source>Available on the cloud</source>
-        <translation>மேகக்கணியில் கிடைக்கும்</translation>
-    </message>
-    <message>
-        <source>, has changes locally</source>
-        <translation>, உள்நாட்டில் மாற்றங்கள் உள்ளன</translation>
     </message>
     <message>
         <source>View Project Details</source>
@@ -3583,6 +3800,38 @@ While you can still view and use the project, it is strongly recommended to rese
         <source>Push changes</source>
         <translation>புச் மாற்றங்கள்</translation>
     </message>
+    <message>
+        <source>Projects</source>
+        <translation>திட்டங்கள்</translation>
+    </message>
+    <message>
+        <source>Refreshing projects list...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Searching for projects...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No cloud projects found.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>To get started, %1read the documentation%2.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2 and see what the community has to offer.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Try to %1include public projects%2.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Search for projects</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QFieldCloudService</name>
@@ -3592,7 +3841,30 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message numerus="yes">
         <source>%n file(s) remaining</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%n கோப்புகள் மீதமுள்ளன</numerusform><numerusform>%n கோப்புகள் மீதமுள்ளன</numerusform></translation>
+    </message>
+</context>
+<context>
+    <name>QFieldCloudStatus</name>
+    <message>
+        <source>QFieldCloud server is not reachable</source>
+        <translation>QFieldCloud சேவையகத்தை அணுக முடியவில்லை.</translation>
+    </message>
+    <message>
+        <source>The server at %1 could not be reached. Please check your internet connection.</source>
+        <translation>%1 இல் உள்ள சேவையகத்தை அடைய முடியவில்லை. உங்கள் இணைய இணைப்பைச் சரிபார்க்கவும்.</translation>
+    </message>
+    <message>
+        <source>QFieldCloud is under maintenance</source>
+        <translation>QFieldCloud பராமரிப்பில் உள்ளது.</translation>
+    </message>
+    <message>
+        <source>QFieldCloud service is degraded</source>
+        <translation>QFieldCloud சேவை தரமிறக்கப்பட்டுள்ளது.</translation>
+    </message>
+    <message>
+        <source>There is an ongoing incident</source>
+        <translation>ஒரு சம்பவம் நடந்து கொண்டிருக்கிறது.</translation>
     </message>
 </context>
 <context>
@@ -3606,8 +3878,12 @@ While you can still view and use the project, it is strongly recommended to rese
         <translation>பிணையம் பிழை ஏற்பட்டது, மீண்டும் முயற்சிக்கவும்.</translation>
     </message>
     <message>
-        <source>Your account&apos;s available storage is full.</source>
-        <translation>உங்கள் கணக்கின் சேமிப்பகம் நிரம்பியுள்ளது.</translation>
+        <source>The project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>The project owner&apos;s subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -3738,6 +4014,10 @@ While you can still view and use the project, it is strongly recommended to rese
     <message>
         <source>Download folder from WebDAV server</source>
         <translation>WebDAV சேவையகத்திலிருந்து கோப்புறையைப் பதிவிறக்கவும்</translation>
+    </message>
+    <message>
+        <source>Delete folder</source>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>Delete file</source>
@@ -4047,7 +4327,7 @@ While you can still view and use the project, it is strongly recommended to rese
     </message>
     <message numerus="yes">
         <source>%n device(s) found</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation type="vanished"><numerusform>%n சாதனம்(கள்) கண்டறியப்பட்டன</numerusform><numerusform>%n சாதனம்(கள்) கண்டறியப்பட்டன</numerusform></translation>
     </message>
     <message>
         <source>Scanning canceled</source>
@@ -4113,7 +4393,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Minimum number of positions collected</source>
-        <translation>சேகரிக்கப்பட்ட பதவிகளின் குறைந்தபட்ச எண்ணிக்கை</translation>
+        <translation type="vanished">சேகரிக்கப்பட்ட பதவிகளின் குறைந்தபட்ச எண்ணிக்கை</translation>
     </message>
     <message>
         <source>Automatically end collection when minimum number is met</source>
@@ -4129,7 +4409,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Antenna height [m]</source>
-        <translation>ஆண்டெனா உயரம் [மீ]</translation>
+        <translation type="vanished">ஆண்டெனா உயரம் [மீ]</translation>
     </message>
     <message>
         <source>Z values which are recorded from the positioning device will be corrected by this value. If a value of 1.6 is entered, this will result in a correction of -1.6 for each recorded value.</source>
@@ -4169,7 +4449,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>நேர முத்திரை (சகாப்தத்திலிருந்து மில்லி விநாடிகள்)</translation>
+        <translation type="vanished">நேர முத்திரை (சகாப்தத்திலிருந்து மில்லி விநாடிகள்)</translation>
     </message>
     <message>
         <source>Ground speed</source>
@@ -4336,14 +4616,6 @@ Cancel to make a minimal device scan instead.</source>
         <translation>ச்விட்ச் ஆன் செய்யும்போது, ​​வரைபடத்தை பயனரால் சுழற்ற முடியும்.</translation>
     </message>
     <message>
-        <source>Bad accuracy threshold [m]</source>
-        <translation>மோசமான துல்லியம் வரம்பு [மீ]</translation>
-    </message>
-    <message>
-        <source>Excellent accuracy threshold [m]</source>
-        <translation>சிறந்த துல்லியம் வரம்பு [மீ]</translation>
-    </message>
-    <message>
         <source>Enforce accuracy requirement</source>
         <translation>துல்லியத் தேவையைச் செயல்படுத்தவும்</translation>
     </message>
@@ -4412,19 +4684,127 @@ Cancel to make a minimal device scan instead.</source>
         <translation>வரைபட கேன்வாச் பின்தொடரும் போது அல்லது நிலைக்கு பூட்டப்பட்டிருக்கும் போது, ​​திசைகாட்டி நோக்குநிலை அல்லது இயக்கத்தின் திசையுடன் பொருந்துமாறு சுழற்றலாம்.</translation>
     </message>
     <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve the experience for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <source>If enabled, anonymized metrics will be collected and sent to help improve %1 for everyone.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <source>This value will correct the Z values recorded from the positioning device. If a value of 1.6 is entered, the system will automatically subtract 1.6 from each recorded value. Make sure to insert the effective antenna height, i.e. pole length + antenna phase center offset.</source>
-        <translation type="unfinished"/>
+        <translation>இந்த மதிப்பு நிலைப்படுத்தல் சாதனத்திலிருந்து பதிவுசெய்யப்பட்ட Z மதிப்புகளைச் சரிசெய்யும். 1.6 மதிப்பை உள்ளிட்டால், கணினி தானாகவே ஒவ்வொரு பதிவுசெய்யப்பட்ட மதிப்பிலிருந்தும் 1.6 ஐக் கழிக்கும். பயனுள்ள ஆண்டெனா உயரத்தைச் செருகுவதை உறுதிசெய்து கொள்ளுங்கள், அதாவது துருவ நீளம் + ஆண்டெனா கட்ட மைய ஆஃப்செட்.</translation>
     </message>
     <message>
         <source>%1 Settings</source>
+        <translation>%1 அமைப்புகள்</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation>பிணையம்</translation>
+    </message>
+    <message>
+        <source>Enable proxy</source>
+        <translation>ப்ராக்ஸியை இயக்கு</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>System default</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. proxy.example.com</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>துறைமுகம்</translation>
+    </message>
+    <message>
+        <source>e.g. 8888</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>பயனர் பெயர்</translation>
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>கடவுச்சொல்</translation>
+    </message>
+    <message>
+        <source>URLs excluded from proxy (comma-separated)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>e.g. localhost, 192.168.*</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Configure a network proxy to route QField&apos;s traffic through a proxy server. Useful for corporate networks and VPNs.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, the native camera provided by the operating system will be used.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>If enabled, anonymized metrics will be collected and sent to help improve the user experience for everyone.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Positioning Device</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable NTRIP corrections</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client disconnected</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client connecting</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>NTRIP client connected</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Please provide valid NTRIP settings</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Elevation Adjustment</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Bad accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>m</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Excellent accuracy threshold</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum positions count</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Antenna height</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -4617,6 +4997,42 @@ Cancel to make a minimal device scan instead.</source>
         <source>Circle #2: point</source>
         <translation>வட்டம் #2: புள்ளி</translation>
     </message>
+    <message>
+        <source>KB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>MB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>GB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>TB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>B</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Cannot delete file (not allowed): %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>File does not exist: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete directory: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Failed to delete file: %1 - %2</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>QfActionButton</name>
@@ -4697,6 +5113,51 @@ Cancel to make a minimal device scan instead.</source>
     <message>
         <source>close</source>
         <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfDialog</name>
+    <message>
+        <source>OK</source>
+        <translation>சரி</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>No</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfMeterBar</name>
+    <message>
+        <source>Storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Tap to manage storage</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>QfOverlayContainer</name>
+    <message>
+        <source>Positioning</source>
+        <translation>நிலைப்படுத்துதல்</translation>
     </message>
 </context>
 <context>
@@ -4967,6 +5428,10 @@ Cancel to make a minimal device scan instead.</source>
         <source>%n feature(s)</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
     </message>
+    <message>
+        <source>Open Form</source>
+        <translation type="unfinished"/>
+    </message>
 </context>
 <context>
     <name>Reshape</name>
@@ -5178,7 +5643,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Minimum time [sec]</source>
-        <translation>குறைந்தபட்ச நேரம் [வினாடி]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the time between the last and new vertex meets a configured mimimum value.</source>
@@ -5190,7 +5655,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Minimum distance [%1]</source>
-        <translation>குறைந்தபட்ச தூரம் [%1]</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>When enabled, vertex additions will occur when the distance between the last and new vertex meets a configured mimimum value.</source>
@@ -5221,10 +5686,6 @@ Cancel to make a minimal device scan instead.</source>
         <translation>தவறான தூர பாதுகாப்பு</translation>
     </message>
     <message>
-        <source>Maximum tolerated distance [%1]</source>
-        <translation>அதிகபட்ச தாங்கக்கூடிய தூரம் [%1]</translation>
-    </message>
-    <message>
         <source>When enabled, vertex addition will not occur when the distance between the last and new vertex is greater than a configured maximum value.</source>
         <translation>இயக்கப்பட்டால், கடைசி மற்றும் புதிய உச்சிக்கு இடையே உள்ள தூரம் உள்ளமைக்கப்பட்ட அதிகபட்ச மதிப்பை விட அதிகமாக இருக்கும் போது, ​​உச்சி கூட்டல் ஏற்படாது.</translation>
     </message>
@@ -5238,7 +5699,7 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Timestamp (milliseconds since epoch)</source>
-        <translation>நேர முத்திரை (சகாப்தத்திலிருந்து மில்லி விநாடிகள்)</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <source>Ground speed</source>
@@ -5291,6 +5752,26 @@ Cancel to make a minimal device scan instead.</source>
     <message>
         <source>Track on layer %1 resumed</source>
         <translation>அடுக்கு% 1 இல் தடம் மீண்டும் தொடங்கப்பட்டது</translation>
+    </message>
+    <message>
+        <source>Timestamp (seconds since epoch)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum time</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>sec</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Minimum distance</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Maximum tolerated distance</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -5573,55 +6054,55 @@ Cancel to make a minimal device scan instead.</source>
     </message>
     <message>
         <source>Upload finished.</source>
-        <translation type="unfinished"/>
+        <translation>பதிவேற்றம் முடிந்தது.</translation>
     </message>
     <message>
         <source>No local paths provided.</source>
-        <translation type="unfinished"/>
+        <translation>உள்ளூர் பாதைகள் எதுவும் வழங்கப்படவில்லை.</translation>
     </message>
     <message>
         <source>WebDAV is busy.</source>
-        <translation type="unfinished"/>
+        <translation>WebDAV பிஸியாக உள்ளது.</translation>
     </message>
     <message>
         <source>Not a WebDAV imported project.</source>
-        <translation type="unfinished"/>
+        <translation>WebDAV இறக்குமதி செய்யப்பட்ட திட்டம் அல்ல.</translation>
     </message>
     <message>
         <source>WebDAV config is missing required fields.</source>
-        <translation type="unfinished"/>
+        <translation>WebDAV கட்டமைப்பில் தேவையான புலங்கள் இல்லை.</translation>
     </message>
     <message>
         <source>No stored password available.</source>
-        <translation type="unfinished"/>
+        <translation>சேமிக்கப்பட்ட கடவுச்சொல் எதுவும் கிடைக்கவில்லை.</translation>
     </message>
     <message>
         <source>Selected items belong to different WebDAV projects.</source>
-        <translation type="unfinished"/>
+        <translation>தேர்ந்தெடுக்கப்பட்ட உருப்படிகள் வெவ்வேறு WebDAV திட்டங்களுக்குச் சொந்தமானவை.</translation>
     </message>
     <message>
         <source>Nothing to upload.</source>
-        <translation type="unfinished"/>
+        <translation>பதிவேற்ற எதுவும் இல்லை.</translation>
     </message>
     <message>
         <source>No local changes detected.</source>
-        <translation type="unfinished"/>
+        <translation>உள்ளூர் மாற்றங்கள் எதுவும் கண்டறியப்படவில்லை.</translation>
     </message>
     <message>
         <source>Upload cancelled.</source>
-        <translation type="unfinished"/>
+        <translation>பதிவேற்றம் ரத்து செய்யப்பட்டது.</translation>
     </message>
     <message>
         <source>Upload skipped.</source>
-        <translation type="unfinished"/>
+        <translation>பதிவேற்றம் தவிர்க்கப்பட்டது.</translation>
     </message>
     <message>
         <source>Upload is locked by another process.</source>
-        <translation type="unfinished"/>
+        <translation>பதிவேற்றம் மற்றொரு செயல்முறையால் பூட்டப்பட்டுள்ளது.</translation>
     </message>
     <message>
         <source>Failed to read WebDAV config file.</source>
-        <translation type="unfinished"/>
+        <translation>WebDAV கட்டமைப்பு கோப்பைப் படிக்க முடியவில்லை.</translation>
     </message>
     <message>
         <source>Invalid WebDAV config JSON.</source>
@@ -5758,11 +6239,11 @@ project</source>
     </message>
     <message>
         <source>Hey there, how do you like your experience with %1 so far?</source>
-        <translation type="unfinished"/>
+        <translation>வணக்கம், இதுவரை %1 உடனான உங்கள் அனுபவம் உங்களுக்கு எப்படிப் பிடித்திருக்கிறது?</translation>
     </message>
     <message>
         <source>To improve stability for everyone, %1 collects and sends anonymized metrics.</source>
-        <translation type="unfinished"/>
+        <translation>அனைவருக்கும் நிலைத்தன்மையை மேம்படுத்த, %1 பெயர் குறிப்பிடப்படாதது அளவீடுகளைச் சேகரித்து அனுப்புகிறது.</translation>
     </message>
     <message>
         <source>Welcome back to %1.</source>
@@ -5774,7 +6255,7 @@ project</source>
     </message>
     <message>
         <source>First time using this application? Try the sample projects listed below.</source>
-        <translation type="unfinished"/>
+        <translation>இந்தப் பயன்பாட்டை முதல் முறையாகப் பயன்படுத்துகிறீர்களா? கீழே பட்டியலிடப்பட்டுள்ள மாதிரி திட்டங்களை முயற்சிக்கவும்.</translation>
     </message>
 </context>
 <context>
@@ -5895,6 +6376,21 @@ project</source>
     <message>
         <source>inches</source>
         <translation>அங்குலங்கள்</translation>
+    </message>
+</context>
+<context>
+    <name>gallery_relation_editor</name>
+    <message>
+        <source>QFieldCloud on-demand attachment error: </source>
+        <translation>QFieldCloud ஆன்-டிமாண்ட் இணைப்பு பிழை:</translation>
+    </message>
+    <message>
+        <source>The external storage&apos;s authentication configuration ID is missing, please insure it is imported into %1</source>
+        <translation>வெளிப்புற சேமிப்பக அங்கீகார உள்ளமைவு ஐடி காணவில்லை, தயவுசெய்து அது %1 க்கு இறக்குமதி செய்யப்பட்டுள்ளதா என்பதை உறுதிப்படுத்தவும்.</translation>
+    </message>
+    <message>
+        <source>Learn more</source>
+        <translation>மேலும் அறிக</translation>
     </message>
 </context>
 <context>
@@ -6171,7 +6667,7 @@ project</source>
     </message>
     <message>
         <source>Precise View Settings</source>
-        <translation>துல்லியமான பார்வை அமைப்புகள்</translation>
+        <translation type="vanished">துல்லியமான பார்வை அமைப்புகள்</translation>
     </message>
     <message>
         <source>0.25m Precision</source>
@@ -6235,11 +6731,11 @@ project</source>
     </message>
     <message>
         <source>%1 Precision</source>
-        <translation>% 1 துல்லியம்</translation>
+        <translation type="vanished">% 1 துல்லியம்</translation>
     </message>
     <message>
         <source>Enable Audio Proximity Feedback</source>
-        <translation>ஆடியோ ப்ராக்சிமிட்டி கருத்தை இயக்கு</translation>
+        <translation type="vanished">ஆடியோ ப்ராக்சிமிட்டி கருத்தை இயக்கு</translation>
     </message>
     <message>
         <source>Positioning Options</source>
@@ -6749,23 +7245,71 @@ to show actions</source>
     </message>
     <message>
         <source>Failed to load 3D view</source>
-        <translation type="unfinished"/>
+        <translation>3D காட்சியை ஏற்ற முடியவில்லை.</translation>
     </message>
     <message>
         <source>Loading terrain...</source>
-        <translation type="unfinished"/>
+        <translation>நிலப்பரப்பை ஏற்றுகிறது...</translation>
     </message>
     <message>
         <source>Close 3D view</source>
-        <translation type="unfinished"/>
+        <translation>3D காட்சியை மூடு</translation>
     </message>
     <message>
         <source>About %1</source>
-        <translation type="unfinished"/>
+        <translation>சுமார் %1</translation>
     </message>
     <message>
         <source>Do you want to import &lt;b&gt;%1&lt;/b&gt; from &lt;b&gt;%2&lt;/b&gt; into %3?</source>
         <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Long press on your location marker to show actions</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade storage</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Plugin Manager</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project plugin loaded</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as your available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be packaged as the project owner&apos;s available storage is full.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as your subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Upgrade plan</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Project %1 cannot be downloaded as the project owner&apos;s subscription plan is insufficient.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Enable NTRIP Corrections</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Long press on the destination marker to show actions</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>meters</source>
+        <translation>மீட்டர்</translation>
     </message>
 </context>
 <context>
